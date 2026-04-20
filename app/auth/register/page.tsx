@@ -84,6 +84,7 @@ export default function RegisterPage() {
         <div>
           <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Contraseña</label>
           <input type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)}
+            autoComplete="new-password"
             className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac transition-colors"
             placeholder="Mínimo 8 caracteres" />
         </div>
