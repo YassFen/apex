@@ -27,6 +27,7 @@ const COACH_NAV = [
   { label: 'Box', items: [
     { href: '/dashboard',           icon: IconGrid,   label: 'Dashboard' },
     { href: '/coach/publish-wod',   icon: IconFlame,  label: 'Publicar WOD' },
+    { href: '/coach/wod-live',      icon: IconPulse,  label: 'Seguimiento WOD', dot: true },
     { href: '/coach/athletes',      icon: IconUsers,  label: 'Atletas' },
     { href: '/analytics',           icon: IconBar,    label: 'Analytics' },
   ]},

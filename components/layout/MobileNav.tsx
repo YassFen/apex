@@ -15,8 +15,8 @@ const ATHLETE_ITEMS = [
 const COACH_ITEMS = [
   { href: '/dashboard',         label: 'Dashboard', icon: '⊞' },
   { href: '/coach/publish-wod', label: 'WOD',       icon: '🔥' },
+  { href: '/coach/wod-live',    label: 'En Vivo',   icon: '🔴' },
   { href: '/coach/athletes',    label: 'Atletas',   icon: '👥' },
-  { href: '/analytics',         label: 'Analytics', icon: '📊' },
   { href: '/settings',          label: 'Perfil',    icon: '👤' },
 ]
 

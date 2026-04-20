@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext } from 'react'
 import type { Profile } from '@/lib/types/database'
 
 interface ShellCtx {
@@ -9,16 +9,19 @@ interface ShellCtx {
 
 const Ctx = createContext<ShellCtx | null>(null)
 
-export function ShellProvider({ profile, children }: { profile: Profile; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <Ctx.Provider value={{ profile, openSidebar: () => setOpen(true) }}>
-      {children}
-    </Ctx.Provider>
-  )
+export function ShellProvider({
+  profile,
+  openSidebar,
+  children,
+}: {
+  profile: Profile
+  openSidebar: () => void
+  children: React.ReactNode
+}) {
+  return <Ctx.Provider value={{ profile, openSidebar }}>{children}</Ctx.Provider>
 }
 
-export function useShell() {
+export function useShell(): ShellCtx {
   const ctx = useContext(Ctx)
   if (!ctx) throw new Error('useShell outside ShellProvider')
   return ctx
