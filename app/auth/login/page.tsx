@@ -11,12 +11,24 @@ export default function LoginPage() {
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
 
+  function translateAuthError(msg: string): string {
+    if (msg.includes('Invalid login credentials'))
+      return 'Email o contraseña incorrectos. Verifica tus datos o regístrate si no tienes cuenta.'
+    if (msg.includes('Email not confirmed'))
+      return 'Debes confirmar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.'
+    if (msg.includes('Too many requests'))
+      return 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.'
+    if (msg.includes('User not found'))
+      return 'No existe una cuenta con ese email. ¿Quieres registrarte?'
+    return msg
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true); setError('')
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) { setError(error.message); setLoading(false); return }
+    if (error) { setError(translateAuthError(error.message)); setLoading(false); return }
     router.push('/dashboard')
     router.refresh()
   }

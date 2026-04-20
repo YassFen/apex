@@ -9,7 +9,7 @@ const ATHLETE_ITEMS = [
   { href: '/wod',        label: 'WOD',    icon: '🔥' },
   { href: '/timer',      label: 'Timer',  icon: '⏱' },
   { href: '/prs',        label: 'PRs',    icon: '📈' },
-  { href: '/calc',       label: 'Calc',   icon: '🧮' },
+  { href: '/settings',   label: 'Perfil', icon: '👤' },
 ]
 
 const COACH_ITEMS = [
@@ -17,6 +17,7 @@ const COACH_ITEMS = [
   { href: '/coach/publish-wod', label: 'WOD',       icon: '🔥' },
   { href: '/coach/athletes',    label: 'Atletas',   icon: '👥' },
   { href: '/analytics',         label: 'Analytics', icon: '📊' },
+  { href: '/settings',          label: 'Perfil',    icon: '👤' },
 ]
 
 export function MobileNav({ profile }: { profile: Profile }) {
