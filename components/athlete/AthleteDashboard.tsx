@@ -1,15 +1,14 @@
 'use client'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { Plus } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { PRModal } from '@/components/athlete/PRModal'
 import { StrengthChart } from '@/components/athlete/StrengthChart'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
-import { useShell } from '@/lib/hooks/useShell'
 import type { Profile } from '@/lib/types/database'
-import { formatWeight } from '@/lib/utils/units'
 
 interface PR {
   id: string
@@ -28,18 +27,28 @@ export function AthleteDashboard({ profile, prs }: { profile: Profile; prs: PR[]
   const kpiMovements = ['Deadlift', 'Back Squat', 'Squat Snatch', 'Clean & Jerk']
   const kpiPRs = kpiMovements.map(name => prs.find(p => p.movements?.name === name))
 
-  const today = new Date().toLocaleDateString('es-CL', { month: 'short', year: 'numeric' })
+  const strengthMovements = useMemo(() => {
+    const names = Array.from(new Set(
+      prs
+        .filter(p => (p.metric === '1rm' || p.metric === '3rm') && p.movements?.name)
+        .map(p => p.movements!.name)
+    ))
+    return names.length > 0 ? names : kpiMovements
+  }, [prs])
+
+  const [selectedMovement, setSelectedMovement] = useState<string>(() =>
+    prs.find(p => (p.metric === '1rm' || p.metric === '3rm'))?.movements?.name ?? 'Deadlift'
+  )
 
   return (
     <>
       <Topbar
         title="Dashboard"
-        onMenuClick={() => {}}
         profile={profile}
         actions={
           <Button onClick={() => setPrModalOpen(true)} size="md">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span className="hidden sm:inline">Registrar PR</span>
+            <Plus size={14} strokeWidth={2.5} />
+            <span className="hidden sm:inline">Registrar RM</span>
           </Button>
         }
       />
@@ -77,17 +86,20 @@ export function AthleteDashboard({ profile, prs }: { profile: Profile; prs: PR[]
         {/* Chart + Top PRs */}
         <div className="grid lg:grid-cols-[2fr_1fr] gap-4">
           <Card padding={false} className="p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 gap-2">
               <div className="font-barlow text-[17px] font-extrabold tracking-wide uppercase">Evolución de fuerza</div>
-              <select className="bg-p3 border border-[var(--ln)] rounded-xl px-3 py-2 text-sm text-t outline-none focus:border-ac">
-                <option>Deadlift</option>
-                <option>Back Squat</option>
-                <option>Squat Snatch</option>
-                <option>Power Clean</option>
+              <select
+                value={selectedMovement}
+                onChange={e => setSelectedMovement(e.target.value)}
+                className="bg-p3 border border-[var(--ln)] rounded-xl px-3 py-2 text-sm text-t outline-none focus:border-ac max-w-[180px]"
+              >
+                {strengthMovements.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
               </select>
             </div>
             <div className="h-[280px]">
-              <StrengthChart prs={prs} />
+              <StrengthChart prs={prs} movement={selectedMovement} unit={unit} />
             </div>
           </Card>
 

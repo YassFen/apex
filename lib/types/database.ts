@@ -9,7 +9,7 @@ export type BoxPlan = "free" | "pro" | "enterprise"
 export type Unit = "lb" | "kg"
 
 // Convenience aliases (no generics needed at alias level)
-export interface Profile { id: string; email: string; full_name: string; avatar_url: string | null; role: UserRole; preferred_unit: Unit; tracking_since: string | null; bio: string | null; city: string | null; created_at: string; updated_at: string }
+export interface Profile { id: string; email: string; full_name: string; avatar_url: string | null; role: UserRole; preferred_unit: Unit; tracking_since: string | null; bio: string | null; city: string | null; favorite_movement: string | null; profile_public: boolean; show_prs_public: boolean; created_at: string; updated_at: string }
 export interface Box { id: string; name: string; slug: string; logo_url: string | null; city: string; country: string; owner_id: string; affiliate_code: string | null; invite_code: string; plan: BoxPlan; created_at: string }
 export interface BoxMember { id: string; box_id: string; user_id: string; role: UserRole; joined_at: string; is_active: boolean }
 export interface Movement { id: string; name: string; category: MovementCategory; description: string | null; video_url: string | null }

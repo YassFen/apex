@@ -1,5 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
+import { Menu } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useShell } from '@/lib/hooks/useShell'
 import type { Profile } from '@/lib/types/database'
@@ -25,12 +26,8 @@ export function Topbar({ title, profile, actions }: TopbarProps) {
   return (
     <header className="h-[60px] border-b border-[var(--ln)] flex items-center justify-between px-6 sticky top-0 bg-bg/90 backdrop-blur-[16px] z-20">
       <div className="flex items-center gap-3.5">
-        <button onClick={openSidebar} className="lg:hidden p-2 rounded-xl hover:bg-p2 transition-colors text-t">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
+        <button onClick={openSidebar} aria-label="Abrir menú" className="lg:hidden p-2 -ml-2 rounded-xl hover:bg-p2 active:bg-p3 transition-colors text-t">
+          <Menu size={22} strokeWidth={2} />
         </button>
         <h1 className="font-barlow text-[22px] font-extrabold tracking-wide uppercase">{title}</h1>
       </div>

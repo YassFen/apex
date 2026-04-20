@@ -10,6 +10,7 @@ interface Props {
   profile: Profile
   onClose: () => void
   onSaved: () => void
+  editingPr?: any
 }
 
 type MetricType = '1rm' | '3rm' | 'max_reps' | 'time'
@@ -27,17 +28,35 @@ const CAT_LABELS: Record<MovementCategory, string> = {
   cardio: 'Cardio / Monostructural',
 }
 
-export function PRModal({ profile, onClose, onSaved }: Props) {
+export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
   const supabase = createClient()
+  const isEditing = !!editingPr
   const [movements, setMovements] = useState<Movement[]>([])
-  const [movId, setMovId]         = useState('')
-  const [metric, setMetric]       = useState<MetricType>('1rm')
-  const [weight, setWeight]       = useState('')
+  const [movId, setMovId]         = useState(editingPr?.movement_id ?? '')
+  const [metric, setMetric]       = useState<MetricType>((editingPr?.metric as MetricType) ?? '1rm')
+  const initialWeight = (() => {
+    if (!editingPr || (editingPr.metric !== '1rm' && editingPr.metric !== '3rm')) return ''
+    const raw = editingPr.value_lb ?? 0
+    return profile.preferred_unit === 'kg' ? String(Math.round(raw * 0.453592 * 10) / 10) : String(raw)
+  })()
+  const initialReps = editingPr?.metric === 'max_reps' ? String(Math.round(editingPr.value_lb ?? 0)) : ''
+  const initialTime = (() => {
+    if (editingPr?.metric !== 'time') return ''
+    const total = Math.round(editingPr.value_lb ?? 0)
+    const mm = Math.floor(total / 60)
+    const ss = total % 60
+    return `${mm}:${String(ss).padStart(2, '0')}`
+  })()
+  const [weight, setWeight]       = useState(initialWeight)
   const [unit, setUnit]           = useState<'kg' | 'lb'>(profile.preferred_unit)
-  const [reps, setReps]           = useState('')
-  const [time, setTime]           = useState('')
-  const [date, setDate]           = useState(new Date().toISOString().split('T')[0])
-  const [notes, setNotes]         = useState('')
+  const [reps, setReps]           = useState(initialReps)
+  const [time, setTime]           = useState(initialTime)
+  const [date, setDate]           = useState(
+    editingPr?.recorded_at
+      ? new Date(editingPr.recorded_at).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0]
+  )
+  const [notes, setNotes]         = useState(editingPr?.notes ?? '')
   const [saving, setSaving]       = useState(false)
   const [saved, setSaved]         = useState(false)
   const [error, setError]         = useState('')
@@ -45,7 +64,7 @@ export function PRModal({ profile, onClose, onSaved }: Props) {
   useEffect(() => {
     supabase.from('movements').select('*').order('category').order('name').then(({ data }) => {
       setMovements(data ?? [])
-      if (data?.length) {
+      if (data?.length && !movId) {
         setMovId(data[0].id)
         applyDefaultMetric(data[0].category as MovementCategory)
       }
@@ -98,15 +117,18 @@ export function PRModal({ profile, onClose, onSaved }: Props) {
       if (valueLb <= 0) { setError('Tiempo inválido'); setSaving(false); return }
     }
 
-    const { error: dbErr } = await supabase.from('pr_records').insert({
+    const payload = {
       user_id:     user.id,
       movement_id: movId,
       value_lb:    valueLb,
       metric,
       recorded_at: new Date(date).toISOString(),
       notes:       notes || null,
-      is_pr:       false,
-    })
+    }
+
+    const { error: dbErr } = isEditing
+      ? await supabase.from('pr_records').update(payload).eq('id', editingPr.id).eq('user_id', user.id)
+      : await supabase.from('pr_records').insert({ ...payload, is_pr: false })
 
     setSaving(false)
     if (dbErr) { setError(dbErr.message); return }
@@ -120,7 +142,7 @@ export function PRModal({ profile, onClose, onSaved }: Props) {
   }, {})
 
   return (
-    <Modal open onClose={onClose} title="REGISTRAR RM" subtitle="Nuevo máximo personal">
+    <Modal open onClose={onClose} title={isEditing ? 'EDITAR RM' : 'REGISTRAR RM'} subtitle={isEditing ? 'Corrige tu registro' : 'Nuevo máximo personal'}>
       {saved && (
         <div className="mb-4 p-3 rounded-xl bg-ac/10 border border-ac/20 text-ac font-bold text-sm">
           ✅ ¡Registro guardado exitosamente!
@@ -271,7 +293,7 @@ export function PRModal({ profile, onClose, onSaved }: Props) {
         <div className="flex gap-3 mt-1">
           <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
           <Button type="submit" className="flex-1" disabled={saving || saved}>
-            {saving ? 'Guardando…' : 'Guardar RM'}
+            {saving ? 'Guardando…' : isEditing ? 'Actualizar' : 'Guardar RM'}
           </Button>
         </div>
       </form>

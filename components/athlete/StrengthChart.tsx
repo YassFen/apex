@@ -1,27 +1,42 @@
 'use client'
 import { useEffect, useRef } from 'react'
 
-export function StrengthChart({ prs }: { prs: any[] }) {
+interface Props {
+  prs: any[]
+  movement: string
+  unit: 'kg' | 'lb'
+}
+
+export function StrengthChart({ prs, movement, unit }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const chartRef  = useRef<any>(null)
+  const emptyRef  = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    let Chart: any
+    let destroyed = false
     async function init() {
       const mod = await import('chart.js/auto')
-      Chart = mod.default
+      const Chart = mod.default
+      if (destroyed) return
 
-      const deadliftPRs = prs
-        .filter(p => p.movements?.name === 'Deadlift')
+      const filtered = prs
+        .filter(p => p.movements?.name === movement && (p.metric === '1rm' || p.metric === '3rm'))
         .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
 
-      const labels = deadliftPRs.map(p =>
-        new Date(p.recorded_at).toLocaleDateString('es-CL', { month: 'short', year: '2-digit' })
+      const labels = filtered.map(p =>
+        new Date(p.recorded_at).toLocaleDateString('es-CL', { month: 'short', day: 'numeric' })
       )
-      const data = deadliftPRs.map(p => p.value_lb)
+      const data = filtered.map(p => unit === 'kg' ? Math.round(p.value_lb * 0.453592) : Math.round(p.value_lb))
+      const suffix = unit === 'kg' ? 'kg' : 'lbs'
 
+      if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null }
       if (!canvasRef.current) return
-      if (chartRef.current) chartRef.current.destroy()
+
+      if (filtered.length === 0) {
+        if (emptyRef.current) emptyRef.current.style.display = 'flex'
+        return
+      }
+      if (emptyRef.current) emptyRef.current.style.display = 'none'
 
       chartRef.current = new Chart(canvasRef.current, {
         type: 'line',
@@ -36,6 +51,7 @@ export function StrengthChart({ prs }: { prs: any[] }) {
             pointBackgroundColor: '#c8f53e',
             pointRadius: 5,
             pointHoverRadius: 7,
+            borderWidth: 2.5,
           }],
         },
         options: {
@@ -48,7 +64,7 @@ export function StrengthChart({ prs }: { prs: any[] }) {
             titleColor: '#8a96a8',
             bodyColor: '#eef0f3',
             bodyFont: { family: '"Barlow Condensed"', size: 18, weight: '700' },
-            callbacks: { label: (ctx: any) => ` ${ctx.raw} lbs` },
+            callbacks: { label: (ctx: any) => ` ${ctx.raw} ${suffix}` },
           }},
           scales: {
             x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#50596a', font: { size: 11 } } },
@@ -58,8 +74,22 @@ export function StrengthChart({ prs }: { prs: any[] }) {
       })
     }
     init()
-    return () => { chartRef.current?.destroy() }
-  }, [prs])
+    return () => {
+      destroyed = true
+      if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null }
+    }
+  }, [prs, movement, unit])
 
-  return <canvas ref={canvasRef} />
+  return (
+    <div className="relative h-full w-full">
+      <canvas ref={canvasRef} />
+      <div ref={emptyRef} className="absolute inset-0 items-center justify-center text-center text-mu text-sm" style={{ display: 'none' }}>
+        <div>
+          <div className="text-3xl mb-2 opacity-50">📉</div>
+          <div>Sin datos de <span className="font-bold text-t">{movement}</span></div>
+          <div className="text-fa text-xs mt-1">Registra un RM para ver tu evolución</div>
+        </div>
+      </div>
+    </div>
+  )
 }
