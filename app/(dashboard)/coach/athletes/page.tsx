@@ -28,7 +28,7 @@ export default async function AthletesPage() {
 
   return (
     <>
-      <Topbar title="Atletas" onMenuClick={() => {}} profile={profile} />
+      <Topbar title="Atletas" profile={profile} />
       <div className="p-4 lg:p-6 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="text-mu text-sm">{members.length} atletas en {box.name}</div>

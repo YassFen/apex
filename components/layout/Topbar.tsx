@@ -9,7 +9,6 @@ interface TopbarProps {
   title: string
   profile: Profile
   actions?: React.ReactNode
-  onMenuClick?: () => void  // kept for call-site compatibility, context handles it
 }
 
 export function Topbar({ title, profile, actions }: TopbarProps) {
