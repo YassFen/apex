@@ -24,7 +24,9 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth')
-  const isPublic = request.nextUrl.pathname === '/'
+  const isPublic =
+    request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname.startsWith('/athlete/')
 
   if (!user && !isAuthRoute && !isPublic) {
     return NextResponse.redirect(new URL('/auth/login', request.url))

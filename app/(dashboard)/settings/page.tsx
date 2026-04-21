@@ -21,6 +21,12 @@ export default async function SettingsPage() {
   const { data: movementsRaw } = await supabase
     .from('movements').select('id, name, category').order('category').order('name')
 
+  const { data: prsRaw } = await supabase
+    .from('pr_records')
+    .select('metric, value_lb, movements(name, category)')
+    .eq('user_id', user.id)
+    .eq('is_pr', true)
+
   let ownedBox: Box | null = null
   if (profile.role === 'coach') {
     const { data: b } = await supabase
@@ -33,6 +39,7 @@ export default async function SettingsPage() {
       profile={profile}
       memberships={(memberships ?? []) as any[]}
       movements={(movementsRaw ?? []) as Movement[]}
+      prs={(prsRaw ?? []) as any[]}
       ownedBox={ownedBox}
     />
   )

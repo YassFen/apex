@@ -4,8 +4,10 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutGrid, TrendingUp, Timer, Flame, Activity,
   BarChart3, Calculator, Users, User, Trophy, Dumbbell,
+  ArrowLeftRight, ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { useShell } from '@/lib/hooks/useShell'
 import type { Profile } from '@/lib/types/database'
 
 const ATHLETE_NAV = [
@@ -30,7 +32,7 @@ const ATHLETE_NAV = [
 const COACH_NAV = [
   { label: 'Box', items: [
     { href: '/dashboard',           icon: LayoutGrid, label: 'Dashboard' },
-    { href: '/coach/publish-wod',   icon: Flame,      label: 'Publicar WOD' },
+    { href: '/coach/publish-wod',   icon: Flame,      label: 'WOD' },
     { href: '/coach/wod-live',      icon: Activity,   label: 'Seguimiento WOD', dot: true },
     { href: '/coach/athletes',      icon: Users,      label: 'Atletas' },
     { href: '/analytics',           icon: BarChart3,  label: 'Analytics' },
@@ -46,8 +48,11 @@ const COACH_NAV = [
 
 export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen: boolean; onClose: () => void }) {
   const pathname = usePathname()
-  const nav = profile.role === 'coach' ? COACH_NAV : ATHLETE_NAV
+  const { viewMode, setViewMode, canSwitchMode, boxes, activeBoxId, setActiveBoxId } = useShell()
+  const nav = viewMode === 'coach' ? COACH_NAV : ATHLETE_NAV
   const initials = profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+
+  const activeBox = boxes.find(b => b.id === activeBoxId) ?? boxes[0]
 
   return (
     <>
@@ -65,6 +70,45 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
           </div>
           <div className="font-barlow text-[26px] font-black tracking-[3px]">AP<span className="text-ac">E</span>X</div>
         </div>
+
+        {/* Box selector + mode toggle */}
+        {(boxes.length > 0 || canSwitchMode) && (
+          <div className="px-3 py-3 border-b border-[var(--ln)] flex flex-col gap-2">
+            {boxes.length > 0 && (
+              <label className="relative block">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fa">
+                  <Dumbbell size={13} />
+                </span>
+                <select
+                  value={activeBoxId ?? ''}
+                  onChange={e => setActiveBoxId(e.target.value)}
+                  className="w-full appearance-none bg-p3 border border-[var(--ln)] rounded-xl pl-8 pr-8 py-2 text-[12px] font-semibold text-t outline-none focus:border-ac cursor-pointer truncate"
+                >
+                  {boxes.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-fa pointer-events-none" />
+              </label>
+            )}
+            {canSwitchMode && (
+              <button
+                onClick={() => setViewMode(viewMode === 'coach' ? 'athlete' : 'coach')}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider border transition-colors',
+                  viewMode === 'coach'
+                    ? 'bg-ac/10 text-ac border-ac/25 hover:bg-ac/15'
+                    : 'bg-bl/10 text-bl border-bl/25 hover:bg-bl/15'
+                )}
+                aria-label="Cambiar modo"
+              >
+                <ArrowLeftRight size={13} />
+                Modo {viewMode === 'coach' ? 'Coach' : 'Atleta'}
+                <span className="ml-auto text-[10px] font-normal opacity-70">cambiar</span>
+              </button>
+            )}
+          </div>
+        )}
 
         <nav className="flex-1 py-4 px-2.5 overflow-y-auto flex flex-col gap-1">
           {nav.map(group => (
@@ -108,7 +152,10 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
           )}
           <div className="min-w-0 flex-1">
             <div className="font-semibold text-sm leading-tight truncate">{profile.full_name.split(' ')[0]}</div>
-            <div className="text-mu text-[11px] truncate">{profile.role} · {profile.city ?? 'CrossFit'}</div>
+            <div className="text-mu text-[11px] truncate">
+              {viewMode === 'coach' ? 'Coach' : 'Atleta'}
+              {activeBox ? ` · ${activeBox.name}` : profile.city ? ` · ${profile.city}` : ''}
+            </div>
           </div>
         </Link>
       </aside>

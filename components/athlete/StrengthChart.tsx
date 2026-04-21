@@ -63,7 +63,7 @@ export function StrengthChart({ prs, movement, unit }: Props) {
             borderWidth: 1,
             titleColor: '#8a96a8',
             bodyColor: '#eef0f3',
-            bodyFont: { family: '"Barlow Condensed"', size: 18, weight: '700' },
+            bodyFont: { family: '"Barlow Condensed"', size: 18, weight: 'bold' as const },
             callbacks: { label: (ctx: any) => ` ${ctx.raw} ${suffix}` },
           }},
           scales: {
