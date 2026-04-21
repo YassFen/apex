@@ -12,14 +12,38 @@ export default async function DashboardPage() {
   const profile = p as Profile | null
   if (!profile) redirect('/auth/login')
 
-  // Fetch box (coach view)
+  // Fetch coach box + stats
   let coachBox: Box | null = null
-  if (profile.role === 'coach') {
-    const { data: b } = await supabase.from('boxes').select('*').eq('owner_id', user.id).maybeSingle()
+  let athleteCount = 0
+  let todayWodTitle: string | null = null
+
+  if (profile.role === 'coach' || profile.role === 'admin') {
+    const { data: b } = await supabase
+      .from('boxes').select('*').eq('owner_id', user.id).maybeSingle()
     coachBox = b as Box | null
+
+    if (coachBox) {
+      // Count active athletes
+      const { count } = await supabase
+        .from('box_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('box_id', coachBox.id)
+        .eq('is_active', true)
+      athleteCount = count ?? 0
+
+      // Today's WOD
+      const today = new Date().toISOString().split('T')[0]
+      const { data: wod } = await supabase
+        .from('daily_wods')
+        .select('title, type')
+        .eq('box_id', coachBox.id)
+        .eq('scheduled_for', today)
+        .maybeSingle()
+      todayWodTitle = wod?.title ?? null
+    }
   }
 
-  // Fetch athlete PRs (shown in athlete dashboard, even for coaches who flip to athlete mode)
+  // Fetch athlete PRs (for athlete mode — even coaches have their own PRs)
   const { data: rawPrs } = await supabase
     .from('pr_records')
     .select('*, movements(name, category)')
@@ -32,6 +56,8 @@ export default async function DashboardPage() {
       profile={profile}
       coachBox={coachBox}
       prs={(rawPrs ?? []) as any[]}
+      athleteCount={athleteCount}
+      todayWodTitle={todayWodTitle}
     />
   )
 }
