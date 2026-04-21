@@ -1,5 +1,5 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Plus, Settings2, Flame, Trophy } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
@@ -65,19 +65,22 @@ export function AthleteDashboard({ profile, prs }: { profile: Profile; prs: PR[]
     [prs]
   )
 
-  // KPI movements — stored in localStorage with default fallback
-  const [kpiMovements, setKpiMovements] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return DEFAULT_KPI
+  // KPI movements — SSR-safe: start with default, sync from localStorage after mount
+  const [kpiMovements, setKpiMovements] = useState<string[]>(DEFAULT_KPI)
+
+  useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(KPI_STORAGE_KEY)
-      if (raw) { const parsed = JSON.parse(raw); if (Array.isArray(parsed) && parsed.length) return parsed.slice(0, 4) }
+      const raw = localStorage.getItem(KPI_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed) && parsed.length) setKpiMovements(parsed.slice(0, 4))
+      }
     } catch {}
-    return DEFAULT_KPI
-  })
+  }, [])
 
   function saveKpis(next: string[]) {
     setKpiMovements(next)
-    try { window.localStorage.setItem(KPI_STORAGE_KEY, JSON.stringify(next)) } catch {}
+    try { localStorage.setItem(KPI_STORAGE_KEY, JSON.stringify(next)) } catch {}
   }
 
   // For each KPI show best PR + previous record
