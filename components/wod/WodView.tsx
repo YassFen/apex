@@ -336,14 +336,23 @@ export function WodView({ profile, wod: initialWod, results: initialResults, myR
               {/* Result action */}
               <div className="p-5">
                 {myResult ? (
-                  <div className="flex items-center justify-between p-3 bg-ac/8 border border-ac/20 rounded-xl">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wide text-ac font-bold">Tu resultado</div>
-                      <div className="font-barlaw text-2xl font-black">{myResult.result_value}</div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between p-3 bg-ac/8 border border-ac/20 rounded-xl">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wide text-ac font-bold">Tu resultado</div>
+                        <div className="font-barlaw text-2xl font-black">{myResult.result_value}</div>
+                      </div>
+                      <Badge color={myResult.rx_level === 'rx+' ? 'orange' : myResult.rx_level === 'scaled' ? 'blue' : 'lime'}>
+                        {myResult.rx_level.toUpperCase()}
+                      </Badge>
                     </div>
-                    <Badge color={myResult.rx_level === 'rx+' ? 'orange' : myResult.rx_level === 'scaled' ? 'blue' : 'lime'}>
-                      {myResult.rx_level.toUpperCase()}
-                    </Badge>
+                    {/* Allow editing up to 2 times — tracked in the result row */}
+                    {(myResult.edit_count ?? 0) < 2 && (
+                      <button onClick={() => setResultModalOpen(true)}
+                        className="w-full py-2 rounded-xl border border-[var(--ln2)] text-mu text-sm font-bold hover:text-ac hover:border-ac/30 transition-colors">
+                        Modificar resultado ({2 - (myResult.edit_count ?? 0)} {2 - (myResult.edit_count ?? 0) === 1 ? 'vez' : 'veces'} restante{2 - (myResult.edit_count ?? 0) !== 1 ? 's' : ''})
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <Button className="w-full" size="lg" onClick={() => setResultModalOpen(true)}>
@@ -362,6 +371,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, myR
         <WodResultModal
           wod={wod}
           profile={profile}
+          existingResult={myResult ?? undefined}
           onClose={() => setResultModalOpen(false)}
           onSaved={() => { setResultModalOpen(false); window.location.reload() }}
         />

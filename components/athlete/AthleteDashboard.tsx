@@ -1,7 +1,7 @@
 'use client'
 import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Settings2, Flame, Trophy } from 'lucide-react'
+import { Plus, Settings2, Flame, Trophy, ChevronUp, ChevronDown, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { PRModal } from '@/components/athlete/PRModal'
@@ -9,7 +9,7 @@ import { StrengthChart } from '@/components/athlete/StrengthChart'
 import { RmCelebrationModal } from '@/components/athlete/RmCelebrationModal'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
-import type { Profile } from '@/lib/types/database'
+import type { Profile, Movement } from '@/lib/types/database'
 
 interface PR {
   id: string
@@ -53,17 +53,35 @@ function computeStreakDays(prs: PR[]): number {
   return streak
 }
 
-export function AthleteDashboard({ profile, prs }: { profile: Profile; prs: PR[] }) {
+export function AthleteDashboard({ profile, prs, movements = [] }: {
+  profile: Profile; prs: PR[]; movements?: Movement[]
+}) {
   const [prModalOpen, setPrModalOpen] = useState(false)
   const [celebration, setCelebration] = useState<{ open: boolean; isNew: boolean; diff: number }>({ open: false, isNew: false, diff: 0 })
   const [editKpis, setEditKpis] = useState(false)
   const unit = profile.preferred_unit
 
-  // All distinct movement names ever recorded, for customization picker
-  const allMovementNames = useMemo(() =>
-    Array.from(new Set(prs.map(p => p.movements?.name).filter(Boolean))) as string[],
-    [prs]
-  )
+  // For KPI picker: combine master movement list with any names already in PRs
+  // (covers custom or removed movements). Group by category for the chooser.
+  const kpiPickerGroups = useMemo(() => {
+    const KEY: Record<string, string> = {
+      weightlifting: 'Levantamiento', olympic: 'Levantamiento',
+      gymnastics: 'Gimnástico', cardio: 'Monoestructural', benchmark: 'Benchmarks',
+    }
+    const groups: Record<string, Set<string>> = {}
+    movements.forEach(m => {
+      const label = KEY[m.category] ?? 'Otros'
+      ;(groups[label] = groups[label] ?? new Set()).add(m.name)
+    })
+    prs.forEach(p => {
+      const cat = p.movements?.category as string | undefined
+      const name = p.movements?.name
+      if (!name) return
+      const label = (cat && KEY[cat]) || 'Otros'
+      ;(groups[label] = groups[label] ?? new Set()).add(name)
+    })
+    return Object.entries(groups).map(([label, set]) => ({ label, names: Array.from(set).sort() }))
+  }, [movements, prs])
 
   // KPI movements — SSR-safe: start with default, sync from localStorage after mount
   const [kpiMovements, setKpiMovements] = useState<string[]>(DEFAULT_KPI)
@@ -98,14 +116,21 @@ export function AthleteDashboard({ profile, prs }: { profile: Profile; prs: PR[]
 
   const topPRs = prs.slice(0, 5)
 
+  // Selector for strength chart: all movements that have at least one weightlifting PR,
+  // falling back to the complete movements list (passed from server), then DEFAULT_KPI.
   const strengthMovements = useMemo(() => {
-    const names = Array.from(new Set(
+    const fromPrs = Array.from(new Set(
       prs
         .filter(p => (p.metric === '1rm' || p.metric === '2rm' || p.metric === '3rm') && p.movements?.name)
         .map(p => p.movements!.name)
     ))
-    return names.length > 0 ? names : DEFAULT_KPI
-  }, [prs])
+    if (fromPrs.length > 0) return fromPrs
+    // Fallback: show all weightlifting/olympic movements from master list
+    const fromMovements = movements
+      .filter(m => m.category === 'weightlifting' || m.category === 'olympic')
+      .map(m => m.name)
+    return fromMovements.length > 0 ? fromMovements : DEFAULT_KPI
+  }, [prs, movements])
 
   const [selectedMovement, setSelectedMovement] = useState<string>(() =>
     prs.find(p => (p.metric === '1rm' || p.metric === '2rm' || p.metric === '3rm'))?.movements?.name ?? 'Deadlift'
@@ -118,9 +143,22 @@ export function AthleteDashboard({ profile, prs }: { profile: Profile; prs: PR[]
     if (kpiMovements.includes(name)) {
       if (kpiMovements.length <= 1) return
       saveKpis(kpiMovements.filter(n => n !== name))
-    } else if (kpiMovements.length < 4) {
-      saveKpis([...kpiMovements, name])
+    } else {
+      // Replace last slot if at capacity, otherwise append
+      if (kpiMovements.length < 4) {
+        saveKpis([...kpiMovements, name])
+      } else {
+        saveKpis([...kpiMovements.slice(0, 3), name])
+      }
     }
+  }
+
+  function moveKpi(idx: number, dir: -1 | 1) {
+    const next = [...kpiMovements]
+    const swap = idx + dir
+    if (swap < 0 || swap >= next.length) return
+    ;[next[idx], next[swap]] = [next[swap], next[idx]]
+    saveKpis(next)
   }
 
   return (
@@ -174,20 +212,74 @@ export function AthleteDashboard({ profile, prs }: { profile: Profile; prs: PR[]
 
         {editKpis ? (
           <Card className="p-4">
-            <div className="text-[11px] text-mu mb-2">Selecciona hasta 4 movimientos para destacar ({kpiMovements.length}/4):</div>
-            <div className="flex flex-wrap gap-2">
-              {(allMovementNames.length ? allMovementNames : DEFAULT_KPI).map(name => {
-                const active = kpiMovements.includes(name)
-                return (
-                  <button key={name} onClick={() => toggleKpi(name)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                      active ? 'bg-ac/15 text-ac border-ac/30' : 'border-[var(--ln)] text-mu hover:text-t'
-                    }`}>
-                    {name}
-                  </button>
-                )
-              })}
+            {/* ── Orden actual + controles ── */}
+            <div className="text-[10px] uppercase tracking-[1.6px] text-fa font-bold mb-2">
+              Destacados seleccionados ({kpiMovements.length}/4) — usa ↑↓ para reordenar
             </div>
+            <div className="flex flex-col gap-1.5 mb-4">
+              {kpiMovements.map((name, idx) => (
+                <div key={name}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-p3 border border-ac/20">
+                  <span className="text-[10px] font-bold text-ac w-4 text-center">{idx + 1}</span>
+                  <span className="flex-1 text-sm font-semibold text-t">{name}</span>
+                  <button onClick={() => moveKpi(idx, -1)} disabled={idx === 0}
+                    className="p-1 text-mu hover:text-t disabled:opacity-30 transition-colors">
+                    <ChevronUp size={14} strokeWidth={2.5} />
+                  </button>
+                  <button onClick={() => moveKpi(idx, 1)} disabled={idx === kpiMovements.length - 1}
+                    className="p-1 text-mu hover:text-t disabled:opacity-30 transition-colors">
+                    <ChevronDown size={14} strokeWidth={2.5} />
+                  </button>
+                  <button onClick={() => toggleKpi(name)} disabled={kpiMovements.length <= 1}
+                    className="p-1 text-fa hover:text-rd disabled:opacity-30 transition-colors">
+                    <X size={14} strokeWidth={2.5} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Picker por categoría ── */}
+            <div className="text-[10px] uppercase tracking-[1.6px] text-fa font-bold mb-2">
+              Agregar movimiento (clic = reemplaza posición 4 si está lleno)
+            </div>
+            {kpiPickerGroups.length === 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {DEFAULT_KPI.map(name => {
+                  const active = kpiMovements.includes(name)
+                  return (
+                    <button key={name} onClick={() => toggleKpi(name)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                        active ? 'bg-ac/15 text-ac border-ac/30' : 'border-[var(--ln)] text-mu hover:text-t'
+                      }`}>
+                      {name}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {kpiPickerGroups.map(group => (
+                  <div key={group.label}>
+                    <div className="text-[10px] uppercase tracking-[1.6px] text-fa font-bold mb-1.5">{group.label}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {group.names.map(name => {
+                        const active = kpiMovements.includes(name)
+                        return (
+                          <button key={name} onClick={() => toggleKpi(name)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                              active
+                                ? 'bg-ac/15 text-ac border-ac/30'
+                                : 'border-[var(--ln)] text-mu hover:text-t hover:border-mu'
+                            }`}>
+                            {name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">

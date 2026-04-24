@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Upload, Globe, Lock, User as UserIcon, Building2, LogOut, Copy, Check } from 'lucide-react'
+import { Upload, Globe, Lock, Building2, LogOut, Copy, Check, Instagram, Phone, Link, Clock, Dumbbell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
@@ -36,15 +36,29 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
   const [savedOk, setSavedOk] = useState(false)
   const [profileErr, setProfileErr] = useState('')
 
-  const [boxName, setBoxName]     = useState(ownedBox?.name ?? '')
-  const [boxCity, setBoxCity]     = useState(ownedBox?.city ?? '')
-  const [boxCountry, setBoxCountry] = useState(ownedBox?.country ?? '')
-  const [boxLogoUrl, setBoxLogoUrl] = useState(ownedBox?.logo_url ?? '')
+  const [boxName, setBoxName]         = useState(ownedBox?.name ?? '')
+  const [boxCity, setBoxCity]         = useState(ownedBox?.city ?? '')
+  const [boxCountry, setBoxCountry]   = useState(ownedBox?.country ?? '')
+  const [boxDesc, setBoxDesc]         = useState(ownedBox?.description ?? '')
+  const [boxWebsite, setBoxWebsite]   = useState(ownedBox?.website_url ?? '')
+  const [boxInstagram, setBoxInstagram] = useState(ownedBox?.instagram ?? '')
+  const [boxWhatsapp, setBoxWhatsapp] = useState(ownedBox?.whatsapp ?? '')
+  const [boxSchedule, setBoxSchedule] = useState(ownedBox?.schedule ?? '')
+  const [boxDisciplines, setBoxDisciplines] = useState<string[]>(ownedBox?.disciplines ?? [])
+  const [boxLogoUrl, setBoxLogoUrl]   = useState(ownedBox?.logo_url ?? '')
   const [uploadingLogo, setUploadingLogo] = useState(false)
-  const [boxSaving, setBoxSaving] = useState(false)
-  const [boxSaved, setBoxSaved]   = useState(false)
-  const [boxErr, setBoxErr]       = useState('')
-  const [codeCopied, setCodeCopied] = useState(false)
+  const [boxSaving, setBoxSaving]     = useState(false)
+  const [boxSaved, setBoxSaved]       = useState(false)
+  const [boxErr, setBoxErr]           = useState('')
+  const [codeCopied, setCodeCopied]   = useState(false)
+
+  const DISCIPLINES = ['CrossFit', 'Weightlifting', 'Gymnastics', 'Endurance', 'HIIT', 'Yoga', 'Functional Fitness']
+
+  function toggleDiscipline(d: string) {
+    setBoxDisciplines(prev =>
+      prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]
+    )
+  }
 
   const [inviteCode, setInviteCode] = useState('')
   const [joining, setJoining]       = useState(false)
@@ -134,7 +148,17 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
     setBoxSaving(true); setBoxErr(''); setBoxSaved(false)
     const { error } = await supabase
       .from('boxes')
-      .update({ name: boxName.trim(), city: boxCity.trim(), country: boxCountry.trim() })
+      .update({
+        name:        boxName.trim(),
+        city:        boxCity.trim(),
+        country:     boxCountry.trim(),
+        description: boxDesc.trim() || null,
+        website_url: boxWebsite.trim() || null,
+        instagram:   boxInstagram.trim().replace('@', '') || null,
+        whatsapp:    boxWhatsapp.trim() || null,
+        schedule:    boxSchedule.trim() || null,
+        disciplines: boxDisciplines.length > 0 ? boxDisciplines : null,
+      })
       .eq('id', ownedBox.id)
     setBoxSaving(false)
     if (error) { setBoxErr(error.message); return }
@@ -387,6 +411,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
             )}
 
             <form onSubmit={handleSaveBox} className="flex flex-col gap-4">
+              {/* Basic info */}
               <div>
                 <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Nombre del box</label>
                 <input value={boxName} onChange={e => setBoxName(e.target.value)} required
@@ -404,6 +429,86 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
                     className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac" />
                 </div>
               </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Descripción <span className="normal-case text-fa">(opcional)</span></label>
+                <textarea value={boxDesc} onChange={e => setBoxDesc(e.target.value)} rows={3} maxLength={320}
+                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac resize-none"
+                  placeholder="Cuéntanos sobre tu box, tu filosofía, tu comunidad…" />
+                <div className="text-right text-[10px] text-fa mt-1">{boxDesc.length}/320</div>
+              </div>
+
+              {/* Disciplines */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Dumbbell size={13} className="text-mu" strokeWidth={2.5} />
+                  <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Disciplinas</label>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {DISCIPLINES.map(d => (
+                    <button key={d} type="button" onClick={() => toggleDiscipline(d)}
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
+                        boxDisciplines.includes(d)
+                          ? 'bg-ac/10 text-ac border-ac/30'
+                          : 'border-[var(--ln2)] text-mu hover:text-t'
+                      }`}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Horario */}
+              <div>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Clock size={13} className="text-mu" strokeWidth={2.5} />
+                  <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Horario</label>
+                </div>
+                <textarea value={boxSchedule} onChange={e => setBoxSchedule(e.target.value)} rows={2}
+                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac resize-none"
+                  placeholder="Lun-Vie: 6am, 9am, 12pm, 6pm, 8pm · Sáb: 9am" />
+              </div>
+
+              {/* Contact / Social */}
+              <div className="pt-2 border-t border-[var(--ln)]">
+                <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-3">Contacto y redes</div>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Globe size={13} className="text-mu" strokeWidth={2.5} />
+                      <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Sitio web</label>
+                    </div>
+                    <input value={boxWebsite} onChange={e => setBoxWebsite(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                      placeholder="https://mibox.com" type="url" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Instagram size={13} className="text-mu" strokeWidth={2.5} />
+                        <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Instagram</label>
+                      </div>
+                      <div className="flex items-center bg-p3 border border-[var(--ln)] rounded-xl overflow-hidden focus-within:border-ac transition-colors">
+                        <span className="pl-3 text-mu text-sm font-bold">@</span>
+                        <input value={boxInstagram} onChange={e => setBoxInstagram(e.target.value.replace('@', ''))}
+                          className="flex-1 px-2 py-2.5 bg-transparent text-t text-sm outline-none"
+                          placeholder="mibox_cf" />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Phone size={13} className="text-mu" strokeWidth={2.5} />
+                        <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">WhatsApp</label>
+                      </div>
+                      <input value={boxWhatsapp} onChange={e => setBoxWhatsapp(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                        placeholder="+56 9 1234 5678" type="tel" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <Button type="submit" disabled={boxSaving} className="self-start px-6">
                 {boxSaving ? 'Guardando…' : 'Guardar box'}
               </Button>

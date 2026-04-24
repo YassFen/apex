@@ -8,8 +8,10 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useShell } from '@/lib/hooks/useShell'
+import { APP_VERSION } from '@/lib/constants/version'
 import type { Profile } from '@/lib/types/database'
 
+// Analytics is coach-only (box-level stats). Athletes see their own history in /prs.
 const ATHLETE_NAV = [
   { label: 'Training', items: [
     { href: '/dashboard',    icon: LayoutGrid, label: 'Dashboard' },
@@ -20,8 +22,7 @@ const ATHLETE_NAV = [
     { href: '/wod',          icon: Flame,      label: 'WOD del Día', dot: true },
     { href: '/timer',        icon: Timer,      label: 'Timer' },
   ]},
-  { label: 'Stats', items: [
-    { href: '/analytics',    icon: BarChart3,  label: 'Analytics' },
+  { label: 'Herramientas', items: [
     { href: '/calc',         icon: Calculator, label: 'Calculadora RM' },
   ]},
   { label: 'Cuenta', items: [
@@ -158,6 +159,10 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
             </div>
           </div>
         </Link>
+
+        <div className="px-5 pb-3 pt-1 text-[9px] uppercase tracking-[1.8px] text-fa/70 font-bold text-center">
+          APEX · v{APP_VERSION}
+        </div>
       </aside>
     </>
   )

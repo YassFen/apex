@@ -9,14 +9,22 @@ import { PRModal } from './PRModal'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Movement } from '@/lib/types/database'
 
-const CATEGORIES = ['all', 'weightlifting', 'olympic', 'gymnastics', 'cardio', 'benchmark']
+// Logical filter buckets — Olympic + Weightlifting collapsed into one "Levantamiento"
+const CATEGORIES = ['all', 'lifting', 'gymnastics', 'cardio', 'benchmark']
 const CAT_LABELS: Record<string, string> = {
   all: 'Todos',
-  weightlifting: 'Levantamiento',
-  olympic: 'Levantamiento',
+  lifting: 'Levantamiento',
   gymnastics: 'Gimnástico',
   cardio: 'Monoestructural',
   benchmark: 'Benchmarks',
+}
+// Map a DB category to a filter bucket
+const CAT_BUCKET: Record<string, string> = {
+  weightlifting: 'lifting',
+  olympic: 'lifting',
+  gymnastics: 'gymnastics',
+  cardio: 'cardio',
+  benchmark: 'benchmark',
 }
 
 const CAT_BADGE: Record<string, { cls: string; label: string }> = {
@@ -71,7 +79,11 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
   function handleEdit(pr: any) { setEditingPr(pr); setPrModalOpen(true) }
   function closeModal() { setPrModalOpen(false); setEditingPr(null) }
 
-  const filtered = prs.filter(pr => cat === 'all' || pr.movements?.category === cat)
+  const filtered = prs.filter(pr => {
+    if (cat === 'all') return true
+    const bucket = CAT_BUCKET[pr.movements?.category as string] ?? 'other'
+    return bucket === cat
+  })
 
   // Group by movement, find best + previous
   const movementSummaries = useMemo(() => {
@@ -151,15 +163,15 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
           /* V3 TABLE VIEW: Movement | Cat | Last | PR | Trend */
           <Card padding={false} className="overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse table-fixed sm:table-auto">
                 <thead>
                   <tr className="bg-p2">
-                    <th className="text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-4">Movimiento</th>
-                    <th className="text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-4 hidden sm:table-cell">Cat.</th>
-                    <th className="text-right text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-4">Último</th>
-                    <th className="text-right text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-4">RM</th>
-                    <th className="text-center text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-4">Tendencia</th>
-                    <th className="py-3.5 px-2 w-16"></th>
+                    <th className="text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-3 sm:px-4">Movimiento</th>
+                    <th className="text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-4 hidden md:table-cell">Cat.</th>
+                    <th className="text-right text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-4 hidden sm:table-cell">Último</th>
+                    <th className="text-right text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-3 sm:px-4">RM</th>
+                    <th className="text-center text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-2 sm:px-4 hidden sm:table-cell">Tend.</th>
+                    <th className="py-3.5 px-1 sm:px-2 w-12 sm:w-16"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -190,36 +202,47 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                       <tr key={name}
                           className="border-b border-[rgba(255,255,255,.04)] hover:bg-white/[.02] transition cursor-pointer"
                           onClick={() => handleEdit(best)}>
-                        <td className="py-3.5 px-4">
-                          <div className="font-semibold text-t">{name}</div>
-                          <div className="text-[11px] text-fa mt-0.5 sm:hidden">
-                            {badge.label}
+                        <td className="py-3 px-3 sm:px-4">
+                          <div className="font-semibold text-t text-sm truncate">{name}</div>
+                          <div className="flex items-center gap-2 mt-0.5 md:hidden">
+                            <span className={`inline-block px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${badge.cls}`}>
+                              {badge.label}
+                            </span>
+                            {/* Inline previous value on mobile (replaces hidden "Último" column) */}
+                            <span className="text-fa text-[11px] sm:hidden whitespace-nowrap">
+                              ant. {latestF.value} {latestF.unit}
+                            </span>
                           </div>
                         </td>
-                        <td className="py-3.5 px-4 hidden sm:table-cell">
+                        <td className="py-3 px-4 hidden md:table-cell">
                           <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${badge.cls}`}>
                             {badge.label}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3 px-4 text-right hidden sm:table-cell">
                           <div className="font-barlow text-base font-bold text-mu">
                             {latestF.value}
                             <span className="text-[10px] text-fa font-normal ml-1">{latestF.unit}</span>
                           </div>
                         </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="font-barlow text-xl font-black text-ac">
+                        <td className="py-3 px-3 sm:px-4 text-right whitespace-nowrap">
+                          <div className="font-barlow text-lg sm:text-xl font-black text-ac">
                             {bestF.value}
                             <span className="text-[11px] text-mu font-normal ml-1">{bestF.unit}</span>
                           </div>
+                          {/* Inline trend on mobile (column hidden) */}
+                          <div className={`flex items-center justify-end gap-1 ${trendColor} font-bold text-[10px] sm:hidden mt-0.5`}>
+                            <TrendIcon size={11} strokeWidth={2.5} />
+                            {trendLabel !== '—' && <span>{trendLabel}</span>}
+                          </div>
                         </td>
-                        <td className="py-3.5 px-4 text-center">
+                        <td className="py-3 px-2 sm:px-4 text-center hidden sm:table-cell">
                           <div className={`inline-flex items-center gap-1 ${trendColor} font-bold text-xs`}>
                             <TrendIcon size={14} strokeWidth={2.5} />
                             {trendLabel !== '—' && <span>{trendLabel}</span>}
                           </div>
                         </td>
-                        <td className="py-3.5 px-2" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-3 px-1 sm:px-2" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-0.5 justify-end">
                             <button onClick={() => handleEdit(best)} aria-label="Editar"
                                     className="p-1.5 rounded-lg text-fa hover:text-ac hover:bg-p3 transition-colors">

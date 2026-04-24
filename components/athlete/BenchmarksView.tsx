@@ -4,22 +4,29 @@ import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { Plus, Flame, Award, Medal, Trophy } from 'lucide-react'
+import { Plus, Award, Medal, Trophy, PenLine } from 'lucide-react'
 import type { Profile, Benchmark } from '@/lib/types/database'
 
+// Canonical list — shown as cards. Extra benchmarks recorded in DB appear below.
 const BENCHMARK_LIST = [
-  { name: 'Fran',   icon: '🔥', desc: '21-15-9 thrusters + pull-ups · 95 lbs', unit: 'time' as const },
-  { name: 'Annie',  icon: '🤸', desc: '50-40-30-20-10 double unders + sit-ups', unit: 'time' as const },
-  { name: 'Murph',  icon: '🏃', desc: '1mi run · 100 pull-ups · 200 push-ups · 300 squats · 1mi run', unit: 'time' as const },
-  { name: 'Cindy',  icon: '⏱',  desc: '20 min AMRAP: 5 pull-ups, 10 push-ups, 15 squats', unit: 'rounds' as const },
-  { name: 'Isabel', icon: '⚡', desc: '30 snatches for time · 135 lbs', unit: 'time' as const },
-  { name: 'Karen',  icon: '🏐', desc: '150 wall balls for time · 20/14', unit: 'time' as const },
-  { name: 'Helen',  icon: '🔔', desc: '3 rounds: 400m run, 21 KB swings, 12 pull-ups', unit: 'time' as const },
-  { name: 'Grace',  icon: '🥇', desc: '30 clean & jerks for time · 135 lbs', unit: 'time' as const },
-  { name: 'Diane',  icon: '💀', desc: '21-15-9 deadlifts + handstand push-ups · 225 lbs', unit: 'time' as const },
-  { name: 'Elizabeth', icon: '🪜', desc: '21-15-9 cleans + ring dips · 135 lbs', unit: 'time' as const },
-  { name: 'Nancy',  icon: '🏃‍♀️', desc: '5 rounds: 400m run + 15 OHS · 95 lbs', unit: 'time' as const },
-  { name: 'Jackie', icon: '🚣', desc: '1000m row + 50 thrusters (45 lb) + 30 pull-ups', unit: 'time' as const },
+  { name: 'Fran',      icon: '🔥', desc: '21-15-9 thrusters + pull-ups · 95 lbs',                   unit: 'time' as const },
+  { name: 'Annie',     icon: '🤸', desc: '50-40-30-20-10 double unders + sit-ups',                   unit: 'time' as const },
+  { name: 'Murph',     icon: '🏃', desc: '1mi run · 100 pull-ups · 200 push-ups · 300 squats · 1mi', unit: 'time' as const },
+  { name: 'Cindy',     icon: '⏱',  desc: '20 min AMRAP: 5 pull-ups, 10 push-ups, 15 squats',          unit: 'rounds' as const },
+  { name: 'Isabel',    icon: '⚡', desc: '30 snatches for time · 135 lbs',                            unit: 'time' as const },
+  { name: 'Karen',     icon: '🏐', desc: '150 wall balls for time · 20/14',                           unit: 'time' as const },
+  { name: 'Helen',     icon: '🔔', desc: '3 rounds: 400m run, 21 KB swings, 12 pull-ups',             unit: 'time' as const },
+  { name: 'Grace',     icon: '🥇', desc: '30 clean & jerks for time · 135 lbs',                      unit: 'time' as const },
+  { name: 'Diane',     icon: '💀', desc: '21-15-9 deadlifts + handstand push-ups · 225 lbs',          unit: 'time' as const },
+  { name: 'Elizabeth', icon: '🪜', desc: '21-15-9 cleans + ring dips · 135 lbs',                     unit: 'time' as const },
+  { name: 'Nancy',     icon: '🏃‍♀️', desc: '5 rounds: 400m run + 15 OHS · 95 lbs',                     unit: 'time' as const },
+  { name: 'Jackie',    icon: '🚣', desc: '1000m row + 50 thrusters (45 lb) + 30 pull-ups',            unit: 'time' as const },
+  { name: 'Barbara',   icon: '💪', desc: '5 rounds: 20 pull-ups, 30 push-ups, 40 sit-ups, 50 squats', unit: 'time' as const },
+  { name: 'Chelsea',   icon: '🏅', desc: 'EMOM 30min: 5 pull-ups, 10 push-ups, 15 squats',            unit: 'rounds' as const },
+  { name: 'Eva',       icon: '🌊', desc: '5 rounds: 800m run, 30 KB swings (70 lb), 30 pull-ups',     unit: 'time' as const },
+  { name: 'Kelly',     icon: '🏔', desc: '5 rounds: 400m run, 30 box jumps, 30 wall balls',            unit: 'time' as const },
+  { name: 'Linda',     icon: '🔱', desc: '10-9-8-7-6-5-4-3-2-1: Deadlift, Bench, Clean',              unit: 'time' as const },
+  { name: 'Mary',      icon: '🌺', desc: '20 min AMRAP: 5 HSPU, 10 pistols, 15 pull-ups',              unit: 'rounds' as const },
 ]
 
 type Level = { label: string; color: 'pop' | 'gr' | 'or' | 'bl' | 'mu'; icon: string }
@@ -57,6 +64,9 @@ const LEVEL_CLS: Record<Level['color'], string> = {
 
 export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benchmarks: Benchmark[] }) {
   const [modalBm, setModalBm] = useState<typeof BENCHMARK_LIST[0] | null>(null)
+  const [customMode, setCustomMode]   = useState(false)
+  const [customName, setCustomName]   = useState('')
+  const [customUnit, setCustomUnit]   = useState<'time' | 'rounds'>('time')
   const [result, setResult]   = useState('')
   const [notes, setNotes]     = useState('')
   const [saving, setSaving]   = useState(false)
@@ -68,31 +78,49 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
     return `${digits.slice(0, -2)}:${digits.slice(-2)}`
   }
 
+  function openCustom() {
+    setCustomMode(true); setModalBm(null)
+    setCustomName(''); setCustomUnit('time')
+    setResult(''); setNotes('')
+  }
+
+  function closeModal() {
+    setModalBm(null); setCustomMode(false)
+    setResult(''); setNotes(''); setCustomName('')
+  }
+
   async function saveBenchmark(e: React.FormEvent) {
     e.preventDefault()
-    if (!modalBm || !result) return
+    const name  = customMode ? customName.trim() : modalBm?.name
+    const unit  = customMode ? customUnit : (modalBm?.unit ?? 'time')
+    if (!name || !result) return
     setSaving(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const level = estimateLevel(modalBm.name, result, modalBm.unit)
+    const level = estimateLevel(name, result, unit)
     await supabase.from('benchmarks').insert({
-      user_id: user.id,
-      name: modalBm.name,
-      result,
-      notes: notes || null,
-      level: level.label,
+      user_id: user.id, name, result,
+      notes: notes || null, level: level.label,
       recorded_at: new Date().toISOString(),
     })
     setSaving(false)
-    setModalBm(null); setResult(''); setNotes('')
+    closeModal()
     window.location.reload()
   }
 
   const bmByName: Record<string, Benchmark[]> = {}
   benchmarks.forEach(b => { (bmByName[b.name] = bmByName[b.name] ?? []).push(b) })
 
-  const filledCount = BENCHMARK_LIST.filter(b => bmByName[b.name]?.length).length
+  // Benchmarks recorded in DB that aren't in the canonical list
+  const knownNames = new Set(BENCHMARK_LIST.map(b => b.name))
+  const extraNames = Array.from(new Set(benchmarks.map(b => b.name))).filter(n => !knownNames.has(n))
+
+  const filledCount = BENCHMARK_LIST.filter(b => bmByName[b.name]?.length).length + extraNames.length
+
+  // Active modal unit (custom or canonical)
+  const activeUnit = customMode ? customUnit : (modalBm?.unit ?? 'time')
+  const modalOpen  = customMode || !!modalBm
 
   return (
     <>
@@ -118,25 +146,38 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
           <div className="rounded-2xl bg-p border border-[var(--ln)] p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-or/10 grid place-items-center text-or"><Medal size={18} strokeWidth={2.2} /></div>
             <div>
-              <div className="font-barlow text-2xl font-black text-or leading-none">{BENCHMARK_LIST.length}</div>
+              <div className="font-barlow text-2xl font-black text-or leading-none">{BENCHMARK_LIST.length + extraNames.length}</div>
               <div className="text-[10px] uppercase tracking-[1.4px] text-fa font-bold mt-1">Total</div>
             </div>
           </div>
         </div>
 
-        {/* Benchmark cards V3 */}
+        {/* Benchmark cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {/* Agregar benchmark custom */}
+          <button
+            onClick={openCustom}
+            className="relative overflow-hidden text-left p-5 rounded-2xl border border-dashed border-ac/30 bg-ac/5 hover:bg-ac/10 transition group"
+          >
+            <div className="text-3xl mb-2">📝</div>
+            <div className="font-barlow text-lg font-black tracking-wide uppercase text-ac">Benchmark personalizado</div>
+            <div className="text-mu text-[11px] mt-1 leading-snug">Registra cualquier WOD, Hero WOD o benchmark de tu box</div>
+            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac text-bg text-[11px] font-bold">
+              <PenLine size={12} strokeWidth={2.5} />
+              Ingresar nombre y resultado
+            </div>
+          </button>
+
           {BENCHMARK_LIST.map(bm => {
             const records = bmByName[bm.name] ?? []
             const best    = records[0]
             const level   = best ? estimateLevel(bm.name, best.result, bm.unit) : null
 
             if (!best) {
-              // EMPTY STATE
               return (
                 <button
                   key={bm.name}
-                  onClick={() => { setModalBm(bm); setResult(''); setNotes('') }}
+                  onClick={() => { setModalBm(bm); setCustomMode(false); setResult(''); setNotes('') }}
                   className="relative overflow-hidden text-left p-5 rounded-2xl border border-dashed border-[var(--ln2)] bg-transparent hover:bg-ac/5 hover:border-ac/30 transition group"
                 >
                   <div className="text-3xl mb-2 opacity-60">{bm.icon}</div>
@@ -144,7 +185,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                   <div className="text-mu text-[11px] mt-1 leading-snug">{bm.desc}</div>
                   <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac/10 text-ac text-[11px] font-bold border border-ac/20 group-hover:bg-ac group-hover:text-bg transition">
                     <Plus size={12} strokeWidth={2.5} />
-                    Registrar tiempo
+                    Registrar {bm.unit === 'time' ? 'tiempo' : 'rondas'}
                   </div>
                 </button>
               )
@@ -153,17 +194,13 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
             return (
               <div key={bm.name}
                    className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[rgba(255,255,255,.13)] transition">
-                {/* Glow corner */}
                 <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none"
                      style={{ background: 'radial-gradient(circle, rgba(200,245,62,.06) 0%, transparent 70%)' }} />
                 <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="font-barlow text-lg font-black tracking-wide uppercase">{bm.name}</div>
-                  </div>
+                  <div className="font-barlow text-lg font-black tracking-wide uppercase">{bm.name}</div>
                   <div className="text-2xl opacity-70">{bm.icon}</div>
                 </div>
 
-                {/* Big result */}
                 <div className="font-barlow font-black leading-none text-ac my-2"
                      style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
                   {best.result}
@@ -182,8 +219,61 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                   </span>
                 </div>
 
-                <button onClick={() => { setModalBm(bm); setResult(''); setNotes('') }}
+                <button onClick={() => { setModalBm(bm); setCustomMode(false); setResult(''); setNotes('') }}
                         className="mt-3 w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl bg-p3 border border-[var(--ln)] text-mu text-[12px] font-bold hover:text-ac hover:border-ac/25 transition">
+                  <Plus size={12} strokeWidth={2.5} />
+                  Mejorar registro
+                </button>
+              </div>
+            )
+          })}
+
+          {/* Extra benchmarks from DB not in canonical list */}
+          {extraNames.map(name => {
+            const records = bmByName[name] ?? []
+            const best    = records[0]
+            const level   = best ? estimateLevel(name, best.result, 'time') : null
+
+            return (
+              <div key={name}
+                   className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[rgba(255,255,255,.13)] transition">
+                <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none"
+                     style={{ background: 'radial-gradient(circle, rgba(200,245,62,.04) 0%, transparent 70%)' }} />
+                <div className="flex items-start justify-between mb-2">
+                  <div className="font-barlow text-lg font-black tracking-wide uppercase">{name}</div>
+                  <div className="text-2xl opacity-70">📝</div>
+                </div>
+
+                {best && (
+                  <>
+                    <div className="font-barlow font-black leading-none text-ac my-2"
+                         style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
+                      {best.result}
+                    </div>
+                    {best.notes && (
+                      <div className="text-mu text-[12px] leading-snug line-clamp-2">{best.notes}</div>
+                    )}
+                    <div className="mt-3 pt-3 border-t border-[var(--ln)] flex items-center justify-between">
+                      {level && (
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${LEVEL_CLS[level.color]}`}>
+                          <span>{level.icon}</span>
+                          {level.label}
+                        </span>
+                      )}
+                      <span className="text-[11px] text-fa">
+                        {new Date(best.recorded_at).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                <button
+                  onClick={() => {
+                    setCustomMode(true); setModalBm(null)
+                    setCustomName(name); setCustomUnit('time')
+                    setResult(''); setNotes('')
+                  }}
+                  className="mt-3 w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl bg-p3 border border-[var(--ln)] text-mu text-[12px] font-bold hover:text-ac hover:border-ac/25 transition">
                   <Plus size={12} strokeWidth={2.5} />
                   Mejorar registro
                 </button>
@@ -193,26 +283,81 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
         </div>
       </div>
 
-      {modalBm && (
-        <Modal open onClose={() => setModalBm(null)} title={`BENCHMARK: ${modalBm.name}`} subtitle={modalBm.desc}>
+      {/* Unified Modal — canonical or custom */}
+      {modalOpen && (
+        <Modal
+          open
+          onClose={closeModal}
+          title={customMode ? 'BENCHMARK PERSONALIZADO' : `BENCHMARK: ${modalBm?.name}`}
+          subtitle={customMode ? 'Registra un WOD, Hero WOD o benchmark propio' : modalBm?.desc}
+        >
           <form onSubmit={saveBenchmark} className="flex flex-col gap-4">
+            {/* Custom name + unit (only in custom mode) */}
+            {customMode && (
+              <>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+                    Nombre del benchmark
+                  </label>
+                  <input
+                    required
+                    value={customName}
+                    onChange={e => setCustomName(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac text-sm"
+                    placeholder="Ej: DT, Kalsu, Oso…"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+                    Tipo de resultado
+                  </label>
+                  <div className="flex gap-2">
+                    {(['time', 'rounds'] as const).map(u => (
+                      <button
+                        key={u} type="button"
+                        onClick={() => setCustomUnit(u)}
+                        className={`flex-1 py-2.5 rounded-xl border font-bold text-sm uppercase transition-all ${
+                          customUnit === u
+                            ? 'bg-ac/10 text-ac border-ac/30'
+                            : 'border-[var(--ln2)] text-mu hover:text-t'
+                        }`}
+                      >
+                        {u === 'time' ? '⏱ Tiempo' : '🔁 Rondas'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Result input */}
             <div>
               <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
-                Resultado ({modalBm.unit === 'time' ? 'mm:ss · escribe solo dígitos' : 'rondas'})
+                Resultado ({activeUnit === 'time' ? 'mm:ss · escribe solo dígitos' : 'rondas'})
               </label>
-              <input required value={result}
-                onChange={e => setResult(modalBm.unit === 'time' ? fmtTimeInput(e.target.value) : e.target.value)}
+              <input
+                required
+                value={result}
+                onChange={e => setResult(activeUnit === 'time' ? fmtTimeInput(e.target.value) : e.target.value)}
                 className="w-full px-3 py-3 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-barlow text-3xl font-bold text-center"
-                placeholder={modalBm.unit === 'time' ? '06:29' : '21+3'} inputMode={modalBm.unit === 'time' ? 'numeric' : 'text'} />
+                placeholder={activeUnit === 'time' ? '06:29' : '21+3'}
+                inputMode={activeUnit === 'time' ? 'numeric' : 'text'}
+              />
             </div>
+
             <div>
               <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Notas</label>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                rows={2}
                 className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac resize-none"
-                placeholder="Condiciones, cómo te sentiste…" />
+                placeholder="Condiciones, cómo te sentiste…"
+              />
             </div>
+
             <div className="flex gap-3">
-              <Button type="button" variant="secondary" className="flex-1" onClick={() => setModalBm(null)}>Cancelar</Button>
+              <Button type="button" variant="secondary" className="flex-1" onClick={closeModal}>Cancelar</Button>
               <Button type="submit" className="flex-1" disabled={saving}>
                 {saving ? 'Guardando…' : 'Guardar'}
               </Button>

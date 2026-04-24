@@ -173,10 +173,10 @@ export function TimerView({ profile }: { profile: Profile }) {
             )}
             {mode === 'emom' && (
               <>
-                <CfgBox label="DURACIÓN (MIN)" val={cfg.durationMin} max={60} min={1}
-                  onChange={v => setCfg(c => ({ ...c, durationMin: v }))} />
                 <CfgBox label="RONDA CADA (SEG)" val={cfg.intervalSec} max={300} min={10}
                   onChange={v => setCfg(c => ({ ...c, intervalSec: v }))} />
+                <CfgBox label="DURACIÓN (MIN)" val={cfg.durationMin} max={60} min={1}
+                  onChange={v => setCfg(c => ({ ...c, durationMin: v }))} />
               </>
             )}
             {mode === 'tabata' && (
@@ -296,12 +296,43 @@ export function TimerView({ profile }: { profile: Profile }) {
 function CfgBox({ label, val, onChange, max, min = 0 }: {
   label: string; val: number; max: number; min?: number; onChange: (v: number) => void
 }) {
+  // Internal string state lets the user clear the field and retype from scratch.
+  // We only commit back to the parent (as a number) when the input is valid.
+  const [raw, setRaw] = useState<string>(String(val))
+
+  // Keep local in sync if parent resets externally (mode change / reset button)
+  useEffect(() => { setRaw(String(val)) }, [val])
+
+  function commit(next: string) {
+    // Empty → do not push yet, keep raw empty so the user can type
+    if (next === '') { setRaw(''); return }
+    // Only digits (and optional leading zero strip for display)
+    if (!/^\d+$/.test(next)) return
+    setRaw(next)
+    const n = Number(next)
+    if (Number.isFinite(n)) {
+      onChange(Math.max(min, Math.min(max, n)))
+    }
+  }
+
+  function handleBlur() {
+    // On blur, if empty, snap back to min
+    if (raw === '') { setRaw(String(min)); onChange(min); return }
+    const n = Number(raw)
+    const clamped = Math.max(min, Math.min(max, Number.isFinite(n) ? n : min))
+    setRaw(String(clamped))
+    onChange(clamped)
+  }
+
   return (
     <div className="bg-p border border-[var(--ln)] rounded-2xl p-4 text-center">
       <div className="text-[10px] uppercase tracking-[1.5px] text-mu font-bold mb-2">{label}</div>
       <input
-        type="number" min={min} max={max} value={val}
-        onChange={e => onChange(Math.max(min, Math.min(max, Number(e.target.value) || 0)))}
+        type="text" inputMode="numeric" pattern="[0-9]*"
+        value={raw}
+        onChange={e => commit(e.target.value)}
+        onBlur={handleBlur}
+        onFocus={e => e.currentTarget.select()}
         className="w-full text-center bg-transparent border-0 font-barlow text-4xl font-black text-t outline-none"
       />
     </div>

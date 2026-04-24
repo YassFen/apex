@@ -5,16 +5,24 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import type { Profile } from '@/lib/types/database'
 
-export function WodResultModal({ wod, profile, onClose, onSaved }: { wod: any; profile: Profile; onClose: () => void; onSaved: () => void }) {
+export function WodResultModal({ wod, profile, existingResult, onClose, onSaved }: {
+  wod: any; profile: Profile; existingResult?: any; onClose: () => void; onSaved: () => void
+}) {
   const supabase = createClient()
+  const isEditing = !!existingResult
+
+  // Pre-fill from existing result when editing
+  const defaultType = wod.type === 'fortime' ? 'time' : wod.type === 'amrap' ? 'rounds' : 'weight'
   const [resultType, setResultType] = useState<'time' | 'rounds' | 'weight' | 'reps'>(
-    wod.type === 'fortime' ? 'time' : wod.type === 'amrap' ? 'rounds' : 'weight'
+    (existingResult?.result_type as any) ?? defaultType
   )
-  const [mm, setMm]           = useState('00')
-  const [ss, setSs]           = useState('00')
-  const [value, setValue]     = useState('')
-  const [rxLevel, setRxLevel] = useState<'rx' | 'scaled' | 'rx+'>('rx')
-  const [notes, setNotes]     = useState('')
+  const [mm, setMm]           = useState(() => existingResult?.result_value?.split(':')[0] ?? '00')
+  const [ss, setSs]           = useState(() => existingResult?.result_value?.split(':')[1] ?? '00')
+  const [value, setValue]     = useState(() =>
+    existingResult && existingResult.result_type !== 'time' ? existingResult.result_value ?? '' : ''
+  )
+  const [rxLevel, setRxLevel] = useState<'rx' | 'scaled' | 'rx+'>((existingResult?.rx_level as any) ?? 'rx')
+  const [notes, setNotes]     = useState(existingResult?.notes ?? '')
   const [saving, setSaving]   = useState(false)
 
   async function handleSave(e: React.FormEvent) {
@@ -28,6 +36,8 @@ export function WodResultModal({ wod, profile, onClose, onSaved }: { wod: any; p
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    const editCount = (existingResult?.edit_count ?? 0) + (isEditing ? 1 : 0)
+
     await supabase.from('wod_results').upsert({
       daily_wod_id: wod.id,
       user_id: user.id,
@@ -35,14 +45,15 @@ export function WodResultModal({ wod, profile, onClose, onSaved }: { wod: any; p
       result_value: resultValue,
       rx_level: rxLevel,
       notes: notes || null,
-    })
+      edit_count: editCount,
+    }, { onConflict: 'daily_wod_id,user_id' })
 
     setSaving(false)
     onSaved()
   }
 
   return (
-    <Modal open onClose={onClose} title="REGISTRAR RESULTADO" subtitle={wod.title}>
+    <Modal open onClose={onClose} title={isEditing ? 'MODIFICAR RESULTADO' : 'REGISTRAR RESULTADO'} subtitle={wod.title}>
       <form onSubmit={handleSave} className="flex flex-col gap-4">
         {/* Result type */}
         <div className="flex gap-2">
@@ -104,7 +115,7 @@ export function WodResultModal({ wod, profile, onClose, onSaved }: { wod: any; p
         <div className="flex gap-3 mt-1">
           <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
           <Button type="submit" className="flex-1" disabled={saving}>
-            {saving ? 'Guardando…' : 'Guardar resultado'}
+            {saving ? 'Guardando…' : isEditing ? 'Actualizar resultado' : 'Guardar resultado'}
           </Button>
         </div>
       </form>

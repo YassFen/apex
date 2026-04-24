@@ -1,10 +1,19 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import { calcOneRM, getRmTable, calcPlates, BAR_WEIGHT_LB } from '@/lib/utils/rm-calculator'
 import { lbToKg } from '@/lib/utils/units'
+import { ChevronDown, Search, X } from 'lucide-react'
 import type { Profile } from '@/lib/types/database'
+
+const CAT_LABEL: Record<string, string> = {
+  weightlifting: '🏋️ Levantamiento',
+  olympic:       '⚡ Olímpico',
+  gymnastics:    '🤸 Gimnástico',
+  cardio:        '🏃 Cardio',
+  benchmark:     '🔥 Benchmark',
+}
 
 /* IWF/CrossFit standard plate colors */
 const PLATE_STYLE: Record<number, { bg: string; w: number; h: number; border?: string }> = {
@@ -14,7 +23,7 @@ const PLATE_STYLE: Record<number, { bg: string; w: number; h: number; border?: s
   15:  { bg: 'linear-gradient(180deg,#15803d,#14532d)', w: 12, h: 56 },
   10:  { bg: 'linear-gradient(180deg,#1f2937,#111827)', w: 11, h: 48, border: '1px solid #374151' },
   5:   { bg: 'linear-gradient(180deg,#374151,#1f2937)', w: 10, h: 40, border: '1px solid #4b5563' },
-  2.5: { bg: 'linear-gradient(180deg,#4b5563,#374151)', w: 8,  h: 32, border: '1px solid #6b7280' },
+  2.5: { bg: 'linear-gradient(180deg,#4b5563,#374151)', w: 10, h: 32, border: '1px solid #6b7280' },
 }
 
 const PLATE_LEGEND = [
@@ -33,6 +42,49 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: any[] }) {
   const [unit, setUnit]             = useState<'lb' | 'kg'>(profile.preferred_unit)
   const [selectedPR, setSelectedPR] = useState('')
   const [pct, setPct]               = useState(70)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [search, setSearch]         = useState('')
+  const pickerRef                   = useRef<HTMLDivElement>(null)
+
+  // Close picker on outside click
+  useEffect(() => {
+    if (!pickerOpen) return
+    function handler(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [pickerOpen])
+
+  // Only include strength-relevant PRs (1rm, 2rm, 3rm, 5rm)
+  const eligiblePrs = prs.filter(p => ['1rm','2rm','3rm','5rm'].includes(p.metric))
+
+  // Group eligible PRs by movement category
+  const groupedPrs = useMemo(() => {
+    const groups: Record<string, typeof eligiblePrs> = {}
+    eligiblePrs.forEach(pr => {
+      const cat = pr.movements?.category ?? 'weightlifting'
+      if (!groups[cat]) groups[cat] = []
+      groups[cat].push(pr)
+    })
+    return groups
+  }, [eligiblePrs])
+
+  // Filter by search
+  const filteredGroups = useMemo(() => {
+    if (!search.trim()) return groupedPrs
+    const q = search.toLowerCase()
+    const result: Record<string, typeof eligiblePrs> = {}
+    Object.entries(groupedPrs).forEach(([cat, items]) => {
+      const filtered = items.filter(p => p.movements?.name?.toLowerCase().includes(q))
+      if (filtered.length > 0) result[cat] = filtered
+    })
+    return result
+  }, [groupedPrs, search])
+
+  const selectedPrData = eligiblePrs.find(p => p.id === selectedPR)
 
   const weightLb = useMemo(() => {
     if (selectedPR) {
@@ -62,18 +114,110 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: any[] }) {
           <Card>
             <div className="font-barlow text-[15px] font-extrabold tracking-wide uppercase mb-4">Calcular 1RM</div>
 
-            {prs.length > 0 && (
-              <div className="mb-4">
-                <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Cargar desde RM existente</label>
-                <select value={selectedPR} onChange={e => { setSelectedPR(e.target.value); setWeight('') }}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac">
-                  <option value="">— Seleccionar —</option>
-                  {prs.filter(p => p.metric === '1rm' || p.metric === '2rm' || p.metric === '3rm').map(pr => (
-                    <option key={pr.id} value={pr.id}>
-                      {pr.movements?.name} — {pr.value_lb} lb ({pr.metric})
-                    </option>
-                  ))}
-                </select>
+            {eligiblePrs.length > 0 && (
+              <div className="mb-4" ref={pickerRef}>
+                <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+                  Cargar desde RM existente
+                </label>
+
+                {/* Trigger button */}
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(o => !o)}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-sm transition-all ${
+                    pickerOpen
+                      ? 'bg-p3 border-ac/50 text-t'
+                      : 'bg-p3 border-[var(--ln)] text-t hover:border-[var(--ln2)]'
+                  }`}
+                >
+                  {selectedPrData ? (
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="font-semibold truncate">{selectedPrData.movements?.name}</span>
+                      <span className="text-ac font-barlow font-black text-base leading-none">{selectedPrData.value_lb} lb</span>
+                      <span className="text-mu text-xs uppercase">{selectedPrData.metric}</span>
+                    </span>
+                  ) : (
+                    <span className="text-mu">— Seleccionar ejercicio —</span>
+                  )}
+                  <span className="flex items-center gap-1 flex-shrink-0">
+                    {selectedPrData && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={e => { e.stopPropagation(); setSelectedPR(''); setSearch('') }}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); setSelectedPR(''); setSearch('') } }}
+                        className="text-mu hover:text-rd transition-colors p-0.5 rounded"
+                      >
+                        <X size={13} strokeWidth={2.5} />
+                      </span>
+                    )}
+                    <ChevronDown size={15} strokeWidth={2.5} className={`text-mu transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
+                  </span>
+                </button>
+
+                {/* Dropdown panel */}
+                {pickerOpen && (
+                  <div className="absolute z-50 mt-1.5 w-[calc(100%-2rem)] max-w-sm bg-p border border-[var(--ln2)] rounded-2xl shadow-2xl overflow-hidden">
+                    {/* Search */}
+                    <div className="p-3 border-b border-[var(--ln)]">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-p3 rounded-xl border border-[var(--ln)]">
+                        <Search size={13} strokeWidth={2.5} className="text-mu flex-shrink-0" />
+                        <input
+                          autoFocus
+                          value={search}
+                          onChange={e => setSearch(e.target.value)}
+                          placeholder="Buscar ejercicio…"
+                          className="flex-1 bg-transparent text-sm text-t outline-none placeholder:text-mu"
+                        />
+                        {search && (
+                          <button onClick={() => setSearch('')} className="text-mu hover:text-t transition-colors">
+                            <X size={12} strokeWidth={2.5} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Grouped list */}
+                    <div className="max-h-64 overflow-y-auto">
+                      {Object.keys(filteredGroups).length === 0 ? (
+                        <div className="p-4 text-center text-mu text-sm">Sin resultados</div>
+                      ) : (
+                        Object.entries(filteredGroups).map(([cat, items]) => (
+                          <div key={cat}>
+                            <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-[1.6px] text-fa font-bold">
+                              {CAT_LABEL[cat] ?? cat}
+                            </div>
+                            {items.map(pr => (
+                              <button
+                                key={pr.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPR(pr.id)
+                                  setWeight('')
+                                  setPickerOpen(false)
+                                  setSearch('')
+                                }}
+                                className={`w-full flex items-center justify-between px-3 py-2.5 text-sm hover:bg-ac/5 transition-colors ${
+                                  selectedPR === pr.id ? 'bg-ac/8 text-ac' : 'text-t'
+                                }`}
+                              >
+                                <span className="font-medium">{pr.movements?.name}</span>
+                                <span className="flex items-center gap-1.5 flex-shrink-0">
+                                  <span className={`font-barlow font-black text-base leading-none ${selectedPR === pr.id ? 'text-ac' : 'text-t'}`}>
+                                    {pr.value_lb} lb
+                                  </span>
+                                  <span className="text-[10px] uppercase text-mu bg-p3 px-1.5 py-0.5 rounded-full border border-[var(--ln)]">
+                                    {pr.metric}
+                                  </span>
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -160,21 +304,21 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: any[] }) {
               <div className="font-barlow text-[15px] font-extrabold tracking-wide uppercase mb-1">Barra y discos por lado</div>
               <div className="text-fa text-[11px] mb-4">Colores estándar CrossFit / IWF</div>
 
-              <div className="flex items-center justify-center py-4">
+              <div className="flex items-center justify-center py-4 overflow-x-auto">
                 {/* Realistic barbell - left half */}
-                <div className="flex items-center">
+                <div className="flex items-center min-w-fit">
                   {/* Collar end cap */}
                   <div className="rounded-l flex-shrink-0"
                        style={{ width: 14, height: 26, background: 'linear-gradient(90deg,#374151,#6b7280)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.15)' }} />
                   {/* Plates stack (outer to inner) */}
-                  <div className="flex items-center gap-[2px] ml-[2px]">
+                  <div className="flex items-center gap-[3px] ml-[3px]">
                     {[...plates].reverse().map((p, i) => {
                       const s = PLATE_STYLE[p as 45 | 35 | 25 | 15 | 10 | 5 | 2.5]
                       if (!s) return null
                       return (
                         <div key={i} className="rounded-[5px] grid place-items-center text-white text-[9px] font-extrabold flex-shrink-0"
                              style={{
-                               width: s.w, height: s.h, background: s.bg, border: s.border,
+                               width: s.w, minWidth: s.w, height: s.h, background: s.bg, border: s.border,
                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,.18), 0 2px 4px rgba(0,0,0,.4)',
                                textShadow: '0 1px 2px rgba(0,0,0,.6)',
                              }}>
@@ -208,7 +352,10 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: any[] }) {
               <div className="mt-4 text-center text-mu text-xs">
                 {plates.length === 0
                   ? <span className="text-fa">Solo la barra ({BAR_WEIGHT_LB} lb)</span>
-                  : <>Barra {BAR_WEIGHT_LB} lb + <span className="text-t font-semibold">{plates.join(' + ')}</span> × 2 lb</>
+                  : <>
+                      Barra {BAR_WEIGHT_LB} lb + <span className="text-t font-semibold">{plates.map(p => `${p} lb`).join(' + ')}</span>
+                      <span className="text-fa"> · cada lado</span>
+                    </>
                 }
               </div>
             </Card>

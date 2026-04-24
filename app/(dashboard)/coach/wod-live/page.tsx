@@ -88,9 +88,12 @@ export default function CoachWodLivePage() {
   const remaining = totalDurationSecs ? totalDurationSecs - elapsed : null
   const isCountdown = wod && ['amrap', 'emom', 'tabata'].includes(wod.type)
 
-  const athleteCount = members.filter(m => m.role === 'athlete').length
-  const doneCount = results.length
-  const pendingAthletes = members.filter(m =>
+  // Only count results from active athlete members (avoids coach results or stale members)
+  const memberIds = new Set(members.map((m: any) => m.profiles?.id).filter(Boolean))
+  const athleteCount  = memberIds.size
+  const doneCount     = results.filter((r: any) => memberIds.has(r.user_id)).length
+  const inProgressCount = Math.max(0, athleteCount - doneCount)
+  const pendingAthletes = members.filter((m: any) =>
     m.profiles && !results.find((r: any) => r.user_id === m.profiles.id)
   )
 
@@ -150,7 +153,7 @@ export default function CoachWodLivePage() {
               <div className="text-[10px] text-mu uppercase tracking-wide font-bold mt-1">Terminaron</div>
             </div>
             <div className="text-center p-3 bg-p3 rounded-xl">
-              <div className="font-barlaw text-3xl font-black text-or">{athleteCount - doneCount}</div>
+              <div className="font-barlaw text-3xl font-black text-or">{inProgressCount}</div>
               <div className="text-[10px] text-mu uppercase tracking-wide font-bold mt-1">En curso</div>
             </div>
             <div className="text-center p-3 bg-p3 rounded-xl">

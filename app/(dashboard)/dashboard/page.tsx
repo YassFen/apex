@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { DashboardDispatcher } from '@/components/layout/DashboardDispatcher'
-import type { Profile, Box } from '@/lib/types/database'
+import type { Profile, Box, Movement } from '@/lib/types/database'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -51,11 +51,21 @@ export default async function DashboardPage() {
     .order('recorded_at', { ascending: false })
     .limit(50)
 
+  // All movements — used by AthleteDashboard for KPI customization picker
+  // so the user can choose any movement, not just ones they've already PR'd.
+  const { data: rawMovs } = await supabase
+    .from('movements')
+    .select('*')
+    .order('category')
+    .order('name')
+  const allMovements = (rawMovs ?? []) as Movement[]
+
   return (
     <DashboardDispatcher
       profile={profile}
       coachBox={coachBox}
       prs={(rawPrs ?? []) as any[]}
+      movements={allMovements}
       athleteCount={athleteCount}
       todayWodTitle={todayWodTitle}
     />
