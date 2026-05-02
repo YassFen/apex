@@ -28,7 +28,7 @@ export function MobileNav({ profile }: { profile: Profile }) {
   const items = viewMode === 'coach' ? COACH_ITEMS : ATHLETE_ITEMS
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-[#0e1117]/95 backdrop-blur-xl border-t border-[var(--ln)] pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-p/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-[58px] px-1">
         {items.map(item => {
           const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
@@ -37,7 +37,7 @@ export function MobileNav({ profile }: { profile: Profile }) {
             <Link key={item.href} href={item.href}
               className={cn(
                 'flex flex-col items-center gap-[3px] px-2 py-1.5 rounded-xl flex-1 transition-colors text-center',
-                active ? 'text-ac' : 'text-fa hover:text-mu'
+                active ? 'text-t' : 'text-fa hover:text-mu'
               )}
             >
               <Icon size={19} strokeWidth={active ? 2.4 : 1.9} />

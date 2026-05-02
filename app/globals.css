@@ -4,21 +4,26 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0a0c0f;
-  --p: #12161d;
-  --p2: #171c24;
-  --p3: #1d242f;
-  --ln: rgba(255,255,255,.07);
-  --ln2: rgba(255,255,255,.13);
-  --t: #eef0f3;
-  --mu: #8a96a8;
-  --fa: #50596a;
-  --ac: #c8f53e;
-  --bl: #6ec3f4;
-  --gr: #4ade80;
-  --or: #fb923c;
-  --rd: #fb7185;
-  --pu: #a78bfa;
+  /* ── Pure Black Minimal palette ── */
+  --bg: #000000;
+  --p:  #0E0E0E;
+  --p2: #1A1A1A;
+  --p3: #242424;
+
+  /* Borders are nearly invisible — separation comes from background tone difference, not from lines */
+  --ln:  rgba(255,255,255,.04);
+  --ln2: rgba(255,255,255,.08);
+
+  --t:  #FFFFFF;
+  --mu: #9E9E9E;
+  --fa: #5A5A5A;
+
+  --ac: #C8F53E;
+  --bl: #6EC3F4;
+  --gr: #4ADE80;
+  --or: #FB923C;
+  --rd: #FB7185;
+  --pu: #A78BFA;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,16 +33,25 @@ html, body {
   color: var(--t);
   font-family: Inter, sans-serif;
   font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.18); }
 
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 input[type=number] { -moz-appearance: textfield; }
+
+/* Inputs blend with surfaces — no harsh borders */
+input, textarea, select {
+  background: var(--p2);
+  color: var(--t);
+}
+input::placeholder, textarea::placeholder { color: var(--fa); }
 
 @keyframes fadeUp {
   from { opacity:0; transform: translateY(12px); }

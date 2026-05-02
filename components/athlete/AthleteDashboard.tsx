@@ -249,7 +249,7 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
                   return (
                     <button key={name} onClick={() => toggleKpi(name)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                        active ? 'bg-ac/15 text-ac border-ac/30' : 'border-[var(--ln)] text-mu hover:text-t'
+                        active ? 'bg-ac/15 text-ac border-ac/30' : 'border-transparent text-mu hover:text-t'
                       }`}>
                       {name}
                     </button>
@@ -269,7 +269,7 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
                             className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                               active
                                 ? 'bg-ac/15 text-ac border-ac/30'
-                                : 'border-[var(--ln)] text-mu hover:text-t hover:border-mu'
+                                : 'border-transparent text-mu hover:text-t hover:border-mu'
                             }`}>
                             {name}
                           </button>
@@ -321,7 +321,7 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
               <select
                 value={selectedMovement}
                 onChange={e => setSelectedMovement(e.target.value)}
-                className="bg-p3 border border-[var(--ln)] rounded-xl px-3 py-2 text-sm text-t outline-none focus:border-ac max-w-[180px]"
+                className="bg-p2 rounded-xl px-3 py-2 text-sm text-t outline-none focus:border-ac max-w-[180px]"
               >
                 {strengthMovements.map(name => (
                   <option key={name} value={name}>{name}</option>
@@ -346,7 +346,7 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
                 const fmt = formatPrValue(pr, unit)
                 return (
                   <Link key={pr.id} href="/prs"
-                    className="flex items-center justify-between p-3 bg-p3 rounded-xl hover:bg-[#232c39] transition-colors cursor-pointer">
+                    className="flex items-center justify-between p-3 bg-p3 rounded-xl hover:bg-p3 transition-colors cursor-pointer">
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-sm truncate">{pr.movements?.name}</div>
                       <div className="text-mu text-[11px]">
@@ -369,16 +369,16 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
           </Card>
         </div>
 
-        {/* Quick links */}
+        {/* Quick links — minimal: white text, subtle dark surface */}
         <div className="grid grid-cols-3 gap-3.5">
           {[
-            { href: '/wod',        label: 'WOD del Día',  desc: 'Ver entrenamiento',  color: 'text-ac', bg: 'bg-ac/10 border-ac/20' },
-            { href: '/timer',      label: 'Timer',         desc: 'Iniciar workout',    color: 'text-bl', bg: 'bg-bl/10 border-bl/20' },
-            { href: '/benchmarks', label: 'Benchmarks',    desc: 'Girls & Heroes',     color: 'text-or', bg: 'bg-or/10 border-or/20' },
+            { href: '/wod',        label: 'WOD del Día',  desc: 'Ver entrenamiento' },
+            { href: '/timer',      label: 'Timer',         desc: 'Iniciar workout' },
+            { href: '/benchmarks', label: 'Benchmarks',    desc: 'Girls & Heroes' },
           ].map(item => (
             <Link key={item.href} href={item.href}>
-              <Card className={`p-4 border ${item.bg} hover:scale-[1.02] active:scale-[.98] transition-transform cursor-pointer`}>
-                <div className={`font-barlow text-[15px] font-extrabold tracking-wide uppercase ${item.color}`}>{item.label}</div>
+              <Card className="p-4 hover:bg-p2 active:scale-[.98] transition-all cursor-pointer">
+                <div className="font-barlow text-[15px] font-extrabold tracking-wide uppercase text-t">{item.label}</div>
                 <div className="text-mu text-xs mt-0.5">{item.desc}</div>
               </Card>
             </Link>

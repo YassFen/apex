@@ -26,7 +26,7 @@ export function Modal({ open, onClose, title, subtitle, children, className }: M
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div className={cn(
-        'w-full max-w-[520px] bg-gradient-to-b from-p2 to-p border border-[var(--ln2)] rounded-[22px] p-6 max-h-[92vh] overflow-y-auto animate-fade-up',
+        'w-full max-w-[520px] bg-p rounded-[24px] p-6 max-h-[92vh] overflow-y-auto animate-fade-up',
         className
       )}>
         {(title || subtitle) && (

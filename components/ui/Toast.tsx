@@ -14,8 +14,8 @@ export function Toast({ message, type = 'ok', show }: ToastProps) {
       'fixed bottom-24 right-4 z-[99] px-4 py-3 rounded-2xl font-bold text-sm transition-all duration-200 pointer-events-none',
       show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4',
       type === 'pr'    && 'bg-ac text-bg shadow-[0_8px_32px_rgba(200,245,62,.3)]',
-      type === 'ok'    && 'bg-p3 border border-[var(--ln2)] text-t',
-      type === 'error' && 'bg-rd/20 border border-rd/30 text-rd',
+      type === 'ok'    && 'bg-p2 text-t',
+      type === 'error' && 'bg-rd/20 text-rd',
     )}>
       {message}
     </div>
