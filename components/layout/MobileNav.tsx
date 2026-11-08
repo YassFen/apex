@@ -192,16 +192,16 @@ function TabBarEditor({ open, onClose, items, pinned, onChange, onReset }: {
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mt-5">
+      <div className="grid grid-cols-2 gap-2 mt-5">
         {items.map(it => {
           const at = pinned.indexOf(it.href)
           return (
-            <motion.button key={it.href} type="button" onClick={() => place(it.href)} whileTap={{ scale: 0.93 }}
-              className={cn('relative p-3 rounded-[20px] flex flex-col items-center gap-1.5 text-center transition-colors',
+            <motion.button key={it.href} type="button" onClick={() => place(it.href)} whileTap={{ scale: 0.95 }}
+              className={cn('relative h-14 px-3 rounded-[18px] flex items-center gap-2.5 text-left transition-colors min-w-0',
                 at >= 0 ? 'bg-ac/15 ring-1 ring-inset ring-ac/50' : 'bg-p2 hover:bg-p3')}>
-              {at >= 0 && <span className="absolute top-1.5 right-2 text-[10px] font-bold text-ac">{at + 1}</span>}
-              <it.icon size={24} weight="duotone" className={at >= 0 ? 'text-ac' : 'text-t'} />
-              <span className="text-[12px] font-semibold leading-tight">{it.label}</span>
+              <it.icon size={22} weight="duotone" className={cn('flex-shrink-0', at >= 0 ? 'text-ac' : 'text-t')} />
+              <span className="text-[13px] font-semibold whitespace-nowrap overflow-hidden">{it.label}</span>
+              {at >= 0 && <span className="ml-auto flex-shrink-0 size-5 rounded-full bg-ac text-onac text-[10px] font-bold grid place-items-center">{at + 1}</span>}
             </motion.button>
           )
         })}
