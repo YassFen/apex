@@ -54,7 +54,7 @@ function allTiles(d: HeroData): Tile[] {
     return {
       id, kind: 'recovery', group: g, title: auto ? `${MUSCLE_LABEL[g]}` : MUSCLE_LABEL[g], value: r.pct, number: r.pct, suffix: '%',
       sub: r.daysToFull > 0 ? `${r.daysToFull} ${r.daysToFull === 1 ? 'día' : 'días'} para recuperar` : 'Listo para entrenar',
-      subTone: r.daysToFull > 0 ? 'text-rd' : 'text-gr', foot: auto ? `El más cargado · ${lastHitLabel(r.lastAt)}` : lastHitLabel(r.lastAt), tone, glow,
+      subTone: r.daysToFull > 0 ? 'text-rd' : 'text-gr', foot: auto ? `Tu grupo más cargado. ${lastHitLabel(r.lastAt)}` : lastHitLabel(r.lastAt), tone, glow,
     }
   }
   const worst = rec.filter(r => r.group !== 'motor')[0]?.group ?? 'piernas'
@@ -166,27 +166,32 @@ export function HeroRings({ data, onLog, onGenerate }: { data: HeroData; onLog: 
               initial={{ strokeDashoffset: C * ARC }} animate={{ strokeDashoffset: C * ARC * (1 - fill) }}
               transition={{ duration: 1, ease: EASE_OUT }} />
           </g>
-          <motion.circle key={`h-${page.id}`} r="11" className={cn('fill-current animate-glow', page.tone)} opacity={0.35}
-            initial={{ cx: 110 + R * Math.cos((130 * Math.PI) / 180), cy: 110 + R * Math.sin((130 * Math.PI) / 180), opacity: 0 }}
-            animate={{ cx: head.x, cy: head.y, opacity: 0.35 }} transition={{ duration: 1, ease: EASE_OUT }} />
+          <motion.g key={`h-${page.id}`} initial={{ x: 110 + R * Math.cos((130 * Math.PI) / 180), y: 110 + R * Math.sin((130 * Math.PI) / 180), opacity: 0 }}
+            animate={{ x: head.x, y: head.y, opacity: 1 }} transition={{ duration: 1, ease: EASE_OUT }}>
+            <circle r="13" className={cn('fill-current animate-glow', page.tone)} opacity={0.22} />
+            <circle r="4.5" className="fill-white" />
+          </motion.g>
         </svg>
 
         <AnimatePresence mode="popLayout" custom={dir} initial={false}>
           <motion.div key={page.id} custom={dir}
             initial={{ opacity: 0, x: dir * 36, scale: 0.94 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: dir * -36, scale: 0.94 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="absolute inset-0 flex flex-col items-center justify-center text-center px-9">
-            <motion.span initial={{ scale: 0.5, rotate: -12 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 16, delay: 0.05 }}
-              className="block animate-floaty">
-              <TileIcon tile={page} className="size-9" />
-            </motion.span>
-            <div className="text-lg font-bold tracking-tight truncate max-w-full mt-1">{page.title}</div>
-            <div className="font-display text-[48px] leading-none font-bold tracking-tight tabular-nums">
-              <AnimatedNumber value={page.number} decimals={page.number % 1 ? 1 : 0} />
-              <span className="text-2xl text-mu">{page.suffix}</span>
+            className="absolute inset-0">
+            <div className="absolute left-1/2 top-[47%] -translate-x-1/2 -translate-y-1/2 w-[164px] flex flex-col items-center text-center">
+              <motion.span initial={{ scale: 0.5, rotate: -12 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 16, delay: 0.05 }}
+                className="h-11 grid place-items-center animate-floaty">
+                <TileIcon tile={page} className={page.kind === 'recovery' && page.group !== 'motor' ? 'h-11 w-7' : 'size-9'} />
+              </motion.span>
+              <div className="text-base font-bold tracking-tight truncate max-w-full mt-1.5 leading-tight">{page.title}</div>
+              <div className="font-display text-[44px] leading-none font-bold tracking-tight tabular-nums mt-1 whitespace-nowrap">
+                <AnimatedNumber value={page.number} decimals={page.number % 1 ? 1 : 0} />
+                <span className="text-xl text-mu font-semibold">{page.suffix}</span>
+              </div>
+              <div className={cn('text-[12px] font-semibold mt-1.5 leading-tight max-w-full line-clamp-2', page.subTone)}>{page.sub}</div>
             </div>
-            <div className={cn('text-[13px] font-semibold mt-1.5', page.subTone)}>{page.sub}</div>
-            <div className="text-mu text-xs mt-2 line-clamp-1">{page.foot}</div>
+            {/* footnote in the opening at the bottom of the ring */}
+            <div className="absolute inset-x-12 bottom-1 text-center text-mu text-[11px] leading-tight line-clamp-2">{page.foot}</div>
           </motion.div>
         </AnimatePresence>
       </motion.div>
