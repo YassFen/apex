@@ -161,28 +161,18 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
       <div className="p-4 lg:p-6">
         {/* Header stats */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="rounded-2xl bg-p border border-[var(--ln)] p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-ac/10 grid place-items-center text-ac"><Trophy size={18} strokeWidth={2.2} /></div>
-            <div>
-              <div className="font-display text-2xl font-extrabold text-ac leading-none tracking-tight">{filledCount}</div>
-              <div className="text-[10px] uppercase tracking-[1.4px] text-fa font-bold mt-1">Logrados</div>
+        <div className="grid grid-cols-3 gap-2.5 mb-5">
+          {[
+            { icon: Trophy, tone: 'bg-ac/15 text-ac', value: filledCount, label: 'Logrados', num: 'text-ac' },
+            { icon: Award, tone: 'bg-bl/15 text-bl', value: BENCHMARK_LIST.length - filledCount, label: 'Pendientes', num: '' },
+            { icon: Medal, tone: 'bg-or/15 text-or', value: BENCHMARK_LIST.length + extraNames.length, label: 'Total', num: 'text-or' },
+          ].map(st => (
+            <div key={st.label} className="rounded-[20px] bg-p p-3.5 flex flex-col gap-2 min-w-0">
+              <span className={`size-9 rounded-xl grid place-items-center ${st.tone}`}><st.icon size={18} weight="duotone" /></span>
+              <div className={`font-display text-3xl font-bold leading-none tracking-tight tabular-nums ${st.num}`}>{st.value}</div>
+              <div className="text-[12px] text-mu font-medium leading-none whitespace-nowrap">{st.label}</div>
             </div>
-          </div>
-          <div className="rounded-2xl bg-p border border-[var(--ln)] p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-bl/10 grid place-items-center text-bl"><Award size={18} strokeWidth={2.2} /></div>
-            <div>
-              <div className="font-display text-2xl font-extrabold leading-none tracking-tight">{BENCHMARK_LIST.length - filledCount}</div>
-              <div className="text-[10px] uppercase tracking-[1.4px] text-fa font-bold mt-1">Pendientes</div>
-            </div>
-          </div>
-          <div className="rounded-2xl bg-p border border-[var(--ln)] p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-or/10 grid place-items-center text-or"><Medal size={18} strokeWidth={2.2} /></div>
-            <div>
-              <div className="font-display text-2xl font-extrabold text-or leading-none tracking-tight">{BENCHMARK_LIST.length + extraNames.length}</div>
-              <div className="text-[10px] uppercase tracking-[1.4px] text-fa font-bold mt-1">Total</div>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Benchmark cards */}

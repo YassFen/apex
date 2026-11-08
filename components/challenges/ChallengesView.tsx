@@ -14,6 +14,8 @@ import { friendlyError, isMissingTable } from '@/lib/utils/errors'
 import { UNIT_WORD, isActive, type ChallengeSummary } from '@/lib/utils/challenges'
 import { guideFor } from '@/lib/utils/movement-guide'
 import { cn } from '@/lib/utils/cn'
+import { useShell } from '@/lib/hooks/useShell'
+import { CHALLENGE_EXERCISES, TARGETS, cleanExercise, unitOfExercise } from '@/lib/constants/challenge-exercises'
 import type { Profile } from '@/lib/types/database'
 
 type Tab = 'active' | 'mine' | 'done'
@@ -109,7 +111,7 @@ export function ChallengesView({ profile, boxes, challenges, today, openId, move
       )}
 
       <ChallengeSheet challenge={current} profile={profile} today={today} onClose={() => setOpenC(null)} />
-      <CreateChallenge open={creating} onClose={() => setCreating(false)} boxes={boxes} movementNames={movementNames} today={today} />
+      <CreateChallenge open={creating} onClose={() => setCreating(false)} boxes={boxes} today={today} />
     </>
   )
 }
@@ -122,13 +124,20 @@ function ChallengeSheet({ challenge: c, profile, today, onClose }: { challenge: 
   const [amount, setAmount] = useState(10)
   const [busy, setBusy] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
-  useEffect(() => { if (c) setAmount(c.unit === 'm' ? 400 : c.target >= 200 ? 25 : 10) }, [c])
+  const { viewMode } = useShell()
+  const [edit, setEdit] = useState({ title: '', target: '', ends: '' })
+  useEffect(() => {
+    if (!c) return
+    setAmount(c.unit === 'm' ? 400 : c.target >= 200 ? 25 : 10)
+    setEdit({ title: c.title, target: String(c.target), ends: c.endsOn })
+  }, [c])
   if (!c) return <Modal open={false} onClose={onClose}>{null}</Modal>
 
   const supabase = createClient()
   const active = isActive(c, today)
   const pct = Math.min(100, Math.round((c.myTotal / c.target) * 100))
   const canDelete = c.createdBy === profile.id || profile.role === 'coach'
+  const managing = viewMode === 'coach' && canDelete
   const chips = c.unit === 'm' ? [100, 200, 400, 800, 1000] : [5, 10, 15, 20, 25, 50]
 
   async function act(fn: () => PromiseLike<{ error: any }>, ok: string) {
@@ -155,7 +164,30 @@ function ChallengeSheet({ challenge: c, profile, today, onClose }: { challenge: 
             </div>
           </div>
 
-          {c.joined && active && (
+          {managing && (
+            <div className="rounded-[24px] bg-p2 p-4 flex flex-col gap-3">
+              <div className="text-[13px] font-semibold text-mu">Editar reto (coach)</div>
+              <input value={edit.title} onChange={e => setEdit(v => ({ ...v, title: e.target.value }))} maxLength={80} aria-label="Nombre del reto"
+                className="h-11 px-4 rounded-2xl bg-p outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 text-base sm:text-sm" />
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="block text-xs text-mu mb-1 px-1">Meta ({UNIT_WORD[c.unit] ?? c.unit})</span>
+                  <input value={edit.target} onChange={e => setEdit(v => ({ ...v, target: e.target.value.replace(/\D/g, '') }))} inputMode="numeric"
+                    className="w-full h-11 px-4 rounded-2xl bg-p outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 text-base sm:text-sm tabular-nums" />
+                </label>
+                <label className="block">
+                  <span className="block text-xs text-mu mb-1 px-1">Termina</span>
+                  <input type="date" value={edit.ends} min={c.startsOn} onChange={e => setEdit(v => ({ ...v, ends: e.target.value }))}
+                    className="w-full h-11 px-3 rounded-2xl bg-p outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 text-base sm:text-sm" />
+                </label>
+              </div>
+              <button type="button" disabled={busy || !edit.title.trim() || !Number(edit.target) || !edit.ends}
+                onClick={() => act(() => supabase.from('challenges').update({ title: edit.title.trim(), target: Number(edit.target), ends_on: edit.ends }).eq('id', c.id), 'Reto actualizado')}
+                className="h-11 rounded-full bg-ac text-onac font-semibold disabled:opacity-50">{busy ? 'Guardando…' : 'Guardar cambios'}</button>
+            </div>
+          )}
+
+          {!managing && c.joined && active && (
             <div className="rounded-[24px] bg-t text-bg p-4 flex flex-col gap-3">
               <div className="text-[13px] font-semibold text-bg/60">Sumar a mi total</div>
               <div className="flex gap-1 overflow-x-auto scrollbar-none -mx-1 px-1">
@@ -191,7 +223,7 @@ function ChallengeSheet({ challenge: c, profile, today, onClose }: { challenge: 
             )}
           </div>
 
-          {c.endsOn >= today && (
+          {!managing && c.endsOn >= today && (
             c.joined
               ? <button type="button" disabled={busy} onClick={() => act(() => supabase.from('challenge_participants').delete().eq('challenge_id', c.id).eq('user_id', profile.id), 'Saliste del reto')}
                   className="h-11 rounded-full text-mu text-sm font-semibold hover:bg-p2">Salir del reto</button>
@@ -225,23 +257,30 @@ function Ring({ pct }: { pct: number }) {
 
 /* ── Create ─────────────────────────────────────────────────────────────── */
 
-const POPULAR = ['Burpee', 'Pull-up', 'Push-up', 'Air Squat', 'Double-Under', 'Toes-to-Bar', 'Wall Ball', 'Sit-up', 'Row (cal)', 'Run (m)']
 const DURATIONS = [[1, 'Hoy'], [7, '7 días'], [14, '14 días'], [30, '30 días']] as const
 
-function CreateChallenge({ open, onClose, boxes, movementNames, today }: { open: boolean; onClose: () => void; boxes: { id: string; name: string }[]; movementNames: string[]; today: string }) {
+function CreateChallenge({ open, onClose, boxes, today }: { open: boolean; onClose: () => void; boxes: { id: string; name: string }[]; today: string }) {
   const router = useRouter()
   const { fire } = useToast()
-  const [mov, setMov] = useState('Burpee')
+  const [catId, setCatId] = useState(CHALLENGE_EXERCISES[0].id)
+  const [subIdx, setSubIdx] = useState(0)
+  const [mov, setMov] = useState(CHALLENGE_EXERCISES[0].subs[0].items[0])
   const [target, setTarget] = useState(100)
+  const cat = CHALLENGE_EXERCISES.find(c => c.id === catId) ?? CHALLENGE_EXERCISES[0]
+  const sub = cat.subs[Math.min(subIdx, cat.subs.length - 1)]
   const [days, setDays] = useState<number>(7)
   const [boxId, setBoxId] = useState(boxes[0]?.id ?? '')
   const [title, setTitle] = useState('')
   const [busy, setBusy] = useState(false)
-  const unit = /\(cal\)/i.test(mov) ? 'cal' : /\(m\)/i.test(mov) ? 'm' : 'reps'
-  const name = mov.replace(/\s*\((cal|m)\)/i, '')
-  const auto = `${target} ${name}${days === 1 ? ' hoy' : ` en ${days} días`}`
-  const targets = unit === 'm' ? [1000, 5000, 10000, 21000] : [50, 100, 300, 500, 1000]
-  const options = [...new Set([...POPULAR, ...movementNames])].slice(0, 30)
+  const unit = unitOfExercise(mov)
+  const name = cleanExercise(mov)
+  const auto = `${target} ${unit === 'reps' ? '' : `${UNIT_WORD[unit] ?? unit} de `}${name}${days === 1 ? ' hoy' : ` en ${days} días`}`
+  const targets = TARGETS[unit] ?? TARGETS.reps
+  function pickExercise(m: string) {
+    setMov(m)
+    const t = TARGETS[unitOfExercise(m)] ?? TARGETS.reps
+    if (!t.includes(target)) setTarget(t[1] ?? t[0])
+  }
 
   async function save() {
     setBusy(true)
@@ -260,24 +299,46 @@ function CreateChallenge({ open, onClose, boxes, movementNames, today }: { open:
   return (
     <Modal open={open} onClose={onClose} title={<>Nuevo <span className="text-or">reto</span></>} subtitle="Todos en tu box pueden sumarse.">
       <div className="rounded-[28px] bg-t text-bg p-4 flex flex-col gap-4">
-        <div className="-mx-4 px-4 flex gap-1 overflow-x-auto scrollbar-none">
-          {options.map(m => (
-            <button key={m} type="button" onClick={() => setMov(m)} className={chip(mov === m)}>
-              {mov === m && <ActivePill layoutId="nc-mov" className="rounded-full bg-bg" />}{m.replace(/\s*\((cal|m)\)/i, '')}
+        {/* 1. Category */}
+        <div className="grid grid-cols-2 gap-1">
+          {CHALLENGE_EXERCISES.map(c => (
+            <button key={c.id} type="button" onClick={() => { setCatId(c.id); setSubIdx(0); pickExercise(c.subs[0].items[0]) }}
+              className={cn(chip(catId === c.id), 'w-full px-2 whitespace-nowrap')}>
+              {catId === c.id && <ActivePill layoutId="nc-cat" className="rounded-full bg-bg" />}{c.label}
             </button>
           ))}
         </div>
+        {/* 2. Subcategory */}
+        <div className="flex flex-wrap gap-1">
+          {cat.subs.map((sb, k) => (
+            <button key={sb.label} type="button" onClick={() => { setSubIdx(k); pickExercise(sb.items[0]) }}
+              className={cn('relative isolate h-8 px-3 rounded-full text-[13px] font-semibold whitespace-nowrap', subIdx === k ? 'text-bg' : 'text-bg/60')}>
+              {subIdx === k && <ActivePill layoutId="nc-sub" className="rounded-full bg-bg/15 ring-1 ring-inset ring-bg/30" />}{sb.label}
+            </button>
+          ))}
+        </div>
+        {/* 3. Exercise */}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={`${catId}-${subIdx}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}
+            className="flex flex-wrap gap-1">
+            {sub.items.map(m => (
+              <button key={m} type="button" onClick={() => pickExercise(m)} className={cn(chip(mov === m), 'whitespace-nowrap')}>
+                {mov === m && <ActivePill layoutId="nc-mov" className="rounded-full bg-bg" />}{cleanExercise(m)}
+              </button>
+            ))}
+          </motion.div>
+        </AnimatePresence>
         <div className="h-px bg-bg/15" />
         <div className="grid grid-cols-4 gap-1">
           {DURATIONS.map(([d, l]) => (
-            <button key={d} type="button" onClick={() => setDays(d)} className={cn(chip(days === d), 'w-full px-0')}>
+            <button key={d} type="button" onClick={() => setDays(d)} className={cn(chip(days === d), 'w-full px-0 whitespace-nowrap')}>
               {days === d && <ActivePill layoutId="nc-days" className="rounded-full bg-bg" />}{l}
             </button>
           ))}
         </div>
         <div className="-mx-4 px-4 flex gap-1 overflow-x-auto scrollbar-none">
           {targets.map(n => (
-            <button key={n} type="button" onClick={() => setTarget(n)} className={cn(chip(target === n), 'tabular-nums min-w-[60px]')}>
+            <button key={n} type="button" onClick={() => setTarget(n)} className={cn(chip(target === n), 'tabular-nums min-w-[60px] whitespace-nowrap')}>
               {target === n && <ActivePill layoutId="nc-target" className="rounded-xl bg-bg" />}{n}
             </button>
           ))}

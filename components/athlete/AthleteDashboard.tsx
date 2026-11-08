@@ -338,16 +338,16 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
         )
       case 'links':
         return (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2.5">
             {[
-              { href: '/wod/history', label: 'Historial', icon: ClockCounterClockwise },
-              { href: '/competitions', label: 'Compe&shy;tencias', icon: Trophy },
-              { href: '/movements', label: 'Ejercicios', icon: Barbell },
-              { href: '/calc', label: 'Calcula&shy;dora', icon: Calculator },
+              { href: '/wod/history', label: 'Historial', icon: ClockCounterClockwise, tone: 'bg-bl/15 text-bl' },
+              { href: '/competitions', label: 'Competencias', icon: Trophy, tone: 'bg-rd/15 text-rd' },
+              { href: '/movements', label: 'Ejercicios', icon: Barbell, tone: 'bg-gr/15 text-gr' },
+              { href: '/calc', label: 'Calculadora', icon: Calculator, tone: 'bg-or/15 text-or' },
             ].map(item => (
-              <Link key={item.href} href={item.href} className="tap-card rounded-[20px] bg-p p-3 flex flex-col items-center gap-2 text-center">
-                <span className="size-11 rounded-2xl bg-p2 grid place-items-center"><item.icon size={22} weight="duotone" aria-hidden /></span>
-                <span className="text-[11px] font-semibold leading-tight hyphens-auto" dangerouslySetInnerHTML={{ __html: item.label }} />
+              <Link key={item.href} href={item.href} className="tap-card rounded-[20px] bg-p p-3 flex items-center gap-3 min-w-0">
+                <span className={cn('size-10 rounded-2xl grid place-items-center flex-shrink-0', item.tone)}><item.icon size={20} weight="duotone" aria-hidden /></span>
+                <span className="text-sm font-semibold whitespace-nowrap">{item.label}</span>
               </Link>
             ))}
           </div>

@@ -2,7 +2,6 @@
 import { useState, useRef } from 'react'
 import { roleLabel } from '@/lib/utils/cn'
 import { useRouter } from 'next/navigation'
-import NextLink from 'next/link'
 import { SECTION_TITLE, type SettingsSection } from '@/lib/constants/settings'
 import { Upload, Globe, Lock, Building2, LogOut, Copy, Check, Trophy } from '@/components/ui/icons'
 import { Segmented } from '@/components/ui/motion'
@@ -240,9 +239,7 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
 
   return (
     <>
-      <Topbar title={SECTION_TITLE[section]} profile={profile} actions={
-        <NextLink href="/settings" aria-label="Volver a Configuración" className="h-10 px-3 rounded-full bg-p2 text-sm font-semibold grid place-items-center hover:bg-p3">Listo</NextLink>
-      } />
+      <Topbar title={SECTION_TITLE[section]} profile={profile} backHref="/settings" />
 
       <div className="p-4 lg:p-6 flex flex-col gap-5 max-w-2xl w-full mx-auto">
         {profileErr && <Alert tone="error">{profileErr}</Alert>}
