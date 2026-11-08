@@ -8,4 +8,5 @@
 //         for athletes, app version shown in sidebar
 // 0.5.0 — Themes, motion, calendar, events and readiness, RM calculator
 // 0.6.0 — Phosphor + Geist redesign, settings hub, class times, results, library, home widgets, demo
-export const APP_VERSION = '0.6.0'
+// 0.7.0 — Coach home widgets, box challenges, exercise photo uploads
+export const APP_VERSION = '0.7.0'

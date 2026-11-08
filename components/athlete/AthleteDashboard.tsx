@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Reorder, useDragControls, motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
+import { WidgetBoard } from '@/components/home/WidgetBoard'
+import { ChallengesWidget, type ChallengeSummary } from '@/components/challenges/ChallengesWidget'
 import {
   Plus, Fire, Trophy, CaretRight, ClockCounterClockwise, Calculator, Check, Users, SlidersHorizontal,
   DotsSixVertical, Target, Barbell, PersonSimpleRun, ArrowCounterClockwise, X, Clock,
@@ -40,15 +42,13 @@ interface PR {
 export type TodayWod = { title: string; type: string; durationMins: number | null; myResult: string | null; classTime?: string | null; count?: number }
 export type GoalProgress = { id: string; movement: string; target: number; unit: string; period: string; done: number }
 
-/* ── Widgets ──────────────────────────────────────────────────────────────── */
-
-type WidgetId = 'hero' | 'today' | 'nextEvent' | 'goals' | 'week' | 'highlights' | 'strength' | 'heatmap' | 'records' | 'stats' | 'links'
-type LayoutItem = { id: WidgetId; on: boolean }
+type WidgetId = 'hero' | 'today' | 'nextEvent' | 'goals' | 'week' | 'highlights' | 'strength' | 'heatmap' | 'records' | 'stats' | 'links' | 'challenges'
 
 const WIDGETS: Record<WidgetId, { label: string; desc: string }> = {
   hero:       { label: 'Tu estado',            desc: 'Recuperación muscular, semana y preparación' },
   today:      { label: 'WOD de hoy',           desc: 'El WOD de tu box con su horario' },
   nextEvent:  { label: 'Próxima competencia',  desc: 'Cuenta regresiva y preparación' },
+  challenges: { label: 'Retos',                desc: 'Retos del box en los que participas' },
   goals:      { label: 'Metas',                desc: 'Progreso de tus metas' },
   week:       { label: 'Esta semana',          desc: 'Días entrenados y racha' },
   highlights: { label: 'Tus tops',             desc: 'Hasta 4 ejercicios que eliges' },
@@ -56,19 +56,9 @@ const WIDGETS: Record<WidgetId, { label: string; desc: string }> = {
   heatmap:    { label: 'Constancia',           desc: 'Mapa de días entrenados' },
   records:    { label: 'Tus récords',          desc: 'Tus últimas mejores marcas' },
   stats:      { label: 'Números',              desc: 'Registros y récords vigentes' },
-  links:      { label: 'Accesos rápidos',      desc: 'Historial, competencias, calculadora' },
+  links:      { label: 'Accesos rápidos',      desc: 'Historial, competencias, ejercicios, calculadora' },
 }
-const DEFAULT_LAYOUT: LayoutItem[] = (['hero', 'today', 'nextEvent', 'goals', 'week', 'highlights', 'strength', 'heatmap', 'records', 'stats', 'links'] as WidgetId[])
-  .map(id => ({ id, on: true }))
-const LAYOUT_KEY = 'apex.homeLayout'
-
-/** Saved layout + any widget added since, in default position. */
-function mergeLayout(saved: unknown): LayoutItem[] {
-  if (!Array.isArray(saved)) return DEFAULT_LAYOUT
-  const known = saved.filter((x: any) => x && x.id in WIDGETS).map((x: any) => ({ id: x.id as WidgetId, on: x.on !== false }))
-  const missing = DEFAULT_LAYOUT.filter(d => !known.some(k => k.id === d.id))
-  return known.length ? [...known, ...missing] : DEFAULT_LAYOUT
-}
+const ORDER: WidgetId[] = ['hero', 'today', 'nextEvent', 'challenges', 'goals', 'week', 'highlights', 'strength', 'heatmap', 'records', 'stats', 'links']
 
 const DEFAULT_KPI = ['Deadlift', 'Back Squat', 'Snatch', 'Clean & Jerk']
 const KPI_STORAGE_KEY = 'apex.dashboard.kpis'
@@ -95,12 +85,12 @@ function computeStreakDays(days: Set<string>): number {
   return streak
 }
 
-export function AthleteDashboard({ profile, prs, movements = [], today = null, hasBox = false, resultDates = [], nextEvent = null, hits = [], goals = [], logDates = [], goalsMissing = false }: {
+export function AthleteDashboard({ profile, prs, movements = [], today = null, hasBox = false, resultDates = [], nextEvent = null, hits = [], goals = [], logDates = [], goalsMissing = false, challenges = null }: {
   profile: Profile; prs: PR[]; movements?: Movement[]; today?: TodayWod | null; hasBox?: boolean; resultDates?: string[]
   nextEvent?: NextEvent | null; hits?: Hit[]; goals?: GoalProgress[]; logDates?: string[]; goalsMissing?: boolean
+  challenges?: ChallengeSummary[] | null
 }) {
   const router = useRouter()
-  const params = useSearchParams()
   const { fire } = useToast()
   const unit = profile.preferred_unit
 
@@ -109,26 +99,6 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
   const [addOpen, setAddOpen] = useState(false)
   const [logTab, setLogTab] = useState<LogTab | null>(null)
   const [genOpen, setGenOpen] = useState(false)
-
-  /* Layout (persisted in the profile when migration 007 exists, else this device) */
-  const [layout, setLayout] = useState<LayoutItem[]>(() => mergeLayout(profile.dashboard_layout))
-  const [editing, setEditing] = useState(false)
-  useEffect(() => {
-    if (profile.dashboard_layout) return
-    try { const v = localStorage.getItem(LAYOUT_KEY); if (v) setLayout(mergeLayout(JSON.parse(v))) } catch {}
-  }, [profile.dashboard_layout])
-  useEffect(() => { if (params.get('edit') === '1') setEditing(true) }, [params])
-
-  async function saveLayout(next: LayoutItem[]) {
-    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(next)) } catch {}
-    await createClient().from('profiles').update({ dashboard_layout: next }).eq('id', profile.id)
-  }
-  function finishEditing() {
-    setEditing(false)
-    saveLayout(layout)
-    fire('Inicio guardado', 'ok')
-    if (params.get('edit')) router.replace('/dashboard', { scroll: false })
-  }
 
   /* KPIs (Tus tops) */
   const [kpiMovements, setKpiMovements] = useState<string[]>(DEFAULT_KPI)
@@ -226,6 +196,8 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
         )
       case 'nextEvent':
         return <NextEventCard event={nextEvent} />
+      case 'challenges':
+        return <ChallengesWidget challenges={challenges} />
       case 'goals':
         return (
           <Card>
@@ -378,7 +350,6 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
     }
   }
 
-  const visible = layout.filter(l => l.on)
 
   return (
     <>
@@ -390,55 +361,12 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
       } />
 
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-5xl w-full mx-auto">
-        <div className="px-1 flex items-end justify-between gap-3">
-          <div>
+        <WidgetBoard scope="athlete" profile={profile}
+          header={<>
             <p className="text-mu text-sm first-letter:uppercase">{formatDateOnly(todayISO(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
             <h2 className="font-display text-[34px] font-bold leading-tight tracking-tight">Hola, {firstName}</h2>
-          </div>
-          {!editing && (
-            <button type="button" onClick={() => setEditing(true)} aria-label="Personalizar inicio"
-              className="h-9 px-3 rounded-full bg-p text-sm font-medium flex items-center gap-1.5 hover:bg-p2">
-              <SlidersHorizontal size={16} /> <span className="hidden sm:inline">Personalizar</span>
-            </button>
-          )}
-        </div>
-
-        <AnimatePresence mode="wait" initial={false}>
-          {editing ? (
-            <motion.div key="edit" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="flex flex-col gap-3">
-              <div className="flex items-center justify-between px-1">
-                <div>
-                  <h3 className="font-semibold">Personaliza tu inicio</h3>
-                  <p className="text-mu text-sm">Arrastra para ordenar. Apaga lo que no uses.</p>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setLayout(DEFAULT_LAYOUT)} aria-label="Restablecer" className="size-10 rounded-full bg-p grid place-items-center"><ArrowCounterClockwise size={18} /></button>
-                  <button type="button" onClick={finishEditing} className="h-10 px-5 rounded-full bg-ac text-onac font-semibold">Listo</button>
-                </div>
-              </div>
-              <Reorder.Group axis="y" values={layout} onReorder={setLayout} className="flex flex-col gap-2">
-                {layout.map(item => (
-                  <EditRow key={item.id} item={item} onToggle={on => setLayout(l => l.map(x => x.id === item.id ? { ...x, on } : x))} />
-                ))}
-              </Reorder.Group>
-            </motion.div>
-          ) : (
-            <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
-              {visible.map((item, i) => (
-                <motion.div key={item.id} layout initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.45, delay: Math.min(i, 6) * 0.05, ease: [0.22, 1, 0.36, 1] }}>
-                  {renderWidget(item.id)}
-                </motion.div>
-              ))}
-              {visible.length === 0 && (
-                <Card className="text-center py-10">
-                  <p className="text-mu">Tu inicio está vacío.</p>
-                  <button type="button" onClick={() => setEditing(true)} className="mt-3 h-10 px-5 rounded-full bg-ac text-onac font-semibold">Agregar widgets</button>
-                </Card>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </>}
+          widgets={ORDER.map(id => ({ id, ...WIDGETS[id], render: () => renderWidget(id) }))} />
       </div>
 
       {/* "+": what do you want to log? */}
@@ -487,25 +415,5 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
       )}
       {celebration && <RmCelebrationModal celebration={celebration} onClose={() => setCelebration(null)} />}
     </>
-  )
-}
-
-function EditRow({ item, onToggle }: { item: LayoutItem; onToggle: (on: boolean) => void }) {
-  const controls = useDragControls()
-  const w = WIDGETS[item.id]
-  return (
-    <Reorder.Item value={item} dragListener={false} dragControls={controls}
-      whileDrag={{ scale: 1.03, boxShadow: '0 18px 40px -12px rgb(0 0 0 / 0.35)' }}
-      className={cn('flex items-center gap-3 p-3 pr-4 rounded-[20px] bg-p select-none', !item.on && 'opacity-60')}>
-      <span onPointerDown={e => controls.start(e)} className="size-10 grid place-items-center text-mu cursor-grab active:cursor-grabbing touch-none" aria-label={`Mover ${w.label}`}>
-        <DotsSixVertical size={22} weight="bold" />
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="block font-semibold text-[15px]">{w.label}</span>
-        <span className="block text-mu text-[13px] truncate">{w.desc}</span>
-      </span>
-      {!item.on && <X size={14} className="text-fa" aria-hidden />}
-      <Switch checked={item.on} onChange={onToggle} label={`Mostrar ${w.label}`} />
-    </Reorder.Item>
   )
 }

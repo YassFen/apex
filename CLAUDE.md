@@ -75,6 +75,7 @@ app/
     ├── calendar/event/[id]/edit/page.tsx   # Edit event + its workouts
     ├── benchmarks/page.tsx         # Athlete: benchmark results
     ├── coach/publish-wod/page.tsx  # Coach: publish or program WODs up to 13 days ahead (?date=), one per class time (?wod=<id>|new)
+    ├── challenges/page.tsx         # Box challenges: join, log amounts, ranking; anyone in the box creates one (?open=<id>)
     ├── competitions/page.tsx       # Athlete: past/upcoming competitions, final places and progress chart
     ├── movements/page.tsx          # Exercise library (how-to, muscles, video, your records); coaches add box movements
     ├── settings/page.tsx           # Settings hub (iOS-style grouped list)
@@ -170,6 +171,7 @@ The `(dashboard)/layout.tsx` already does this — individual pages only need it
 | `event_participants` | Who goes to an event (006), with `category` (m/f, picks the load) and `division` (rx/scaled/masters/teens); `final_place`/`field_size` (007). |
 | `event_results` | Athlete's mark and place in each event workout (007). |
 | `personal_logs` | Training done on your own: movement, sets × reps / distance, load (007). |
+| `challenges` / `challenge_participants` / `challenge_entries` | Box challenges (008): target per movement and dates; the ranking is the sum of entries. |
 | `goals` | Athlete goals: movement, target, unit, period today/week/daily/weekly (007). |
 
 ### Key RLS Helpers (PostgreSQL functions)
@@ -187,7 +189,7 @@ These are used throughout all RLS policies. An athlete sees WODs/results only fo
 
 ### Migrations
 
-Migrations are run by hand in **Supabase Dashboard → SQL Editor**. `005_reactions_and_deletes.sql` adds `wod_result_bumps` ("fuego" reactions on leaderboard results, hidden in the UI until it exists) plus the missing delete policies on `daily_wods` (coach) and `wod_results` (own). Without it, "Quitar WOD" falls back to `is_live = false`. `006_calendar_events.sql` adds `daily_wods.show_early` (the coach decides whether a future WOD is visible before its day), rewrites the `daily_wods` select policy so athletes only see live WODs whose day has come (`app_today()`, Santiago) or that are `show_early`, adds the `box_wod_days()` RPC (days with a WOD, without content, for "WOD programado") and the three event tables with RLS (`can_see_event()` / `can_edit_event()`). Until 006 runs, the calendar shows WODs only, events are hidden with a note, and programming ahead saves without `show_early` (athletes see future WODs right away). `007_sessions_results_library.sql` (after 006) adds `daily_wods.class_time` (several WODs per day, one per class), `profiles.sex` + `profiles.dashboard_layout`, `event_results`, final places, box movements (`movements.box_id/created_by/image_url/cues/muscles` + coach policies), `personal_logs` and `goals`. Every screen that uses 007 falls back when it's missing. `004_production_sync.sql` is idempotent and also contains everything from 002 and 003, which were never applied in production. Code that writes columns added in 004 (`wod_results.edit_count`, box profile fields) falls back gracefully if 004 is missing — see `isMissingColumn()` in `lib/utils/errors.ts`.
+Migrations are run by hand in **Supabase Dashboard → SQL Editor**. `005_reactions_and_deletes.sql` adds `wod_result_bumps` ("fuego" reactions on leaderboard results, hidden in the UI until it exists) plus the missing delete policies on `daily_wods` (coach) and `wod_results` (own). Without it, "Quitar WOD" falls back to `is_live = false`. `006_calendar_events.sql` adds `daily_wods.show_early` (the coach decides whether a future WOD is visible before its day), rewrites the `daily_wods` select policy so athletes only see live WODs whose day has come (`app_today()`, Santiago) or that are `show_early`, adds the `box_wod_days()` RPC (days with a WOD, without content, for "WOD programado") and the three event tables with RLS (`can_see_event()` / `can_edit_event()`). Until 006 runs, the calendar shows WODs only, events are hidden with a note, and programming ahead saves without `show_early` (athletes see future WODs right away). `007_sessions_results_library.sql` (after 006) adds `daily_wods.class_time` (several WODs per day, one per class), `profiles.sex` + `profiles.dashboard_layout`, `event_results`, final places, box movements (`movements.box_id/created_by/image_url/cues/muscles` + coach policies), `personal_logs` and `goals`. Every screen that uses 007 falls back when it's missing. `008_challenges_media.sql` adds box challenges and the public `movement-media` storage bucket (coaches upload exercise photos under `<box_id>/`, see `lib/utils/upload-image.ts`). `004_production_sync.sql` is idempotent and also contains everything from 002 and 003, which were never applied in production. Code that writes columns added in 004 (`wod_results.edit_count`, box profile fields) falls back gracefully if 004 is missing — see `isMissingColumn()` in `lib/utils/errors.ts`.
 
 ### Dates and time zones
 
@@ -219,9 +221,9 @@ Every Tailwind color is a CSS variable holding RGB channels (`--c-bg`, `--c-ac`,
 
 In-app only (no push server). `app/(dashboard)/layout.tsx` builds notices with `buildNotices()` (`lib/utils/notifications.ts`): event countdown at 7/3/1/0 days, tomorrow's WOD with its class time, today's WOD still to log, new box events. `NotificationBell` (Topbar) shows them; read state and preferences live in localStorage. With permission, new notices also show as system notifications via the service worker while the app is open.
 
-### Home (athlete) widgets
+### Home widgets
 
-`AthleteDashboard` renders a list of widgets (`hero`, `today`, `nextEvent`, `goals`, `week`, `highlights`, `strength`, `heatmap`, `records`, `stats`, `links`). The order/visibility is edited in place (`?edit=1` or "Personalizar", drag with `Reorder`) and saved to `profiles.dashboard_layout` (007) and localStorage. The hero ring shows muscle recovery from `lib/utils/movement-guide.ts` (movement → muscle groups, recovery hours) and opens "Generar WOD" (`lib/utils/wod-generator.ts`).
+Both homes use `components/home/WidgetBoard.tsx` (reorder, hide, restore; saved to `profiles.dashboard_layout` as `{ athlete: [...], coach: [...] }`, older saves were a bare athlete array). The coach home adds today's classes, box activity (14 days), athletes to win back (7+ days without a WOD) and challenges. `AthleteDashboard` renders a list of widgets (`hero`, `today`, `nextEvent`, `goals`, `week`, `highlights`, `strength`, `heatmap`, `records`, `stats`, `links`). The order/visibility is edited in place (`?edit=1` or "Personalizar", drag with `Reorder`) and saved to `profiles.dashboard_layout` (007) and localStorage. The hero ring shows muscle recovery from `lib/utils/movement-guide.ts` (movement → muscle groups, recovery hours) and opens "Generar WOD" (`lib/utils/wod-generator.ts`).
 
 ### Demo mode (temporary, remove before launch)
 

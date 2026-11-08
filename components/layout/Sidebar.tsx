@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutGrid, TrendingUp, Timer, Flame, Activity,
   BarChart3, Calculator, Users, User, Trophy, Dumbbell,
-  ArrowLeftRight, ChevronDown, History, CalendarDays, Medal, BookOpenText, Gear,
+  ArrowLeftRight, ChevronDown, History, CalendarDays, Medal, BookOpenText, Gear, Flag,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 import { useShell } from '@/lib/hooks/useShell'
@@ -24,6 +24,7 @@ const ATHLETE_NAV = [
     { href: '/prs',          icon: TrendingUp, label: 'RMs' },
     { href: '/benchmarks',   icon: Trophy,     label: 'Benchmarks' },
     { href: '/competitions', icon: Medal,      label: 'Competencias' },
+    { href: '/challenges',   icon: Flag,       label: 'Retos' },
   ]},
   { label: 'Herramientas', items: [
     { href: '/calc',         icon: Calculator, label: 'Calculadora RM' },
@@ -42,6 +43,7 @@ const COACH_NAV = [
     { href: '/coach/wod-live',      icon: Activity,   label: 'Seguimiento WOD', dot: true },
     { href: '/coach/athletes',      icon: Users,      label: 'Atletas' },
     { href: '/analytics',           icon: BarChart3,  label: 'Analytics' },
+    { href: '/challenges',          icon: Flag,       label: 'Retos' },
   ]},
   { label: 'Herramientas', items: [
     { href: '/calc',                icon: Calculator, label: 'Calculadora RM' },

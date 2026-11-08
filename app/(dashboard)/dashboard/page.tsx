@@ -4,6 +4,8 @@ import type { Hit } from '@/lib/utils/movement-guide'
 import type { TodayWod, GoalProgress } from '@/components/athlete/AthleteDashboard'
 import { eventReadiness, type EventCategory, type PrLite } from '@/lib/utils/readiness'
 import type { NextEvent } from '@/components/calendar/NextEventCard'
+import type { CoachActivity } from '@/components/coach/CoachDashboard'
+import { loadChallenges } from '@/lib/utils/challenges'
 import { redirect } from 'next/navigation'
 import { DashboardDispatcher } from '@/components/layout/DashboardDispatcher'
 import type { Profile, Box, Movement } from '@/lib/types/database'
@@ -23,6 +25,7 @@ export default async function DashboardPage() {
   let todayWod: { id: string; title: string; type: string } | null = null
   let todayResults = 0
   let recentMembers: { id: string; name: string; avatar: string | null; joinedAt: string }[] = []
+  let coachActivity: CoachActivity = { days: [], inactive: [], classes: [] }
 
   if (profile.role === 'coach' || profile.role === 'admin') {
     const { data: b } = await supabase
@@ -39,39 +42,52 @@ export default async function DashboardPage() {
         .neq('user_id', user.id) // the coach is a member of their own box; don't count them
       athleteCount = count ?? 0
 
-      // Today's WOD
+      // Today's classes, the roster, and the last 30 days of results for activity + retention.
       const today = todayISO()
-      const [{ data: wod }, { data: members }] = await Promise.all([
-        supabase
-          .from('daily_wods')
-          .select('id, title, type')
-          .eq('box_id', coachBox.id)
-          .eq('scheduled_for', today)
-          .eq('is_live', true)
-          .order('published_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from('box_members')
-          .select('user_id, joined_at, profiles(full_name, avatar_url)')
-          .eq('box_id', coachBox.id)
-          .eq('is_active', true)
-          .neq('user_id', user.id)
-          .order('joined_at', { ascending: false })
-          .limit(5),
+      const since30 = addDaysISO(today, -30)
+      const wodQ = (cols: string) => supabase.from('daily_wods').select(cols)
+        .eq('box_id', (coachBox as Box).id).eq('is_live', true).gte('scheduled_for', since30).lte('scheduled_for', today)
+      const [wodsRes, { data: members }] = await Promise.all([
+        wodQ('id, title, type, scheduled_for, class_time'),
+        supabase.from('box_members').select('user_id, joined_at, profiles(full_name, avatar_url)')
+          .eq('box_id', coachBox.id).eq('is_active', true).neq('user_id', user.id).order('joined_at', { ascending: false }),
       ])
-      todayWod = (wod as any) ?? null
-      recentMembers = ((members ?? []) as any[]).map(m => ({
-        id: m.user_id, name: m.profiles?.full_name ?? 'Atleta', avatar: m.profiles?.avatar_url ?? null, joinedAt: m.joined_at,
+      const allMembers = ((members ?? []) as any[]).map(m => ({
+        id: m.user_id as string, name: (m.profiles?.full_name as string) ?? 'Atleta', avatar: (m.profiles?.avatar_url as string) ?? null, joinedAt: m.joined_at as string,
+      }))
+      recentMembers = allMembers.slice(0, 5)
+      // Before migration 007 there's no class_time column.
+      const wodList = ((wodsRes.error ? (await wodQ('id, title, type, scheduled_for')).data : wodsRes.data) ?? []) as any[]
+      const ids = wodList.map(w => w.id)
+      const { data: res } = ids.length
+        ? await supabase.from('wod_results').select('user_id, daily_wod_id, recorded_at').in('daily_wod_id', ids)
+        : { data: [] as any[] }
+      const results = (res ?? []) as any[]
+      const dayOf = new Map(wodList.map(w => [w.id, w.scheduled_for as string]))
+
+      const todays = wodList.filter(w => w.scheduled_for === today)
+        .sort((a, b) => String(a.class_time ?? '').localeCompare(String(b.class_time ?? '')))
+      const first = todays[0]
+      todayWod = first ? { id: first.id, title: first.title, type: first.type } : null
+      todayResults = new Set(results.filter(r => todays.some(t => t.id === r.daily_wod_id)).map(r => r.user_id)).size
+      coachActivity.classes = todays.map(t => ({
+        id: t.id, title: t.title, time: t.class_time ? String(t.class_time).slice(0, 5) : null,
+        count: results.filter(r => r.daily_wod_id === t.id).length,
       }))
 
-      if (todayWod) {
-        const { count: rc } = await supabase
-          .from('wod_results')
-          .select('*', { count: 'exact', head: true })
-          .eq('daily_wod_id', todayWod.id)
-        todayResults = rc ?? 0
-      }
+      // Athletes per day, last 14 days.
+      coachActivity.days = Array.from({ length: 14 }, (_, k) => {
+        const d = addDaysISO(today, k - 13)
+        return { date: d, athletes: new Set(results.filter(r => dayOf.get(r.daily_wod_id) === d).map(r => r.user_id)).size }
+      })
+      // Athletes who haven't logged a WOD in 7+ days (or ever, if they joined over a week ago).
+      const last = new Map<string, string>()
+      for (const r of results) { const d = dayOf.get(r.daily_wod_id) ?? ''; if (d > (last.get(r.user_id) ?? '')) last.set(r.user_id, d) }
+      coachActivity.inactive = allMembers
+        .map(m => ({ ...m, last: last.get(m.id) ?? null }))
+        .filter(m => m.last ? daysBetween(m.last, today) >= 7 : daysBetween(m.joinedAt.slice(0, 10), today) >= 7)
+        .map(m => ({ id: m.id, name: m.name, avatar: m.avatar, days: m.last ? daysBetween(m.last, today) : null }))
+        .sort((a, b) => (b.days ?? 99) - (a.days ?? 99))
     }
   }
 
@@ -164,6 +180,10 @@ export default async function DashboardPage() {
     }
   }
 
+  // Box challenges (008) for both homes.
+  const challengeBoxes = [...new Set([...myBoxIds, ...(coachBox ? [coachBox.id] : [])])]
+  const challenges = await loadChallenges(supabase, user.id, challengeBoxes)
+
   // All movements — used by AthleteDashboard for KPI customization picker
   // so the user can choose any movement, not just ones they've already PR'd.
   const { data: rawMovs } = await supabase
@@ -187,6 +207,8 @@ export default async function DashboardPage() {
       hasBox={myBoxIds.length > 0}
       resultDates={resultDates}
       nextEvent={nextEvent}
+      coachActivity={coachActivity}
+      challenges={challenges}
       hits={hits}
       goals={goals}
       logDates={logs.map(l => l.logged_on as string)}

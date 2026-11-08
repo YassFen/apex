@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutGrid, Flame, Timer, TrendingUp, Activity, Users, ArrowLeftRight, MoreHorizontal,
-  Trophy, Calculator, BarChart3, Gear, History, ChevronRight, CalendarDays, Medal, BookOpenText,
+  Trophy, Calculator, BarChart3, Gear, History, ChevronRight, CalendarDays, Medal, BookOpenText, Flag,
 } from '@/components/ui/icons'
 import { motion } from 'motion/react'
 import { cn } from '@/lib/utils/cn'
@@ -32,6 +32,7 @@ const COACH_TABS: Item[] = [
 // Everything that doesn't fit in the tab bar lives in the "Más" sheet.
 const ATHLETE_MORE: Item[] = [
   { href: '/timer',       label: 'Timer',             icon: Timer,      desc: 'For Time, AMRAP, EMOM, Tabata' },
+  { href: '/challenges',  label: 'Retos',             icon: Flag,       desc: 'Desafíos con tu box' },
   { href: '/competitions', label: 'Competencias',     icon: Medal,      desc: 'Resultados y tu progreso' },
   { href: '/movements',   label: 'Ejercicios',        icon: BookOpenText, desc: 'Cómo se hace cada uno' },
   { href: '/wod/history', label: 'Historial de WODs', icon: History,    desc: 'Tus resultados día a día' },
@@ -44,6 +45,7 @@ const COACH_MORE: Item[] = [
   { href: '/coach/wod-live', label: 'Seguimiento en vivo', icon: Activity, desc: 'Quién ya registró el WOD' },
   { href: '/analytics', label: 'Analytics',      icon: BarChart3,  desc: 'Progreso del box' },
   { href: '/timer',     label: 'Timer',          icon: Timer,      desc: 'For Time, AMRAP, EMOM, Tabata' },
+  { href: '/challenges', label: 'Retos',         icon: Flag,       desc: 'Desafíos del box' },
   { href: '/movements', label: 'Ejercicios',     icon: BookOpenText, desc: 'Crea los de tu box' },
   { href: '/calc',      label: 'Calculadora RM', icon: Calculator, desc: 'Porcentajes y discos' },
   { href: '/settings',  label: 'Configuración',  icon: Gear,       desc: 'Perfil, box, avisos y apariencia' },

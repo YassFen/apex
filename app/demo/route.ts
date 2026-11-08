@@ -4,7 +4,8 @@ import { DEMO_COOKIE } from '@/lib/demo/client'
 
 export function GET(request: NextRequest) {
   const res = NextResponse.redirect(new URL('/dashboard', request.url))
-  const id = request.cookies.get(DEMO_COOKIE)?.value ?? crypto.randomUUID()
+  // Every visit to /demo starts from fresh demo data.
+  const id = crypto.randomUUID()
   res.cookies.set(DEMO_COOKIE, id, { path: '/', maxAge: 60 * 60 * 6, sameSite: 'lax' })
   return res
 }

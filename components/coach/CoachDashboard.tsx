@@ -14,6 +14,17 @@ import {
 } from '@/components/ui/icons'
 import type { Profile, Box } from '@/lib/types/database'
 import { NextEventCard, type NextEvent } from '@/components/calendar/NextEventCard'
+import { WidgetBoard } from '@/components/home/WidgetBoard'
+import { ChallengesWidget } from '@/components/challenges/ChallengesWidget'
+import { motion } from 'motion/react'
+import { formatDateOnly as fmtDay } from '@/lib/utils/dates'
+import type { ChallengeSummary } from '@/lib/utils/challenges'
+
+export interface CoachActivity {
+  days: { date: string; athletes: number }[]
+  inactive: { id: string; name: string; avatar: string | null; days: number | null }[]
+  classes: { id: string; title: string; time: string | null; count: number }[]
+}
 
 interface Props {
   profile: Profile
@@ -23,6 +34,8 @@ interface Props {
   todayResults: number
   recentMembers: { id: string; name: string; avatar: string | null; joinedAt: string }[]
   nextEvent?: NextEvent | null
+  activity?: CoachActivity
+  challenges?: ChallengeSummary[] | null
 }
 
 const TOOLS = [
@@ -31,7 +44,7 @@ const TOOLS = [
   { href: '/calc',      icon: Calculator, label: 'Calculadora' },
 ]
 
-export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResults, recentMembers, nextEvent = null }: Props) {
+export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResults, recentMembers, nextEvent = null, activity = { days: [], inactive: [], classes: [] }, challenges = null }: Props) {
   const { setViewMode } = useShell()
   const { fire } = useToast()
   const [copied, setCopied] = useState(false)
@@ -75,12 +88,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
         }
       />
 
-      <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-3xl w-full stagger">
-        <div className="px-1">
-          <p className="text-mu text-sm first-letter:uppercase">{dateLabel}</p>
-          <h2 className="font-display text-4xl font-extrabold leading-tight tracking-tight">Hola, {firstName}</h2>
-        </div>
-
+      <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-3xl w-full mx-auto">
         {!box ? (
           <Card className="p-8 text-center">
             <div className="size-16 rounded-2xl bg-ac/15 text-ac grid place-items-center mx-auto mb-4 animate-pop">
@@ -94,8 +102,13 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
             </Link>
           </Card>
         ) : (
-          <>
-            {/* Today's WOD: the one thing a coach needs every morning */}
+          <WidgetBoard scope="coach" profile={profile}
+            header={<>
+              <p className="text-mu text-sm first-letter:uppercase">{dateLabel}</p>
+              <h2 className="font-display text-[34px] font-bold leading-tight tracking-tight">Hola, {firstName}</h2>
+            </>}
+            widgets={[
+              { id: 'today', label: 'WOD de hoy', desc: 'Clases de hoy y cuántos registraron', render: () => (<>
             {todayWod ? (
               <Card padding={false} className="overflow-hidden">
                 <div className="p-5">
@@ -138,11 +151,13 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                 </span>
               </Link>
             )}
-
-            {/* Calendar: programmed WODs and box events */}
-            <NextEventCard event={nextEvent} />
-
-            {/* Box + invite */}
+              </>) },
+              { id: 'classes', label: 'Clases de hoy', desc: 'Resultados por horario', render: () => <ClassesCard classes={activity.classes} /> },
+              { id: 'activity', label: 'Actividad del box', desc: 'Atletas que entrenaron cada día', render: () => <ActivityCard days={activity.days} total={athleteCount} /> },
+              { id: 'inactive', label: 'Atletas por recuperar', desc: '7+ días sin registrar un WOD', render: () => <InactiveCard list={activity.inactive} /> },
+              { id: 'nextEvent', label: 'Próximo evento', desc: 'Competencias del box', render: () => <NextEventCard event={nextEvent} /> },
+              { id: 'challenges', label: 'Retos', desc: 'Retos activos en tu box', render: () => <ChallengesWidget challenges={challenges} /> },
+              { id: 'box', label: 'Tu box e invitación', desc: 'Código para sumar atletas', render: () => (<>
             <Card>
               <div className="flex items-center gap-4">
                 {box.logo_url ? (
@@ -156,7 +171,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                   <div className="font-display text-xl font-extrabold truncate tracking-tight">{box.name}</div>
                   <div className="text-mu text-sm truncate">{[box.city, box.country].filter(Boolean).join(' · ')}</div>
                 </div>
-                <Link href="/settings" className="flex-shrink-0 h-9 px-3 rounded-full bg-p2 text-mu text-xs font-bold grid place-items-center hover:bg-p3 hover:text-t transition">
+                <Link href="/settings/box" className="flex-shrink-0 h-9 px-3 rounded-full bg-p2 text-mu text-xs font-bold grid place-items-center hover:bg-p3 hover:text-t transition">
                   Editar
                 </Link>
               </div>
@@ -175,8 +190,8 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                 </button>
               </div>
             </Card>
-
-            {/* Athletes */}
+              </>) },
+              { id: 'athletes', label: 'Atletas', desc: 'Total y los últimos en unirse', render: () => (<>
             <Link href="/coach/athletes" className="tap-card block rounded-[20px] bg-p p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -203,8 +218,8 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                 <p className="text-mu text-xs mt-3">Comparte el código de invitación para sumar a tus atletas.</p>
               )}
             </Link>
-
-            {/* Tools */}
+              </>) },
+              { id: 'tools', label: 'Herramientas', desc: 'Analytics, timer, calculadora', render: () => (<>
             <div className="grid grid-cols-3 gap-3">
               {TOOLS.map(t => {
                 const Icon = t.icon
@@ -216,9 +231,8 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                 )
               })}
             </div>
-          </>
-        )}
-
+              </>) },
+              { id: 'train', label: 'Entrenar como atleta', desc: 'Cambiar a tu modo atleta', render: () => (<>
         <button type="button" onClick={() => setViewMode('athlete')}
           className="tap-card w-full flex items-center gap-4 p-4 rounded-[20px] bg-p hover:bg-p2 text-left">
           <span className="size-11 rounded-xl bg-bl/15 text-bl grid place-items-center flex-shrink-0">
@@ -230,7 +244,95 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
           </span>
           <ChevronRight size={18} className="text-fa flex-shrink-0" aria-hidden />
         </button>
+              </>) },
+            ]} />
+        )}
       </div>
     </>
+  )
+}
+
+/* ── Coach widgets ───────────────────────────────────────────────────────── */
+
+function ClassesCard({ classes }: { classes: CoachActivity['classes'] }) {
+  if (classes.length === 0) return null
+  return (
+    <Card>
+      <h3 className="font-semibold mb-3">Clases de hoy</h3>
+      <ul className="flex flex-col gap-2">
+        {classes.map(c => (
+          <li key={c.id}>
+            <Link href={`/coach/wod-live`} className="flex items-center gap-3 p-3 rounded-2xl bg-p2 hover:bg-p3">
+              <span className="w-14 text-center font-display font-bold tabular-nums">{c.time ?? '—'}</span>
+              <span className="flex-1 min-w-0 truncate font-medium">{c.title}</span>
+              <span className="text-sm text-mu tabular-nums">{c.count} result.</span>
+              <ChevronRight size={16} className="text-fa" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
+function ActivityCard({ days, total }: { days: CoachActivity['days']; total: number }) {
+  if (days.length === 0) return null
+  const max = Math.max(1, ...days.map(d => d.athletes))
+  const week = days.slice(-7).reduce((s, d) => s + d.athletes, 0)
+  const prev = days.slice(0, 7).reduce((s, d) => s + d.athletes, 0)
+  const diff = prev ? Math.round(((week - prev) / prev) * 100) : null
+  return (
+    <Card>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="font-semibold">Actividad del box</h3>
+          <p className="text-mu text-sm">Atletas que registraron cada día · {total} en el box</p>
+        </div>
+        {diff !== null && (
+          <span className={cn('px-2.5 py-1 rounded-full text-xs font-bold', diff >= 0 ? 'bg-gr/15 text-gr' : 'bg-rd/15 text-rd')}>
+            {diff >= 0 ? '+' : ''}{diff}% vs semana anterior
+          </span>
+        )}
+      </div>
+      <div className="flex items-end gap-1.5 h-32">
+        {days.map((d, i) => (
+          <div key={d.date} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+            <span className="text-[10px] text-mu tabular-nums">{d.athletes || ''}</span>
+            <motion.div className={cn('w-full rounded-md', i >= 7 ? 'bg-ac' : 'bg-ac/35')}
+              initial={{ height: 0 }} whileInView={{ height: `${Math.max(4, (d.athletes / max) * 100)}%` }} viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] }} />
+            <span className="text-[9px] text-fa uppercase">{fmtDay(d.date, { weekday: 'narrow' })}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
+function InactiveCard({ list }: { list: CoachActivity['inactive'] }) {
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold">Atletas por recuperar</h3>
+        <Link href="/coach/athletes" className="text-ac text-sm font-semibold">Ver todos</Link>
+      </div>
+      {list.length === 0 ? (
+        <p className="text-mu text-sm">Todos tus atletas entrenaron esta semana.</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {list.slice(0, 5).map(a => (
+            <li key={a.id} className="flex items-center gap-3">
+              {a.avatar ? <img src={a.avatar} alt="" className="size-10 rounded-full object-cover" />
+                : <span className="size-10 rounded-full bg-p2 grid place-items-center text-xs font-bold text-mu">{a.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>}
+              <span className="flex-1 min-w-0">
+                <span className="block font-medium text-sm truncate">{a.name}</span>
+                <span className="block text-or text-xs">{a.days === null ? 'Sin WODs registrados' : `${a.days} días sin entrenar`}</span>
+              </span>
+            </li>
+          ))}
+          {list.length > 5 && <li className="text-mu text-xs">y {list.length - 5} más</li>}
+        </ul>
+      )}
+    </Card>
   )
 }

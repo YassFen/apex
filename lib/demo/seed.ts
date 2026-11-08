@@ -32,6 +32,7 @@ const MOVEMENTS: [string, string][] = [
   ['Double-Under', 'cardio'], ['Row', 'cardio'], ['Assault Bike', 'cardio'], ['Run', 'cardio'], ['Burpee', 'cardio'],
   ['Wall Ball', 'weightlifting'], ['Kettlebell Swing', 'weightlifting'],
 ]
+const daysSince = (from: string, to: string) => Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000)
 const mvId = (name: string) => `mv-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
 type M = { name: string; reps: string; weight?: string }
@@ -146,6 +147,8 @@ export function buildSeed(today: string): Store {
       const rt = resultTypeOf(s.tpl.type)
       for (const a of athletes) {
         if (r() > a.attendance * (k === 0 ? 0.45 : 1)) continue
+        // Three athletes stopped coming ~10 days ago, so the coach sees who to reach out to.
+        if (['demo-ath-18', 'demo-ath-19', 'demo-ath-20'].includes(a.id) && d > -10) continue
         const rx = a.skill > 1.18 ? (r() < 0.7 ? 'scaled' : 'rx') : a.skill < 0.88 && r() < 0.2 ? 'rx+' : 'rx'
         const resId = `res-${id}-${a.id}`
         wod_results.push({ id: resId, daily_wod_id: id, user_id: a.id, result_type: rt, result_value: formatResult(s.tpl, a.skill, r), rx_level: rx, notes: null, recorded_at: iso(day, s.time === '07:00' ? '08:10' : '20:10'), edit_count: 0 })
@@ -252,7 +255,32 @@ export function buildSeed(today: string): Store {
     { id: 'goal-2', user_id: DEMO_USER_ID, movement: 'Push-up', target: 50, unit: 'reps', period: 'daily', starts_on: addDaysISO(today, -10), archived: false, created_at: iso(today) },
   ]
 
+  /* ── Box challenges ── */
+  const challenges: Row[] = [
+    { id: 'ch-burpees', box_id: BOX, created_by: 'demo-ath-0', title: '500 burpees en noviembre', movement: 'Burpee', target: 500, unit: 'reps', starts_on: addDaysISO(today, -7), ends_on: addDaysISO(today, 22), created_at: iso(addDaysISO(today, -7)) },
+    { id: 'ch-pullups', box_id: BOX, created_by: DEMO_USER_ID, title: '100 dominadas esta semana', movement: 'Pull-up', target: 100, unit: 'reps', starts_on: addDaysISO(today, -4), ends_on: addDaysISO(today, 2), created_at: iso(addDaysISO(today, -4)) },
+    { id: 'ch-abs', box_id: BOX, created_by: 'demo-ath-5', title: '30 días de abdominales', movement: 'Sit-up', target: 1500, unit: 'reps', starts_on: addDaysISO(today, -12), ends_on: addDaysISO(today, 17), created_at: iso(addDaysISO(today, -12)) },
+    { id: 'ch-row', box_id: BOX, created_by: 'demo-ath-2', title: '10 km de remo', movement: 'Row', target: 10000, unit: 'm', starts_on: addDaysISO(today, -40), ends_on: addDaysISO(today, -10), created_at: iso(addDaysISO(today, -40)) },
+  ]
+  const challenge_participants: Row[] = []
+  const challenge_entries: Row[] = []
+  let ce = 0
+  for (const c of challenges) {
+    const crew = [DEMO_USER_ID, ...athletes.filter(() => r() < 0.45).map(a => a.id)]
+    for (const uid of crew) {
+      if (c.id === 'ch-abs' && uid === DEMO_USER_ID) continue // one open challenge to join
+      challenge_participants.push({ challenge_id: c.id, user_id: uid, joined_at: iso(c.starts_on) })
+      const span = Math.max(1, Math.min(daysSince(c.starts_on, today), 30))
+      const pace = (c.target / Math.max(7, span + 5)) * (0.5 + r())
+      for (let k = 0; k < span; k += 1 + Math.floor(r() * 2)) {
+        const amount = Math.max(1, Math.round(pace * (0.6 + r() * 0.8) / (c.unit === 'm' ? 100 : 1)) * (c.unit === 'm' ? 100 : 1))
+        challenge_entries.push({ id: `ce-${ce++}`, challenge_id: c.id, user_id: uid, amount, logged_on: addDaysISO(c.starts_on, k), created_at: iso(addDaysISO(c.starts_on, k)) })
+      }
+    }
+  }
+
   return {
+    challenges, challenge_participants, challenge_entries,
     profiles, boxes, box_members, movements, daily_wods, wod_results, wod_result_bumps: bumps, pr_records, benchmarks,
     events, event_workouts, event_participants, event_results, personal_logs, goals, wod_templates: [],
     __me: [{ id: DEMO_USER_ID }],

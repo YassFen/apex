@@ -41,6 +41,8 @@ class DemoQuery implements PromiseLike<any> {
   }
 }
 
+const demoFiles = new Map<string, string>()
+
 const noopChannel = () => {
   const ch: any = { on: () => ch, subscribe: () => ch, unsubscribe: () => {} }
   return ch
@@ -60,10 +62,15 @@ export function createDemoClient(exec: Exec, onSignOut?: () => void): any {
       resend: async () => ({ error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
     },
+    // Photos "upload" to this browser tab only (object URLs), so the demo flow works end to end.
     storage: {
       from: () => ({
-        upload: async () => ({ error: { message: 'En la demo no se pueden subir imágenes.' } }),
-        getPublicUrl: () => ({ data: { publicUrl: '' } }),
+        upload: async (path: string, file: Blob) => {
+          if (typeof URL === 'undefined' || typeof window === 'undefined') return { error: { message: 'En la demo no se pueden subir imágenes.' } }
+          demoFiles.set(path, URL.createObjectURL(file))
+          return { data: { path }, error: null }
+        },
+        getPublicUrl: (path: string) => ({ data: { publicUrl: demoFiles.get(path) ?? '' } }),
       }),
     },
     channel: noopChannel,

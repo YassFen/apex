@@ -1,9 +1,9 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'motion/react'
 import {
-  MagnifyingGlass, ArrowRight, Barbell, PersonSimpleRun, Lightning, Timer, Trophy, YoutubeLogo, Plus, Check, X,
+  MagnifyingGlass, ArrowRight, Barbell, PersonSimpleRun, Lightning, Timer, Trophy, YoutubeLogo, Plus, Check, X, Camera,
 } from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
 import { Modal, ModalActions } from '@/components/ui/Modal'
@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
 import { MUSCLE_LABEL, guideFor, youtubeEmbed, youtubeSearch, youtubeThumb, type MuscleGroup } from '@/lib/utils/movement-guide'
 import { cn } from '@/lib/utils/cn'
+import { uploadPublicImage } from '@/lib/utils/upload-image'
 import type { Movement, MovementCategory, Profile } from '@/lib/types/database'
 
 const CATS: { key: MovementCategory | 'all' | 'box'; label: string }[] = [
@@ -112,16 +113,35 @@ export function MovementsView({ profile, movements, records, coachBoxes }: {
         </div>
       )}
 
-      <MovementDetail movement={open} onClose={() => setOpen(null)} records={open ? records[open.name] ?? [] : []} unit={profile.preferred_unit} />
+      <MovementDetail movement={open} onClose={() => setOpen(null)} records={open ? records[open.name] ?? [] : []} unit={profile.preferred_unit}
+        canEditPhoto={!!open?.box_id && coachBoxes.some(b => b.id === open.box_id)} />
       <CreateMovement open={creating} onClose={() => setCreating(false)} boxes={coachBoxes} userId={profile.id} />
     </>
   )
 }
 
-export function MovementDetail({ movement: m, onClose, records, unit }: {
-  movement: Movement | null; onClose: () => void; records: { metric: string; valueLb: number }[]; unit: 'kg' | 'lb'
+export function MovementDetail({ movement: m, onClose, records, unit, canEditPhoto = false }: {
+  movement: Movement | null; onClose: () => void; records: { metric: string; valueLb: number }[]; unit: 'kg' | 'lb'; canEditPhoto?: boolean
 }) {
+  const router = useRouter()
+  const { fire } = useToast()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
   if (!m) return <Modal open={false} onClose={onClose}>{null}</Modal>
+
+  async function changePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !m?.box_id) return
+    setUploading(true)
+    try {
+      const supabase = createClient()
+      const url = await uploadPublicImage(supabase, 'movement-media', m.box_id, file)
+      const { error } = await supabase.from('movements').update({ image_url: url }).eq('id', m.id)
+      if (error) throw new Error(friendlyError(error.message))
+      fire('Foto actualizada', 'ok'); onClose(); router.refresh()
+    } catch (err) { fire((err as Error).message, 'error') }
+    setUploading(false)
+  }
   const g = guideFor(m.name, m.category)
   const cues = (m.cues?.split('\n').map(s => s.trim()).filter(Boolean)) ?? []
   const allCues = cues.length ? cues : g.cues
@@ -139,7 +159,18 @@ export function MovementDetail({ movement: m, onClose, records, unit }: {
             <iframe src={embed} title={`Video de ${m.name}`} className="w-full h-full" allow="encrypted-media; picture-in-picture" allowFullScreen />
           </div>
         ) : (
-          <Thumb m={m} className="w-full h-44 rounded-[20px]" />
+          <div className="relative">
+            <Thumb m={m} className="w-full h-44 rounded-[20px]" />
+            {canEditPhoto && (
+              <>
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                  className="absolute bottom-3 right-3 h-10 px-4 rounded-full bg-t text-bg text-sm font-semibold flex items-center gap-2 shadow-lg disabled:opacity-60">
+                  <Camera size={18} weight="fill" />{uploading ? 'Subiendo…' : 'Cambiar foto'}
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={changePhoto} className="hidden" />
+              </>
+            )}
+          </div>
         )}
         {(m.description || g.desc) && <p className="text-[15px] text-pretty">{m.description || g.desc}</p>}
         {muscles.length > 0 && (
@@ -194,16 +225,24 @@ function CreateMovement({ open, onClose, boxes, userId }: { open: boolean; onClo
   const [cues, setCues] = useState('')
   const [muscles, setMuscles] = useState<MuscleGroup[]>([])
   const [video, setVideo] = useState('')
-  const [image, setImage] = useState('')
+  const [photo, setPhoto] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const preview = useMemo(() => (photo ? URL.createObjectURL(photo) : null), [photo])
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
     setBusy(true)
-    const { error } = await createClient().from('movements').insert({
+    const supabase = createClient()
+    let imageUrl: string | null = null
+    if (photo) {
+      try { imageUrl = await uploadPublicImage(supabase, 'movement-media', boxes[0].id, photo) }
+      catch (err) { setBusy(false); fire((err as Error).message, 'error'); return }
+    }
+    const { error } = await supabase.from('movements').insert({
       name: name.trim(), category, description: description.trim() || null, cues: cues.trim() || null,
-      muscles: muscles.length ? muscles : null, video_url: video.trim() || null, image_url: image.trim() || null,
+      muscles: muscles.length ? muscles : null, video_url: video.trim() || null, image_url: imageUrl,
       box_id: boxes[0].id, created_by: userId,
     })
     setBusy(false)
@@ -213,7 +252,7 @@ function CreateMovement({ open, onClose, boxes, userId }: { open: boolean; onClo
       return
     }
     fire('Ejercicio creado. Tus atletas ya lo ven.', 'pr')
-    setName(''); setDescription(''); setCues(''); setMuscles([]); setVideo(''); setImage('')
+    setName(''); setDescription(''); setCues(''); setMuscles([]); setVideo(''); setPhoto(null)
     onClose(); router.refresh()
   }
 
@@ -247,7 +286,14 @@ function CreateMovement({ open, onClose, boxes, userId }: { open: boolean; onClo
           </div>
         </div>
         <input value={video} onChange={e => setVideo(e.target.value)} type="url" placeholder="Link de YouTube (opcional)" aria-label="Video" className={input} />
-        <input value={image} onChange={e => setImage(e.target.value)} type="url" placeholder="Link de una imagen (opcional)" aria-label="Imagen" className={input} />
+        <button type="button" onClick={() => fileRef.current?.click()}
+          className="relative h-40 rounded-[20px] bg-p2 border-2 border-dashed border-[var(--ln2)] overflow-hidden grid place-items-center text-mu hover:text-t transition-colors">
+          {preview
+            ? <img src={preview} alt="Foto elegida" className="absolute inset-0 w-full h-full object-cover" />
+            : <span className="flex flex-col items-center gap-2 text-sm font-medium"><Camera size={28} weight="duotone" />Tomar o elegir una foto (opcional)</span>}
+          {preview && <span className="absolute bottom-2 right-2 h-8 px-3 rounded-full bg-t text-bg text-xs font-semibold grid place-items-center">Cambiar</span>}
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0] ?? null)} className="hidden" />
         <ModalActions secondary="Cancelar" primary="Crear" onSecondary={onClose} primaryType="submit" busy={busy} disabled={!name.trim()} />
       </form>
       <button type="button" onClick={onClose} className="sr-only"><X /></button>
