@@ -410,7 +410,10 @@ function CfgBox({ label, val, onChange, max, min = 0 }: {
     if (next === '') { setRaw(''); return }
     if (!/^\d+$/.test(next)) return
     setRaw(next)
-    onChange(Math.max(min, Math.min(max, Number(next))))
+    // Don't clamp mid-typing: "15" passes through "1", which is below a min of 10.
+    // Only push values already in range; blur clamps the rest.
+    const n = Number(next)
+    if (n >= min && n <= max) onChange(n)
   }
 
   function handleBlur() {

@@ -265,7 +265,7 @@ Each coach owns one box. Athletes belong to boxes via `box_members`. All data sc
 |---|---|
 | `lib/utils/rm-calculator.ts` | Epley formula (`weight × (1 + reps/30)`), plate calculator, percentage table |
 | `lib/utils/units.ts` | lb ↔ kg conversion |
-| `lib/utils/cn.ts` | `clsx` + `tailwind-merge` className utility |
+| `lib/utils/cn.ts` | `clsx` only (tailwind-merge is NOT installed — a className that conflicts with a component default does not reliably win) + `roleLabel()` |
 | `lib/types/database.ts` | All TypeScript interfaces for DB tables + union types |
 
 ---

@@ -4,10 +4,14 @@ import { Eye, EyeOff, AlertCircle, CheckCircle2, Dumbbell } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
 // 16px on phones so iOS Safari doesn't zoom into the field on focus.
-export const inputCls =
-  'w-full h-12 px-4 rounded-xl bg-p2 text-t text-base sm:text-sm outline-none ' +
+// cn() is plain clsx (no tailwind-merge), so never pass a class that fights one
+// already in here. inputBase has no height; inputCls adds the standard 48px.
+export const inputBase =
+  'w-full px-4 rounded-xl bg-p2 text-t text-base sm:text-sm outline-none ' +
   'ring-1 ring-inset ring-transparent focus:ring-ac/60 placeholder:text-fa transition-[box-shadow,background-color] ' +
   'disabled:opacity-50'
+
+export const inputCls = inputBase + ' h-12'
 
 export const labelCls = 'block text-[11px] uppercase tracking-[1.4px] text-mu font-bold mb-2'
 

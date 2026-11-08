@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import { roleLabel } from '@/lib/utils/cn'
 import { Topbar } from '@/components/layout/Topbar'
 import { useShell } from '@/lib/hooks/useShell'
 import {
@@ -115,7 +116,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWodTitle }: Pr
                 <div className="font-barlow text-3xl font-black leading-none text-t">
                   <Trophy size={24} />
                 </div>
-                <div className="text-fa text-[11px] mt-1 capitalize">{profile.role}</div>
+                <div className="text-fa text-[11px] mt-1">{roleLabel(profile.role)}</div>
               </div>
             </div>
 

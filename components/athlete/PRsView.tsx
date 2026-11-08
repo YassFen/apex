@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { PRModal } from './PRModal'
 import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { friendlyError } from '@/lib/utils/errors'
 import type { Profile, Movement } from '@/lib/types/database'
 
 // Logical filter buckets — Olympic + Weightlifting collapsed into one "Levantamiento"
@@ -65,6 +67,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
   const [prModalOpen, setPrModalOpen] = useState(false)
   const [editingPr, setEditingPr]     = useState<any>(null)
   const [deletingId, setDeletingId]   = useState<string | null>(null)
+  const router = useRouter()
 
   async function handleDelete(id: string) {
     if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return
@@ -72,8 +75,8 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
     const supabase = createClient()
     const { error } = await supabase.from('pr_records').delete().eq('id', id)
     setDeletingId(null)
-    if (error) { alert('Error al eliminar: ' + error.message); return }
-    window.location.reload()
+    if (error) { alert(friendlyError(error.message)); return }
+    router.refresh()
   }
 
   function handleEdit(pr: any) { setEditingPr(pr); setPrModalOpen(true) }
@@ -85,20 +88,30 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
     return bucket === cat
   })
 
-  // Group by movement, find best + previous
+  // One row per movement + record type (a 3RM is not a worse 1RM).
+  // best = current PR; prevBest = the best mark logged before it, so the delta
+  // shows how much the PR improved.
   const movementSummaries = useMemo(() => {
-    const byMov: Record<string, any[]> = {}
+    const groups: Record<string, any[]> = {}
     filtered.forEach(pr => {
-      const key = pr.movements?.name ?? pr.movement_id
-      ;(byMov[key] = byMov[key] ?? []).push(pr)
+      const key = `${pr.movement_id}|${pr.metric}`
+      ;(groups[key] = groups[key] ?? []).push(pr)
     })
-    return Object.entries(byMov).map(([name, records]) => {
-      // Sort newest first
+    const better = (a: any, b: any) =>
+      a.metric === 'time' ? a.value_lb < b.value_lb : a.value_lb > b.value_lb
+    return Object.entries(groups).map(([key, records]) => {
       records.sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())
-      const best = records.find(r => r.is_pr) ?? records[0]
+      const best = records.find(r => r.is_pr)
+        ?? records.reduce((acc, r) => (better(r, acc) ? r : acc), records[0])
       const latest = records[0]
-      const prevBest = records.filter(r => r.id !== best.id)[0] ?? null
-      return { name, records, best, latest, prevBest, category: best.movements?.category }
+      const before = records.filter(r => r.id !== best.id && new Date(r.recorded_at) <= new Date(best.recorded_at))
+      const prevBest = before.length
+        ? before.reduce((acc, r) => (better(r, acc) ? r : acc), before[0])
+        : null
+      const baseName = best.movements?.name ?? 'Movimiento'
+      const showMetric = ['2rm', '3rm'].includes(best.metric) || (best.metric === '1rm' && best.movements?.category === 'gymnastics')
+      const name = showMetric ? `${baseName} · ${best.metric === '1rm' ? 'con peso' : best.metric.toUpperCase()}` : baseName
+      return { key, name, records, best, latest, prevBest, category: best.movements?.category }
     })
   }, [filtered])
 
@@ -115,7 +128,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
     <>
       <Topbar title="Historial & RMs" profile={profile}
         actions={
-          <Button onClick={() => { setEditingPr(null); setPrModalOpen(true) }}>
+          <Button onClick={() => { setEditingPr(null); setPrModalOpen(true) }} aria-label="Nuevo registro">
             <Plus size={14} strokeWidth={2.5} />
             <span className="hidden sm:inline">Nuevo registro</span>
           </Button>
@@ -175,9 +188,10 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                   </tr>
                 </thead>
                 <tbody>
-                  {movementSummaries.map(({ name, best, latest, prevBest, category }) => {
+                  {movementSummaries.map(({ key, name, best, latest, prevBest, category }) => {
                     const bestF = formatValue(best, unit)
                     const latestF = formatValue(latest, unit)
+                    const prevF = prevBest ? formatValue(prevBest, unit) : null
                     const badge = CAT_BADGE[category as string] ?? { cls: 'bg-mu/10 text-mu', label: 'OTRO' }
 
                     // Trend logic: compare best vs prevBest (only for weight metrics; for time, lower is better)
@@ -199,7 +213,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                     const trendColor = trend === 'up' ? 'text-gr' : trend === 'down' ? 'text-rd' : 'text-fa'
 
                     return (
-                      <tr key={name}
+                      <tr key={key}
                           className="border-b border-[rgba(255,255,255,.04)] hover:bg-white/[.02] transition cursor-pointer"
                           onClick={() => handleEdit(best)}>
                         <td className="py-3 px-3 sm:px-4">
@@ -209,8 +223,8 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                               {badge.label}
                             </span>
                             {/* Inline previous value on mobile (replaces hidden "Último" column) */}
-                            <span className="text-fa text-[11px] sm:hidden whitespace-nowrap">
-                              ant. {latestF.value} {latestF.unit}
+                            <span className="text-fa text-[11px] sm:hidden whitespace-nowrap tabular-nums">
+                              {prevF ? <>antes {prevF.value} {prevF.unit}</> : 'primer registro'}
                             </span>
                           </div>
                         </td>
@@ -338,7 +352,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
           profile={profile}
           editingPr={editingPr}
           onClose={closeModal}
-          onSaved={() => { closeModal(); window.location.reload() }}
+          onSaved={() => { closeModal(); router.refresh() }}
         />
       )}
     </>

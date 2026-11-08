@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { Alert, inputCls, labelCls } from '@/components/ui/Field'
+import { Alert, inputBase, labelCls } from '@/components/ui/Field'
 import { cn } from '@/lib/utils/cn'
 import type { Profile } from '@/lib/types/database'
 
@@ -116,7 +116,7 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
     onSaved()
   }
 
-  const numCls = cn(inputCls, 'h-16 text-center font-barlow text-4xl sm:text-4xl font-black tabular-nums')
+  const numCls = inputBase.replace('text-base sm:text-sm', '') + ' h-16 text-center font-barlow text-4xl font-black tabular-nums'
 
   return (
     <Modal open onClose={onClose} title={isEditing ? 'Corregir resultado' : 'Registrar resultado'} subtitle={wod.title}>
@@ -172,7 +172,7 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
         <div>
           <label htmlFor="wod-notes" className={labelCls}>Notas <span className="text-fa normal-case tracking-normal font-normal">(opcional)</span></label>
           <textarea id="wod-notes" value={notes} onChange={e => setNotes(e.target.value)} rows={2}
-            className={cn(inputCls, 'h-auto py-3 resize-none')} placeholder="Ej. pull-ups con banda, 35 kg en vez de 43…" />
+            className={inputBase + ' py-3 resize-none'} placeholder="Ej. pull-ups con banda, 35 kg en vez de 43…" />
         </div>
 
         {error && <Alert tone="error">{error}</Alert>}

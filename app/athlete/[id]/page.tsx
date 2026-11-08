@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { roleLabel } from '@/lib/utils/cn'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { AthleteRadar } from '@/components/athlete/AthleteRadar'
@@ -63,7 +64,7 @@ export default async function PublicAthletePage({ params }: { params: Promise<{ 
           )}
           <div className="min-w-0">
             <div className="font-barlow text-2xl font-black tracking-wide uppercase truncate">{profile.full_name}</div>
-            <div className="text-mu text-sm capitalize">{profile.role}{profile.city ? ` · ${profile.city}` : ''}</div>
+            <div className="text-mu text-sm">{roleLabel(profile.role)}{profile.city ? ` · ${profile.city}` : ''}</div>
             {profile.favorite_movement && (
               <div className="text-ac text-xs mt-1.5 font-semibold">Movimiento favorito: {profile.favorite_movement}</div>
             )}

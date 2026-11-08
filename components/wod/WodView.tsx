@@ -189,9 +189,9 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
                         <Timer size={18} aria-hidden /> Timer
                       </Link>
                     )}
-                    <Button className="w-full h-14" size="lg" onClick={() => setResultModalOpen(true)}>
+                    <button type="button" onClick={() => setResultModalOpen(true)} className="w-full h-14 rounded-full bg-ac text-bg font-bold text-base hover:bg-[#b8e030] active:scale-[0.96] transition-[transform,background-color]">
                       Registrar resultado
-                    </Button>
+                    </button>
                   </div>
                 )}
               </div>

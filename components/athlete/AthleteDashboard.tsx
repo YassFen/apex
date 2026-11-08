@@ -116,7 +116,8 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
     return { name, best, previous }
   })
 
-  const topPRs = prs.slice(0, 5)
+  // Current records only (is_pr), newest first — older, beaten marks don't belong in "tops".
+  const topPRs = prs.filter(p => p.is_pr).slice(0, 5)
 
   // Selector for strength chart: all movements that have at least one weightlifting PR,
   // falling back to the complete movements list (passed from server), then DEFAULT_KPI.
@@ -169,7 +170,7 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
         title="Dashboard"
         profile={profile}
         actions={
-          <Button onClick={() => setPrModalOpen(true)} size="md">
+          <Button onClick={() => setPrModalOpen(true)} size="md" aria-label="Nuevo registro">
             <Plus size={14} strokeWidth={2.5} />
             <span className="hidden sm:inline">Nuevo registro</span>
           </Button>
@@ -199,7 +200,7 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
               {prs.filter(p => p.is_pr).length}
               <Trophy size={16} className="text-ac" />
             </div>
-            <div className="text-fa text-[11px] mt-0.5">máximos vigentes</div>
+            <div className="text-fa text-[11px] mt-0.5">vigentes</div>
           </Card>
         </div>
 
@@ -374,8 +375,8 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
         {/* Quick links — minimal: white text, subtle dark surface */}
         <div className="grid grid-cols-3 gap-3.5">
           {[
-            { href: '/wod',        label: 'WOD del Día',  desc: 'Ver entrenamiento' },
-            { href: '/timer',      label: 'Timer',         desc: 'Iniciar workout' },
+            { href: '/wod',        label: 'WOD',          desc: 'El de hoy' },
+            { href: '/timer',      label: 'Timer',         desc: 'AMRAP, EMOM…' },
             { href: '/benchmarks', label: 'Benchmarks',    desc: 'Girls & Heroes' },
           ].map(item => (
             <Link key={item.href} href={item.href}>

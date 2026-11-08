@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
+import { roleLabel } from '@/lib/utils/cn'
 import { useRouter } from 'next/navigation'
 import { Upload, Globe, Lock, Building2, LogOut, Copy, Check, Instagram, Phone, Link, Clock, Dumbbell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -252,7 +253,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
             </div>
             <div className="min-w-0">
               <div className="font-barlow text-xl font-black tracking-wide uppercase truncate">{profile.full_name}</div>
-              <div className="text-mu text-sm capitalize">{profile.role}</div>
+              <div className="text-mu text-sm">{roleLabel(profile.role)}</div>
               {uploadingAvatar && <div className="text-ac text-xs mt-1">Subiendo imagen…</div>}
             </div>
           </div>
@@ -597,7 +598,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
               {pwSaving ? 'Guardando…' : 'Cambiar contraseña'}
             </Button>
           </form>
-          <Button variant="secondary" disabled={signingOut} onClick={handleSignOut} className="text-rd border-rd/20 hover:bg-rd/10">
+          <Button variant="danger" disabled={signingOut} onClick={handleSignOut}>
             <LogOut size={14} strokeWidth={2} />
             {signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
           </Button>

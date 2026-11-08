@@ -34,9 +34,33 @@ const BENCHMARK_LIST = [
 
 type Level = { label: string; color: 'pop' | 'gr' | 'or' | 'bl' | 'mu'; icon: string }
 
+// Older entries were saved as bare digits ("629" = 6:29); show them as time.
+function normalizeResult(result: string, unit: 'time' | 'rounds'): string {
+  const r = (result ?? '').trim()
+  if (unit === 'time' && /^\d{3,5}$/.test(r)) return `${r.slice(0, -2)}:${r.slice(-2)}`
+  return r
+}
+
+function resultScore(result: string, unit: 'time' | 'rounds'): number {
+  const r = normalizeResult(result, unit)
+  if (unit === 'time') {
+    const [m, sec] = r.split(':').map(n => parseInt(n, 10) || 0)
+    const total = m * 60 + sec
+    return total > 0 ? -total : -Infinity // faster is better
+  }
+  const [rounds, reps] = r.split('+').map(n => parseInt(n, 10) || 0)
+  return rounds * 1000 + reps
+}
+
+/** Best mark (not the latest one): fastest time or most rounds. */
+function pickBest<T extends { result: string }>(records: T[], unit: 'time' | 'rounds'): T | undefined {
+  return records.reduce<T | undefined>((acc, r) =>
+    !acc || resultScore(r.result, unit) > resultScore(acc.result, unit) ? r : acc, undefined)
+}
+
 function estimateLevel(name: string, result: string, unit: 'time' | 'rounds'): Level {
   if (unit === 'time') {
-    const [m, s] = result.split(':').map(Number)
+    const [m, s] = normalizeResult(result, unit).split(':').map(Number)
     const secs = (m || 0) * 60 + (s || 0)
     if (name === 'Fran') {
       if (secs > 0 && secs < 180) return { label: 'Elite',         color: 'or', icon: '🔥' }
@@ -99,13 +123,16 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
     const name  = customMode ? customName.trim() : modalBm?.name
     const unit  = customMode ? customUnit : (modalBm?.unit ?? 'time')
     if (!name || !result) return
+    const clean = normalizeResult(result, unit)
+    if (unit === 'time' && !/^\d+:\d{2}$/.test(clean)) { setSaveErr('Escribe el tiempo como minutos y segundos, por ejemplo 6:29.'); return }
+    if (unit === 'rounds' && !/^\d+(\+\d+)?$/.test(clean)) { setSaveErr('Escribe rondas o rondas+reps, por ejemplo 12+5.'); return }
     setSaving(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSaving(false); setSaveErr('Tu sesión expiró. Vuelve a iniciar sesión.'); return }
-    const level = estimateLevel(name, result, unit)
+    const level = estimateLevel(name, clean, unit)
     const { error } = await supabase.from('benchmarks').insert({
-      user_id: user.id, name, result,
+      user_id: user.id, name, result: clean,
       notes: notes || null, level: level.label,
       recorded_at: new Date().toISOString(),
     })
@@ -175,7 +202,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
           {BENCHMARK_LIST.map(bm => {
             const records = bmByName[bm.name] ?? []
-            const best    = records[0]
+            const best    = pickBest(records, bm.unit)
             const level   = best ? estimateLevel(bm.name, best.result, bm.unit) : null
 
             if (!best) {
@@ -204,7 +231,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
                 <div className="font-barlow font-black leading-none text-ac my-2 tabular-nums"
                      style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
-                  {best.result}
+                  {normalizeResult(best.result, bm.unit)}
                 </div>
                 <div className="text-mu text-[12px] leading-snug">{bm.desc}</div>
 
@@ -231,8 +258,9 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
           {/* Extra benchmarks from DB not in canonical list */}
           {extraNames.map(name => {
             const records = bmByName[name] ?? []
-            const best    = records[0]
-            const level   = best ? estimateLevel(name, best.result, 'time') : null
+            const extraUnit: 'time' | 'rounds' = records.some(r => r.result.includes('+')) ? 'rounds' : 'time'
+            const best    = pickBest(records, extraUnit)
+            const level   = best ? estimateLevel(name, best.result, extraUnit) : null
 
             return (
               <div key={name}
@@ -247,7 +275,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                   <>
                     <div className="font-barlow font-black leading-none text-ac my-2 tabular-nums"
                          style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
-                      {best.result}
+                      {normalizeResult(best.result, extraUnit)}
                     </div>
                     {best.notes && (
                       <div className="text-mu text-[12px] leading-snug line-clamp-2">{best.notes}</div>
