@@ -8,6 +8,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { AthleteRadar } from '@/components/athlete/AthleteRadar'
+import { AppearancePicker } from '@/components/ui/AppearancePicker'
 import { PasswordField, Alert } from '@/components/ui/Field'
 import { friendlyError } from '@/lib/utils/errors'
 import { joinBoxByCode } from '@/lib/utils/join-box'
@@ -585,6 +586,12 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
             <AthleteRadar prs={prs} />
           </Card>
         )}
+
+        <Card>
+          <h2 className="font-barlow text-lg font-black tracking-wide mb-1">APARIENCIA</h2>
+          <p className="text-mu text-sm mb-4">Se guarda en este dispositivo.</p>
+          <AppearancePicker />
+        </Card>
 
         <Card>
           <h2 className="font-barlow text-lg font-black tracking-wide mb-1">CUENTA</h2>

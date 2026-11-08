@@ -5,27 +5,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ── Pure Black Minimal palette (inspired by Hevy / Dropset / Train Fitness) ──
-        // Backgrounds: separated by tone, not by border lines
-        bg:  '#000000',  // Page background — pure black
-        p:   '#0E0E0E',  // Primary surface (cards on bg)
-        p2:  '#1A1A1A',  // Secondary surface (cards on cards / inputs)
-        p3:  '#242424',  // Elevated surface (hover, active states)
+        // Every color is a CSS variable (RGB channels) defined in app/globals.css,
+        // so light/dark mode and the accent theme switch without touching components.
+        bg:   'rgb(var(--c-bg) / <alpha-value>)',   // Page background
+        p:    'rgb(var(--c-p) / <alpha-value>)',    // Primary surface (cards)
+        p2:   'rgb(var(--c-p2) / <alpha-value>)',   // Secondary surface (inputs, cards on cards)
+        p3:   'rgb(var(--c-p3) / <alpha-value>)',   // Elevated surface (hover, selected)
 
-        // Accent — used SPARINGLY, only for primary CTAs and key highlights
-        ac:  '#C8F53E',  // Lime (kept as brand accent for PRs and main CTA)
+        ac:   'rgb(var(--c-ac) / <alpha-value>)',   // Accent: main CTA, PRs, highlights (user-selectable)
+        onac: 'rgb(var(--c-onac) / <alpha-value>)', // Text/icons on top of the accent
 
-        // Semantic colors — used only where needed (badges, indicators)
-        bl:  '#6EC3F4',  // Blue — info / EMOM
-        gr:  '#4ADE80',  // Green — success / strength
-        or:  '#FB923C',  // Orange — ForTime
-        rd:  '#FB7185',  // Red — danger / live
-        pu:  '#A78BFA',  // Purple — AMRAP
+        bl:   'rgb(var(--c-bl) / <alpha-value>)',   // Blue — info / EMOM
+        gr:   'rgb(var(--c-gr) / <alpha-value>)',   // Green — success / strength
+        or:   'rgb(var(--c-or) / <alpha-value>)',   // Orange — For Time
+        rd:   'rgb(var(--c-rd) / <alpha-value>)',   // Red — danger / live
+        pu:   'rgb(var(--c-pu) / <alpha-value>)',   // Purple — AMRAP
 
-        // Text scale — high contrast on pure black
-        t:   '#FFFFFF',  // Primary text (was #eef0f3 → pure white for max contrast)
-        mu:  '#9E9E9E',  // Muted text (secondary info)
-        fa:  '#5A5A5A',  // Faint text (labels, placeholders)
+        t:    'rgb(var(--c-t) / <alpha-value>)',    // Primary text
+        mu:   'rgb(var(--c-mu) / <alpha-value>)',   // Muted text
+        fa:   'rgb(var(--c-fa) / <alpha-value>)',   // Faint text (labels, placeholders)
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
@@ -33,10 +31,6 @@ const config: Config = {
       },
       borderRadius: {
         card: '20px',
-      },
-      backgroundImage: {
-        // Cards no longer use gradient — flat surface
-        'card-grad': 'linear-gradient(160deg, #0E0E0E 0%, #1A1A1A 100%)',
       },
     },
   },

@@ -33,7 +33,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWodTitle }: Pr
       <Topbar title="Dashboard" profile={profile}
         actions={
           <Link href="/coach/publish-wod"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-ac text-bg text-sm font-bold hover:bg-[#b8e030] transition active:scale-95">
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-ac text-bg text-sm font-bold hover:bg-ac/90 transition active:scale-95">
             <Plus size={14} strokeWidth={2.5} />
             <span className="hidden sm:inline">Nuevo WOD</span>
           </Link>
@@ -64,7 +64,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWodTitle }: Pr
             <div className="font-barlow text-2xl font-black mb-2">CREA TU BOX</div>
             <p className="text-mu text-sm mb-5">Configura tu box para publicar WODs y gestionar atletas.</p>
             <Link href="/coach/create-box"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-ac text-bg font-barlow font-extrabold tracking-wide text-base hover:bg-[#b8e030] transition">
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-ac text-bg font-barlow font-extrabold tracking-wide text-base hover:bg-ac/90 transition">
               <Plus size={16} strokeWidth={2.5} /> Crear mi Box
             </Link>
           </div>

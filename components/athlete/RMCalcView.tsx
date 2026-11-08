@@ -369,7 +369,7 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: any[] }) {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-[rgba(255,255,255,.04)] bg-p2">
+                    <tr className="border-b border-[var(--ln)] bg-p2">
                       <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold">%</th>
                       <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold">Lb</th>
                       <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold">Kg</th>
@@ -379,11 +379,11 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: any[] }) {
                   <tbody>
                     {table.map(row => (
                       <tr key={row.pct}
-                          className="border-b border-[rgba(255,255,255,.04)] hover:bg-white/[.02] transition-colors cursor-pointer"
+                          className="border-b border-[var(--ln)] hover:bg-t/[.03] transition-colors cursor-pointer"
                           onClick={() => setPct(row.pct)}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-12 h-1.5 bg-[rgba(255,255,255,.07)] rounded-full overflow-hidden">
+                            <div className="w-12 h-1.5 bg-t/[.08] rounded-full overflow-hidden">
                               <div className="h-full bg-ac rounded-full" style={{ width: `${row.pct}%` }} />
                             </div>
                             <span className="font-barlow font-bold text-sm">{row.pct}%</span>

@@ -86,7 +86,7 @@ export default async function AnalyticsPage() {
                 {Object.entries(wodsByType).map(([type, count]) => (
                   <div key={type} className="flex items-center gap-3">
                     <div className="w-20 text-mu text-xs uppercase font-bold">{type}</div>
-                    <div className="flex-1 h-2 bg-[rgba(255,255,255,.07)] rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-t/[.08] rounded-full overflow-hidden">
                       <div className="h-full bg-ac rounded-full" style={{ width: `${(count / totalWods) * 100}%` }} />
                     </div>
                     <div className="font-barlow font-bold text-sm w-5 text-right">{count}</div>
@@ -101,7 +101,7 @@ export default async function AnalyticsPage() {
             {(wods ?? []).length === 0 ? (
               <div className="text-mu text-sm">Sin WODs todavía.</div>
             ) : (
-              <div className="flex flex-col divide-y divide-[rgba(255,255,255,.04)]">
+              <div className="flex flex-col divide-y divide-[var(--ln)]">
                 {(wods ?? []).slice(0, 10).map((w: any) => (
                   <div key={w.id} className="flex items-center justify-between py-2.5">
                     <div>
@@ -177,7 +177,7 @@ export default async function AnalyticsPage() {
                 {Object.entries(byCategory).map(([cat, count]) => (
                   <div key={cat} className="flex items-center gap-3">
                     <div className="w-24 text-mu text-xs">{CAT_LABELS[cat] ?? cat}</div>
-                    <div className="flex-1 h-2 bg-[rgba(255,255,255,.07)] rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-t/[.08] rounded-full overflow-hidden">
                       <div className="h-full bg-ac rounded-full" style={{ width: `${(count / (prBests.length || 1)) * 100}%` }} />
                     </div>
                     <div className="font-barlow font-bold text-sm w-4 text-right">{count}</div>

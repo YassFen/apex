@@ -40,7 +40,7 @@ export default async function AthletesPage() {
         <Card padding={false}>
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[rgba(255,255,255,.04)]">
+              <tr className="border-b border-[var(--ln)]">
                 <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold">Atleta</th>
                 <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold hidden sm:table-cell">Ciudad</th>
                 <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold">Rol</th>
@@ -51,7 +51,7 @@ export default async function AthletesPage() {
                 const pr = m.profiles as any
                 const initials = (pr?.full_name ?? 'AN').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
                 return (
-                  <tr key={m.id} className="border-b border-[rgba(255,255,255,.04)] hover:bg-white/[.02] transition-colors">
+                  <tr key={m.id} className="border-b border-[var(--ln)] hover:bg-t/[.03] transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-ac to-bl grid place-items-center font-black text-xs text-bg flex-shrink-0">

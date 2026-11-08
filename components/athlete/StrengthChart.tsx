@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useRef } from 'react'
 import { LineChart } from 'lucide-react'
+import { themeColor } from '@/lib/utils/theme'
+import { useThemeVersion } from '@/components/ui/AppearancePicker'
 
 interface Props {
   prs: any[]
@@ -12,6 +14,7 @@ export function StrengthChart({ prs, movement, unit }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const chartRef  = useRef<any>(null)
   const emptyRef  = useRef<HTMLDivElement>(null)
+  const themeVersion = useThemeVersion() // redraw with the new colors when the theme changes
 
   useEffect(() => {
     let destroyed = false
@@ -45,11 +48,11 @@ export function StrengthChart({ prs, movement, unit }: Props) {
           labels,
           datasets: [{
             data,
-            borderColor: '#c8f53e',
-            backgroundColor: 'rgba(200,245,62,.08)',
+            borderColor: themeColor('ac'),
+            backgroundColor: themeColor('ac', .1),
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#c8f53e',
+            pointBackgroundColor: themeColor('ac'),
             pointRadius: 5,
             pointHoverRadius: 7,
             borderWidth: 2.5,
@@ -59,17 +62,17 @@ export function StrengthChart({ prs, movement, unit }: Props) {
           responsive: true,
           maintainAspectRatio: false,
           plugins: { legend: { display: false }, tooltip: {
-            backgroundColor: '#12161d',
-            borderColor: 'rgba(255,255,255,.13)',
+            backgroundColor: themeColor('p'),
+            borderColor: themeColor('t', .13),
             borderWidth: 1,
-            titleColor: '#8a96a8',
-            bodyColor: '#eef0f3',
+            titleColor: themeColor('mu'),
+            bodyColor: themeColor('t'),
             bodyFont: { family: '"Barlow Condensed"', size: 18, weight: 'bold' as const },
             callbacks: { label: (ctx: any) => ` ${ctx.raw} ${suffix}` },
           }},
           scales: {
-            x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#50596a', font: { size: 11 } } },
-            y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#50596a', font: { size: 11 } } },
+            x: { grid: { color: themeColor('t', .06) }, ticks: { color: themeColor('fa'), font: { size: 11 } } },
+            y: { grid: { color: themeColor('t', .06) }, ticks: { color: themeColor('fa'), font: { size: 11 } } },
           },
         },
       })
@@ -79,7 +82,7 @@ export function StrengthChart({ prs, movement, unit }: Props) {
       destroyed = true
       if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null }
     }
-  }, [prs, movement, unit])
+  }, [prs, movement, unit, themeVersion])
 
   return (
     <div className="relative h-full w-full">

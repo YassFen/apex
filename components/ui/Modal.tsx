@@ -47,7 +47,7 @@ export function Modal({ open, onClose, title, subtitle, children, className }: M
         role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
         className={cn(
-          'relative w-full sm:max-w-[520px] bg-p rounded-t-[24px] sm:rounded-[24px] p-5 sm:p-6 ring-1 ring-white/[0.07]',
+          'relative w-full sm:max-w-[520px] bg-p rounded-t-[24px] sm:rounded-[24px] p-5 sm:p-6 ring-1 ring-t/[0.07]',
           'max-h-[92dvh] overflow-y-auto overscroll-contain outline-none animate-fade-up',
           'pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-6',
           className,

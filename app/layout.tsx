@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { themeBootScript } from '@/lib/utils/theme'
 
 export const metadata: Metadata = {
   title: 'APEX – CrossFit Platform',
@@ -10,7 +11,11 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#000000',
+  // Browser chrome color follows the device's light/dark preference.
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+    { media: '(prefers-color-scheme: light)', color: '#F3F3F6' },
+  ],
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -18,7 +23,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    // The boot script sets data-theme/data-accent before React hydrates.
+    <html lang="es" data-accent="lima" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className="bg-bg text-t antialiased">
         {children}
         <script dangerouslySetInnerHTML={{ __html: `

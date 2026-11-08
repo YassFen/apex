@@ -214,7 +214,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
 
                     return (
                       <tr key={key}
-                          className="border-b border-[rgba(255,255,255,.04)] hover:bg-white/[.02] transition cursor-pointer"
+                          className="border-b border-[var(--ln)] hover:bg-t/[.03] transition cursor-pointer"
                           onClick={() => handleEdit(best)}>
                         <td className="py-3 px-3 sm:px-4">
                           <div className="font-semibold text-t text-sm truncate">{name}</div>
@@ -313,11 +313,11 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                 </div>
 
                 {history.length > 0 && (
-                  <div className="divide-y divide-[rgba(255,255,255,.04)]">
+                  <div className="divide-y divide-[var(--ln)]">
                     {history.slice(0, 5).map(r => {
                       const fmt = formatValue(r, unit)
                       return (
-                        <div key={r.id} className="flex items-center justify-between px-4 py-3 hover:bg-white/[.02] transition-colors gap-3">
+                        <div key={r.id} className="flex items-center justify-between px-4 py-3 hover:bg-t/[.03] transition-colors gap-3">
                           <div className="text-mu text-sm flex-1 min-w-0">
                             {new Date(r.recorded_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </div>

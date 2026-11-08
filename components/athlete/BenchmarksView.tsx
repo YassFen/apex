@@ -224,7 +224,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
             return (
               <div key={bm.name}
-                   className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[rgba(255,255,255,.13)] transition">
+                   className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[var(--ln2)] transition">
                 <div className="flex items-start justify-between mb-2">
                   <div className="font-barlow text-lg font-black tracking-wide uppercase">{bm.name}</div>
                 </div>
@@ -264,9 +264,9 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
             return (
               <div key={name}
-                   className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[rgba(255,255,255,.13)] transition">
+                   className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[var(--ln2)] transition">
                 <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none"
-                     style={{ background: 'radial-gradient(circle, rgba(200,245,62,.04) 0%, transparent 70%)' }} />
+                     style={{ background: 'radial-gradient(circle, rgb(var(--c-ac) / .05) 0%, transparent 70%)' }} />
                 <div className="flex items-start justify-between mb-2">
                   <div className="font-barlow text-lg font-black tracking-wide uppercase">{name}</div>
                 </div>

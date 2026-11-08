@@ -3,32 +3,110 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens ─────────────────────────────────────────────────────────
+   Colors are RGB channels so Tailwind can add opacity (bg-ac/15).
+   Dark is the default; light applies with data-theme="light", or with no
+   data-theme when the device prefers light ("Sistema"). The accent comes from
+   data-accent and has a dark and a light variant (light ones are deeper so
+   text-ac stays readable on white). */
+
 :root {
-  /* ── Pure Black Minimal palette ── */
-  --bg: #000000;
-  --p:  #0E0E0E;
-  --p2: #1A1A1A;
-  --p3: #242424;
+  /* Accent: lima (default) */
+  --ac-d: 200 245 62;  --onac-d: 0 0 0;
+  --ac-l: 77 124 15;   --onac-l: 255 255 255;
+}
+:root[data-accent="violeta"] { --ac-d: 139 92 246;  --onac-d: 255 255 255; --ac-l: 124 58 237; --onac-l: 255 255 255; }
+:root[data-accent="cian"]    { --ac-d: 34 211 238;  --onac-d: 0 0 0;       --ac-l: 8 127 158;   --onac-l: 255 255 255; }
+:root[data-accent="naranja"] { --ac-d: 251 146 60;  --onac-d: 0 0 0;       --ac-l: 194 65 12;   --onac-l: 255 255 255; }
+:root[data-accent="rosa"]    { --ac-d: 244 114 182; --onac-d: 0 0 0;       --ac-l: 190 24 93;   --onac-l: 255 255 255; }
+:root[data-accent="azul"]    { --ac-d: 96 165 250;  --onac-d: 0 0 0;       --ac-l: 37 99 235;   --onac-l: 255 255 255; }
 
-  /* Borders are nearly invisible — separation comes from background tone difference, not from lines */
-  --ln:  rgba(255,255,255,.04);
-  --ln2: rgba(255,255,255,.08);
+/* Dark */
+:root {
+  color-scheme: dark;
+  --c-bg: 0 0 0;
+  --c-p:  14 14 14;
+  --c-p2: 26 26 26;
+  --c-p3: 36 36 36;
 
-  --t:  #FFFFFF;
-  --mu: #9E9E9E;
-  --fa: #5A5A5A;
+  --c-t:  255 255 255;
+  --c-mu: 158 158 158;
+  --c-fa: 110 110 110;
 
-  --ac: #C8F53E;
-  --bl: #6EC3F4;
-  --gr: #4ADE80;
-  --or: #FB923C;
-  --rd: #FB7185;
-  --pu: #A78BFA;
+  --c-ac:   var(--ac-d);
+  --c-onac: var(--onac-d);
+  --c-bl: 110 195 244;
+  --c-gr: 74 222 128;
+  --c-or: 251 146 60;
+  --c-rd: 251 113 133;
+  --c-pu: 167 139 250;
+
+  /* Borders are nearly invisible — separation comes from surface tone, not lines */
+  --ln:  rgb(255 255 255 / .05);
+  --ln2: rgb(255 255 255 / .10);
+}
+
+/* Light (the media-query block below repeats it for "Sistema") */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --c-bg: 243 243 246;
+  --c-p:  255 255 255;
+  --c-p2: 236 236 241;
+  --c-p3: 224 224 231;
+
+  --c-t:  17 17 22;
+  --c-mu: 88 88 100;
+  --c-fa: 130 130 142;
+
+  --c-ac:   var(--ac-l);
+  --c-onac: var(--onac-l);
+  --c-bl: 2 116 178;
+  --c-gr: 21 128 61;
+  --c-or: 194 65 12;
+  --c-rd: 200 30 70;
+  --c-pu: 109 40 217;
+
+  --ln:  rgb(0 0 0 / .07);
+  --ln2: rgb(0 0 0 / .13);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --c-bg: 243 243 246;
+    --c-p:  255 255 255;
+    --c-p2: 236 236 241;
+    --c-p3: 224 224 231;
+
+    --c-t:  17 17 22;
+    --c-mu: 88 88 100;
+    --c-fa: 130 130 142;
+
+    --c-ac:   var(--ac-l);
+    --c-onac: var(--onac-l);
+    --c-bl: 2 116 178;
+    --c-gr: 21 128 61;
+    --c-or: 194 65 12;
+    --c-rd: 200 30 70;
+    --c-pu: 109 40 217;
+
+    --ln:  rgb(0 0 0 / .07);
+    --ln2: rgb(0 0 0 / .13);
+  }
+}
+
+/* Plain-CSS aliases for the few places that can't use Tailwind classes */
+:root, :root[data-theme] {
+  --bg: rgb(var(--c-bg));
+  --p:  rgb(var(--c-p));
+  --p2: rgb(var(--c-p2));
+  --p3: rgb(var(--c-p3));
+  --t:  rgb(var(--c-t));
+  --mu: rgb(var(--c-mu));
+  --fa: rgb(var(--c-fa));
+  --ac: rgb(var(--c-ac));
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { color-scheme: dark; }
 
 html, body {
   background: var(--bg);
@@ -41,8 +119,8 @@ html, body {
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.18); }
+::-webkit-scrollbar-thumb { background: rgb(var(--c-t) / .1); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-t) / .2); }
 
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
@@ -59,7 +137,7 @@ input::placeholder, textarea::placeholder { color: var(--fa); }
 :focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
 input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
 
-::selection { background: rgba(200,245,62,.35); color: #fff; }
+::selection { background: rgb(var(--c-ac) / .35); color: var(--t); }
 
 /* No 300ms double-tap delay, no grey flash on tap */
 a, button, [role="button"], label, input, select, textarea { touch-action: manipulation; }

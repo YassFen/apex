@@ -19,7 +19,7 @@ export function Toast({ message, type = 'ok', show }: ToastProps) {
         show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4',
         type === 'pr'    && 'bg-ac text-bg',
         type === 'ok'    && 'bg-p3 text-t',
-        type === 'error' && 'bg-[#3a1820] text-rd',
+        type === 'error' && 'bg-p3 text-rd ring-1 ring-inset ring-rd/30',
       )}
     >
       {message}

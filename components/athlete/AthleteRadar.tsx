@@ -152,24 +152,24 @@ export function AthleteRadar({ prs, size = 280 }: { prs: PrRow[]; size?: number 
             .map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`)
             .join(' ')
           return (
-            <polygon key={level} points={pts} fill="none" stroke="rgba(255,255,255,.07)" strokeWidth="1" />
+            <polygon key={level} points={pts} fill="none" className="stroke-t/10" strokeWidth="1" />
           )
         })}
         {axes.map((_, i) => {
           const [x, y] = point(i, 100)
-          return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,.07)" strokeWidth="1" />
+          return <line key={i} x1={cx} y1={cy} x2={x} y2={y} className="stroke-t/10" strokeWidth="1" />
         })}
-        <polygon points={polygon} fill="rgba(200,245,62,.2)" stroke="#c8f53e" strokeWidth="2" strokeLinejoin="round" />
+        <polygon points={polygon} className="fill-ac/20 stroke-ac" strokeWidth="2" strokeLinejoin="round" />
         {axes.map((a, i) => {
           const [x, y] = point(i, scores[a.key] ?? 0)
-          return <circle key={a.key} cx={x} cy={y} r="3.5" fill="#c8f53e" />
+          return <circle key={a.key} cx={x} cy={y} r="3.5" className="fill-ac" />
         })}
         {axes.map((a, i) => {
           const [x, y] = point(i, 118)
           const anchor = Math.abs(x - cx) < 2 ? 'middle' : x > cx ? 'start' : 'end'
           return (
-            <text key={a.key} x={x} y={y} fontSize="11" fill="#8a96a8" fontWeight="700"
-              textAnchor={anchor} dominantBaseline="middle" className="uppercase tracking-wider">
+            <text key={a.key} x={x} y={y} fontSize="11" fontWeight="700"
+              textAnchor={anchor} dominantBaseline="middle" className="uppercase tracking-wider fill-mu">
               {a.label}
             </text>
           )

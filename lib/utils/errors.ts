@@ -11,6 +11,11 @@ export function friendlyError(raw: string | undefined | null): string {
     return 'Ya existe una cuenta con ese email. Inicia sesión o recupera tu contraseña.'
   if (/password should be at least|weak password/i.test(msg))
     return 'La contraseña es muy corta o débil. Usa al menos 8 caracteres.'
+  const wait = msg.match(/only request this after (\d+) seconds/i)
+  if (wait)
+    return `Por seguridad, espera ${wait[1]} segundos antes de pedir otro correo.`
+  if (/email rate limit/i.test(msg))
+    return 'Se enviaron demasiados correos en poco tiempo. Espera una hora e inténtalo de nuevo; revisa también si ya te llegó uno (y la carpeta de spam).'
   if (/rate limit|too many requests/i.test(msg))
     return 'Demasiados intentos seguidos. Espera unos minutos e inténtalo de nuevo.'
   if (/invalid email|unable to validate email/i.test(msg))

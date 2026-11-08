@@ -5,8 +5,8 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Card primitive — flat dark surface, no border.
- * Separation from background comes from tone difference (#0E0E0E on #000).
+ * Card primitive — flat surface, no border.
+ * Separation from background comes from tone difference (p on bg).
  */
 export function Card({ className, padding = true, children, ...props }: CardProps) {
   return (

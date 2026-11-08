@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { Menu, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useShell } from '@/lib/hooks/useShell'
+import { ThemeToggle } from '@/components/ui/AppearancePicker'
 import type { Profile } from '@/lib/types/database'
 
 interface TopbarProps {
@@ -32,6 +33,7 @@ export function Topbar({ title, actions }: TopbarProps) {
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         {actions}
+        <ThemeToggle />
         <button onClick={signOut} aria-label="Cerrar sesión" title="Cerrar sesión"
           className="hidden lg:grid size-10 place-items-center rounded-xl text-fa hover:text-t hover:bg-p2 transition-colors">
           <LogOut size={18} aria-hidden />
