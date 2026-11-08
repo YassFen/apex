@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import { roleLabel } from '@/lib/utils/cn'
 import { useRouter } from 'next/navigation'
 import NextLink from 'next/link'
+import { SECTION_TITLE, type SettingsSection } from '@/lib/constants/settings'
 import { Upload, Globe, Lock, Building2, LogOut, Copy, Check, Trophy } from '@/components/ui/icons'
 import { Segmented } from '@/components/ui/motion'
 import { Switch } from '@/components/ui/Switch'
@@ -17,13 +18,6 @@ import { PasswordField, Alert } from '@/components/ui/Field'
 import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
 import { joinBoxByCode } from '@/lib/utils/join-box'
 import type { Profile, Movement, Box } from '@/lib/types/database'
-
-export type SettingsSection = 'profile' | 'training' | 'privacy' | 'box' | 'boxes' | 'athletic' | 'appearance' | 'notifications' | 'security'
-
-export const SECTION_TITLE: Record<SettingsSection, string> = {
-  profile: 'Perfil', training: 'Entrenamiento', privacy: 'Privacidad', box: 'Mi box', boxes: 'Mis boxes',
-  athletic: 'Perfil atlético', appearance: 'Apariencia', notifications: 'Avisos', security: 'Cuenta y seguridad',
-}
 
 interface Props {
   section: SettingsSection

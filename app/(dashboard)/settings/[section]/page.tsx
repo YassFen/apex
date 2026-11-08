@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { getUser, getProfile } from '@/lib/supabase/session'
 import { notFound, redirect } from 'next/navigation'
-import { SettingsView, SECTION_TITLE, type SettingsSection } from '@/components/athlete/SettingsView'
+import { SettingsView } from '@/components/athlete/SettingsView'
+import { SECTION_TITLE, type SettingsSection } from '@/lib/constants/settings'
 import type { Profile, Movement, Box } from '@/lib/types/database'
 
 export default async function SettingsSectionPage({ params }: { params: Promise<{ section: string }> }) {
