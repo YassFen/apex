@@ -128,8 +128,9 @@ export function EventView({ profile, event, today, prs, benchmarks, canEdit }: {
                 </div>
                 <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-[0.95] mt-2 text-balance tracking-tight">{event.name}</h1>
                 <div className="text-mu text-sm mt-2 first-letter:uppercase">
-                  {formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                  {multi && ` – ${formatDateOnly(event.endsOn, { day: 'numeric', month: 'long' })}`}
+                  {multi
+                    ? `${Number(event.startsOn.slice(8))}–${formatDateOnly(event.endsOn, { day: 'numeric', month: 'long', year: 'numeric' })}`
+                    : formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
                 <div className="flex flex-wrap gap-3 mt-2 text-sm">
                   {event.location && <span className="flex items-center gap-1 text-mu"><MapPin size={14} aria-hidden />{event.location}</span>}

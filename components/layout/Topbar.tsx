@@ -48,7 +48,7 @@ export function Topbar({ title, actions, backHref }: TopbarProps) {
             <CaretLeft size={24} weight="bold" />
           </motion.button>
         )}
-        <h1 className="font-display text-[28px] font-bold tracking-tight truncate min-w-0 leading-tight">{title}</h1>
+        <h1 className={`font-display font-bold tracking-tight min-w-0 leading-tight whitespace-nowrap ${title.length > 14 ? 'text-[20px]' : title.length > 9 ? 'text-[24px]' : 'text-[28px]'}`}>{title}</h1>
       </div>
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {actions}

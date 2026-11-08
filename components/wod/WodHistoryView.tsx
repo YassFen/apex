@@ -108,7 +108,8 @@ function Stat({ icon: Icon, label, value, sub }: { icon: typeof Flame; label: st
     <Card padding={false} className="p-4">
       <Icon size={16} className="text-ac mb-2" aria-hidden />
       <div className="font-display text-3xl font-extrabold tabular-nums leading-none tracking-tight">{value}</div>
-      <div className="text-[11px] text-mu mt-1.5 leading-tight">{label} <span className="text-fa">· {sub}</span></div>
+      <div className="text-[12px] text-mu mt-1.5 leading-tight whitespace-nowrap">{label}</div>
+      <div className="text-[11px] text-fa leading-tight whitespace-nowrap">{sub}</div>
     </Card>
   )
 }

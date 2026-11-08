@@ -37,7 +37,7 @@ export function NextEventCard({ event }: { event: NextEvent | null }) {
           <div className="flex items-center gap-1.5 text-rd text-[10px] font-bold uppercase tracking-[1.2px]">
             <Trophy size={12} aria-hidden />{EVENT_KIND_LABEL[event.kind] ?? 'Evento'}
           </div>
-          <div className="font-display text-xl font-extrabold leading-tight tracking-tight text-balance break-words">{event.name}</div>
+          <div className="font-display text-lg font-extrabold leading-tight tracking-tight text-balance break-words">{event.name}</div>
           <div className="text-mu text-xs first-letter:uppercase">{formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           {r !== null && (
             <div className="flex items-center gap-2 mt-2">

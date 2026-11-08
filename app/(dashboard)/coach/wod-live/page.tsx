@@ -82,7 +82,7 @@ export default function CoachWodLivePage() {
 
   if (loading) return (
     <>
-      <Topbar title="Seguimiento WOD" profile={profile} />
+      <Topbar title="En vivo" profile={profile} />
       <div className="p-4 lg:p-6 max-w-2xl mx-auto w-full flex flex-col gap-4" aria-busy="true">
         <div className="h-36 rounded-[20px] bg-p animate-pulse" />
         <div className="h-64 rounded-[20px] bg-p animate-pulse" />
@@ -92,7 +92,7 @@ export default function CoachWodLivePage() {
 
   if (!wod) return (
     <>
-      <Topbar title="Seguimiento WOD" profile={profile} />
+      <Topbar title="En vivo" profile={profile} />
       <div className="p-4 lg:p-6 max-w-2xl mx-auto w-full">
         <Card className="text-center py-14 flex flex-col items-center gap-3">
           <div className="size-14 rounded-2xl bg-p2 grid place-items-center text-mu"><ClipboardList size={26} aria-hidden /></div>
@@ -108,7 +108,7 @@ export default function CoachWodLivePage() {
 
   return (
     <>
-      <Topbar title="Seguimiento WOD" profile={profile} />
+      <Topbar title="En vivo" profile={profile} />
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full">
 
         <Card>

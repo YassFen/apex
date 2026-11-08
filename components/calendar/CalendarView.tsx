@@ -304,7 +304,7 @@ function NextEventHero({ event, today }: { event: CalEvent; today: string }) {
             </div>
             <div className="font-display text-2xl font-extrabold leading-tight mt-1.5 tracking-tight text-balance break-words">{event.name}</div>
             <div className="text-mu text-xs mt-0.5 first-letter:uppercase">
-              {formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}{event.location ? ` · ${event.location}` : ''}
+              {formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}{event.location && <span className="block normal-case">{event.location}</span>}
             </div>
           </div>
           <span className="relative size-10 rounded-full bg-t/10 grid place-items-center flex-shrink-0 transition-transform duration-300 group-hover:translate-x-1">

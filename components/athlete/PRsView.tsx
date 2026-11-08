@@ -137,7 +137,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
 
   return (
     <>
-      <Topbar title="Historial & RMs" profile={profile}
+      <Topbar title="Récords" profile={profile}
         actions={
           <Button onClick={() => { setEditingPr(null); setPrModalOpen(true) }} aria-label="Nuevo registro">
             <Plus size={14} strokeWidth={2.5} />

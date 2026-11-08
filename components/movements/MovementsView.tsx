@@ -87,7 +87,7 @@ export function MovementsView({ profile, movements, records, coachBoxes }: {
                   className="tap-card w-full flex items-stretch rounded-[20px] bg-p overflow-hidden text-left">
                   <span className="flex-1 min-w-0 p-4">
                     <span className="block font-display text-xl font-bold tracking-tight truncate">{m.name}</span>
-                    <span className="block text-mu text-sm truncate mt-0.5">
+                    <span className="block text-mu text-sm leading-snug mt-0.5">
                       {CAT_LABEL[m.category] ?? m.category}{g.muscles.filter(x => !(x === 'motor' && m.category === 'cardio')).length ? ` · ${g.muscles.filter(x => !(x === 'motor' && m.category === 'cardio')).map(x => MUSCLE_LABEL[x]).join(', ')}` : ''}
                     </span>
                     <span className="mt-3 block h-1 w-24 rounded-full bg-t/10 overflow-hidden">
