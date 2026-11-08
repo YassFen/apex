@@ -320,7 +320,7 @@ function WorkoutCard({ workout, index, assessments, unit, benchmark, results, me
           <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-bold uppercase', meta.cls)}>{meta.label}</span>
           {workout.time_cap_mins ? <span className="flex items-center gap-1 text-xs text-mu"><Timer size={12} aria-hidden />{workout.type === 'amrap' ? '' : 'Cap '}{workout.time_cap_mins} min</span> : null}
         </div>
-        <h3 className="font-display text-3xl font-extrabold leading-none tracking-tight">{workout.title}</h3>
+        <h3 className="font-display text-[22px] font-extrabold leading-tight tracking-tight text-balance">{workout.title}</h3>
         {workout.description && <p className="text-mu text-sm mt-2 whitespace-pre-line">{workout.description}</p>}
         {benchmark && (
           <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-ac/15 text-ac text-xs font-bold">

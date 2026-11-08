@@ -302,7 +302,7 @@ function NextEventHero({ event, today }: { event: CalEvent; today: string }) {
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rd/15 text-rd text-[10px] font-bold uppercase tracking-[1.2px]">
               <Trophy size={12} aria-hidden /> {EVENT_KIND_LABEL[event.kind] ?? 'Evento'}
             </div>
-            <div className="font-display text-2xl font-extrabold leading-tight mt-1.5 tracking-tight text-balance break-words">{event.name}</div>
+            <div className="font-display text-lg font-extrabold leading-tight mt-1.5 tracking-tight text-balance break-words">{event.name}</div>
             <div className="text-mu text-xs mt-0.5 first-letter:uppercase">
               {formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}{event.location && <span className="block normal-case">{event.location}</span>}
             </div>
