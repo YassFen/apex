@@ -57,7 +57,8 @@ app/
 │   ├── layout.tsx                  # Centered card layout for auth pages
 │   ├── login/page.tsx              # Email/password + Google OAuth
 │   ├── register/page.tsx           # Signup with role selector (athlete/coach) + optional invite code
-│   └── callback/route.ts           # Supabase OAuth callback handler
+│   ├── reset-password/page.tsx     # Pick a new password (reset link lands here) or request a new link
+│   └── callback/route.ts           # OAuth, email confirmation and reset links (code or token_hash)
 └── (dashboard)/
     ├── layout.tsx                  # Server component: verifies auth, fetches profile, wraps DashboardShell
     ├── dashboard/page.tsx          # Branches: CoachDashboard or AthleteDashboard based on profile.role

@@ -32,7 +32,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  if (user && isAuthRoute && !request.nextUrl.pathname.startsWith('/auth/callback')) {
+  // The reset link signs the person in, and they still need the reset page to pick a new password.
+  const isAuthFlow =
+    request.nextUrl.pathname.startsWith('/auth/callback') ||
+    request.nextUrl.pathname.startsWith('/auth/reset-password')
+
+  if (user && isAuthRoute && !isAuthFlow) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

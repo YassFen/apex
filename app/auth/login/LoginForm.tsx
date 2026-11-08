@@ -49,7 +49,7 @@ export function LoginForm({ confirmed = false, initialError = '', initialEmail =
     if (!email.trim()) { setError('Escribe tu email arriba y te enviamos un enlace para cambiar la contraseña.'); return }
     const supabase = createClient()
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${location.origin}/auth/callback?next=/settings`,
+      redirectTo: `${location.origin}/auth/callback?next=/auth/reset-password`,
     })
     if (error) { setError(friendlyError(error.message)); return }
     setError('')
