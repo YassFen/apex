@@ -1,68 +1,141 @@
 'use client'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutGrid, Flame, Timer, TrendingUp, User, Activity, Users, ArrowLeftRight } from 'lucide-react'
+import {
+  LayoutGrid, Flame, Timer, TrendingUp, Activity, Users, ArrowLeftRight, MoreHorizontal,
+  Trophy, Calculator, BarChart3, User, History, ChevronRight,
+} from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useShell } from '@/lib/hooks/useShell'
+import { Modal } from '@/components/ui/Modal'
+import { AppearancePicker } from '@/components/ui/AppearancePicker'
 import type { Profile } from '@/lib/types/database'
 
-const ATHLETE_ITEMS = [
-  { href: '/dashboard', label: 'Home',   icon: LayoutGrid },
+type Item = { href: string; label: string; icon: typeof Flame; desc?: string }
+
+const ATHLETE_TABS: Item[] = [
+  { href: '/dashboard', label: 'Inicio', icon: LayoutGrid },
   { href: '/wod',       label: 'WOD',    icon: Flame },
   { href: '/timer',     label: 'Timer',  icon: Timer },
   { href: '/prs',       label: 'RMs',    icon: TrendingUp },
-  { href: '/settings',  label: 'Perfil', icon: User },
 ]
 
-const COACH_ITEMS = [
-  { href: '/dashboard',         label: 'Home',    icon: LayoutGrid },
+const COACH_TABS: Item[] = [
+  { href: '/dashboard',         label: 'Inicio',  icon: LayoutGrid },
   { href: '/coach/publish-wod', label: 'WOD',     icon: Flame },
-  { href: '/coach/wod-live',    label: 'En Vivo', icon: Activity },
+  { href: '/coach/wod-live',    label: 'En vivo', icon: Activity },
   { href: '/coach/athletes',    label: 'Atletas', icon: Users },
-  { href: '/settings',          label: 'Perfil',  icon: User },
 ]
+
+// Everything that doesn't fit in the tab bar lives in the "Más" sheet.
+const ATHLETE_MORE: Item[] = [
+  { href: '/wod/history', label: 'Historial de WODs', icon: History,    desc: 'Tus resultados día a día' },
+  { href: '/benchmarks',  label: 'Benchmarks',        icon: Trophy,     desc: 'Fran, Grace, Murph…' },
+  { href: '/calc',        label: 'Calculadora RM',    icon: Calculator, desc: 'Porcentajes y discos' },
+  { href: '/settings',    label: 'Mi perfil',         icon: User,       desc: 'Datos, box y cuenta' },
+]
+
+const COACH_MORE: Item[] = [
+  { href: '/analytics', label: 'Analytics',      icon: BarChart3,  desc: 'Progreso del box' },
+  { href: '/timer',     label: 'Timer',          icon: Timer,      desc: 'For Time, AMRAP, EMOM, Tabata' },
+  { href: '/calc',      label: 'Calculadora RM', icon: Calculator, desc: 'Porcentajes y discos' },
+  { href: '/settings',  label: 'Mi perfil',      icon: User,       desc: 'Datos, box y cuenta' },
+]
+
+function isActive(pathname: string, href: string) {
+  return pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
+}
 
 export function MobileNav({ profile }: { profile: Profile }) {
   const pathname = usePathname()
   const { viewMode, setViewMode, canSwitchMode } = useShell()
-  const items = viewMode === 'coach' ? COACH_ITEMS : ATHLETE_ITEMS
+  const [moreOpen, setMoreOpen] = useState(false)
+  const coach = viewMode === 'coach'
+  const tabs = coach ? COACH_TABS : ATHLETE_TABS
+  const more = coach ? COACH_MORE : ATHLETE_MORE
+
+  // Close the sheet after navigating from it.
+  useEffect(() => { setMoreOpen(false) }, [pathname])
+
+  const moreActive = !tabs.some(t => isActive(pathname, t.href)) && more.some(m => isActive(pathname, m.href))
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-p/95 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around h-[58px] px-1">
-        {items.map(item => {
-          const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
-          const Icon = item.icon
-          return (
-            <Link key={item.href} href={item.href}
-              className={cn(
-                'flex flex-col items-center gap-[3px] px-2 py-1.5 rounded-xl flex-1 transition-colors text-center',
-                active ? 'text-t' : 'text-fa hover:text-mu'
-              )}
-            >
-              <Icon size={19} strokeWidth={active ? 2.4 : 1.9} />
-              <span className="text-[9px] font-bold tracking-wide leading-none">{item.label}</span>
-            </Link>
-          )
-        })}
-
-        {/* Mode toggle — only for coaches */}
-        {canSwitchMode && (
-          <button
-            onClick={() => setViewMode(viewMode === 'coach' ? 'athlete' : 'coach')}
-            className={cn(
-              'flex flex-col items-center gap-[3px] px-2 py-1.5 rounded-xl flex-1 transition-colors text-center',
-              viewMode === 'coach' ? 'text-bl' : 'text-or'
-            )}
-            aria-label="Cambiar modo"
-          >
-            <ArrowLeftRight size={19} strokeWidth={1.9} />
-            <span className="text-[9px] font-bold tracking-wide leading-none">
-              {viewMode === 'coach' ? 'Atleta' : 'Coach'}
-            </span>
+    <>
+      <nav aria-label="Navegación principal"
+        className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-p/90 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_0_var(--ln)]">
+        <div className="grid grid-cols-5 h-[62px] px-1.5">
+          {tabs.map(item => (
+            <TabLink key={item.href} item={item} active={isActive(pathname, item.href)} />
+          ))}
+          <button type="button" onClick={() => setMoreOpen(true)} aria-haspopup="dialog" aria-expanded={moreOpen}
+            className="relative flex flex-col items-center justify-center gap-1 text-center">
+            <TabIcon Icon={MoreHorizontal} active={moreActive || moreOpen} label="Más" />
           </button>
-        )}
-      </div>
-    </nav>
+        </div>
+      </nav>
+
+      <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="Más" subtitle={profile.full_name}>
+        <nav className="flex flex-col gap-1.5 stagger" aria-label="Más secciones">
+          {more.map(item => {
+            const Icon = item.icon
+            const active = isActive(pathname, item.href)
+            return (
+              <Link key={item.href} href={item.href}
+                className={cn('flex items-center gap-3.5 p-3 rounded-2xl transition-colors', active ? 'bg-p3' : 'bg-p2 hover:bg-p3')}>
+                <span className={cn('size-10 rounded-xl grid place-items-center flex-shrink-0', active ? 'bg-ac text-onac' : 'bg-p3 text-t')}>
+                  <Icon size={19} aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-sm">{item.label}</span>
+                  {item.desc && <span className="block text-mu text-xs truncate">{item.desc}</span>}
+                </span>
+                <ChevronRight size={16} className="text-fa" aria-hidden />
+              </Link>
+            )
+          })}
+
+          {canSwitchMode && (
+            <button type="button" onClick={() => { setViewMode(coach ? 'athlete' : 'coach'); setMoreOpen(false) }}
+              className="flex items-center gap-3.5 p-3 rounded-2xl bg-p2 hover:bg-p3 transition-colors text-left">
+              <span className="size-10 rounded-xl grid place-items-center flex-shrink-0 bg-bl/15 text-bl">
+                <ArrowLeftRight size={19} aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-sm">Cambiar a modo {coach ? 'atleta' : 'coach'}</span>
+                <span className="block text-mu text-xs">{coach ? 'Tus RMs, WOD y timer personal' : 'Publicar WODs y ver tu box'}</span>
+              </span>
+            </button>
+          )}
+        </nav>
+
+        <div className="mt-6">
+          <AppearancePicker />
+        </div>
+      </Modal>
+    </>
+  )
+}
+
+function TabLink({ item, active }: { item: Item; active: boolean }) {
+  return (
+    <Link href={item.href} aria-current={active ? 'page' : undefined}
+      className="relative flex flex-col items-center justify-center gap-1 text-center">
+      <TabIcon Icon={item.icon} active={active} label={item.label} />
+    </Link>
+  )
+}
+
+function TabIcon({ Icon, active, label }: { Icon: typeof Flame; active: boolean; label: string }) {
+  return (
+    <>
+      <span className={cn(
+        'h-8 w-14 rounded-full grid place-items-center transition-[background-color,color,transform] duration-300 ease-[var(--ease-out)]',
+        active ? 'bg-ac/15 text-ac scale-100' : 'text-mu scale-95',
+      )}>
+        <Icon size={20} strokeWidth={active ? 2.4 : 1.9} aria-hidden />
+      </span>
+      <span className={cn('text-[10px] font-bold leading-none transition-colors', active ? 'text-t' : 'text-mu')}>{label}</span>
+    </>
   )
 }

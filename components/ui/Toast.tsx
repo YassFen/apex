@@ -1,45 +1,71 @@
 'use client'
-import { useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useRef, useState } from 'react'
+import { AlertCircle, CheckCircle2, Info, Trophy, X } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
-interface ToastProps {
-  message: string
-  type?: 'pr' | 'ok' | 'error'
-  show: boolean
+export type ToastType = 'ok' | 'pr' | 'error' | 'info'
+
+interface ToastItem { id: number; message: string; type: ToastType }
+
+const ICONS = { ok: CheckCircle2, pr: Trophy, error: AlertCircle, info: Info }
+const TONES: Record<ToastType, string> = {
+  ok:    'text-gr bg-gr/15',
+  pr:    'text-ac bg-ac/15',
+  error: 'text-rd bg-rd/15',
+  info:  'text-bl bg-bl/15',
 }
 
-export function Toast({ message, type = 'ok', show }: ToastProps) {
+const Ctx = createContext<((message: string, type?: ToastType) => void) | null>(null)
+
+/**
+ * App-wide toasts: small, stacked, auto-dismissed, tap to close.
+ * Sits above the mobile tab bar; top-right on desktop.
+ */
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [toasts, setToasts] = useState<ToastItem[]>([])
+  const nextId = useRef(0)
+
+  const dismiss = useCallback((id: number) => setToasts(t => t.filter(x => x.id !== id)), [])
+
+  const fire = useCallback((message: string, type: ToastType = 'ok') => {
+    const id = ++nextId.current
+    // Keep at most 3 on screen so they never pile up.
+    setToasts(t => [...t.slice(-2), { id, message, type }])
+    setTimeout(() => dismiss(id), type === 'error' ? 5000 : 3000)
+  }, [dismiss])
+
   return (
-    <div
-      role={type === 'error' ? 'alert' : 'status'}
-      aria-live={type === 'error' ? 'assertive' : 'polite'}
-      className={cn(
-        'fixed left-4 right-4 sm:left-auto sm:right-6 bottom-[calc(88px+env(safe-area-inset-bottom))] lg:bottom-6 z-[99]',
-        'px-4 py-3 rounded-2xl font-semibold text-sm transition-[opacity,transform] duration-200 pointer-events-none sm:max-w-sm',
-        show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4',
-        type === 'pr'    && 'bg-ac text-bg',
-        type === 'ok'    && 'bg-p3 text-t',
-        type === 'error' && 'bg-p3 text-rd ring-1 ring-inset ring-rd/30',
-      )}
-    >
-      {message}
-    </div>
+    <Ctx.Provider value={fire}>
+      {children}
+      <div
+        aria-live="polite"
+        className="fixed z-[99] inset-x-4 bottom-[calc(76px+env(safe-area-inset-bottom))] lg:inset-x-auto lg:right-6 lg:bottom-auto lg:top-6 flex flex-col gap-2 items-stretch lg:items-end pointer-events-none"
+      >
+        {toasts.map(t => {
+          const Icon = ICONS[t.type]
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role={t.type === 'error' ? 'alert' : 'status'}
+              onClick={() => dismiss(t.id)}
+              className="pointer-events-auto animate-toast-in flex items-center gap-3 w-full lg:w-auto lg:max-w-sm pl-3.5 pr-3 py-3 rounded-2xl bg-p3/95 backdrop-blur-xl text-t text-sm font-semibold text-left shadow-[0_12px_40px_-12px_rgb(0_0_0/.5)] ring-1 ring-inset ring-t/[0.06]"
+            >
+              <span className={cn('size-8 rounded-full grid place-items-center flex-shrink-0', TONES[t.type])}>
+                <Icon size={18} strokeWidth={2.4} aria-hidden className={t.type === 'pr' ? 'animate-pop' : ''} />
+              </span>
+              <span className="flex-1 text-pretty leading-snug">{t.message}</span>
+              <X size={16} className="text-fa flex-shrink-0" aria-hidden />
+            </button>
+          )
+        })}
+      </div>
+    </Ctx.Provider>
   )
 }
 
-// Convenience hook
+/** `const { fire } = useToast(); fire('Guardado')` — works anywhere inside the dashboard. */
 export function useToast() {
-  const [toast, setToast] = useState<{ message: string; type: 'pr' | 'ok' | 'error' } | null>(null)
-  const [show, setShow] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  function fire(message: string, type: 'pr' | 'ok' | 'error' = 'ok') {
-    setToast({ message, type })
-    setShow(true)
-    if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => setShow(false), type === 'error' ? 5000 : 2800)
-  }
-
-  const element = toast ? <Toast message={toast.message} type={toast.type} show={show} /> : null
-  return { fire, element }
+  const fire = useContext(Ctx)
+  return { fire: fire ?? (() => {}) }
 }

@@ -194,7 +194,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
           >
             <div className="font-barlow text-lg font-black tracking-wide uppercase text-ac">Benchmark personalizado</div>
             <div className="text-mu text-[11px] mt-1 leading-snug">Registra cualquier WOD, Hero WOD o benchmark de tu box</div>
-            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac text-bg text-[11px] font-bold">
+            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac text-onac text-[11px] font-bold">
               <PenLine size={12} strokeWidth={2.5} />
               Ingresar nombre y resultado
             </div>
@@ -214,7 +214,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                 >
                   <div className="font-barlow text-lg font-black tracking-wide uppercase">{bm.name}</div>
                   <div className="text-mu text-[11px] mt-1 leading-snug">{bm.desc}</div>
-                  <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac/10 text-ac text-[11px] font-bold border border-ac/20 group-hover:bg-ac group-hover:text-bg transition">
+                  <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac/10 text-ac text-[11px] font-bold border border-ac/20 group-hover:bg-ac group-hover:text-onac transition">
                     <Plus size={12} strokeWidth={2.5} />
                     Registrar {bm.unit === 'time' ? 'tiempo' : 'rondas'}
                   </div>

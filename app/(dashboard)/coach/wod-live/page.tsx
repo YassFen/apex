@@ -98,7 +98,7 @@ export default function CoachWodLivePage() {
           <div className="size-14 rounded-2xl bg-p2 grid place-items-center text-mu"><ClipboardList size={26} aria-hidden /></div>
           <h2 className="font-barlow text-2xl font-black">Sin WOD publicado hoy</h2>
           <p className="text-mu text-sm max-w-xs text-pretty">Publica el WOD del día y aquí verás en vivo quién registra y cómo va el ranking.</p>
-          <Link href="/coach/publish-wod" className="mt-2 h-11 px-5 rounded-full bg-ac text-bg font-bold text-sm grid place-items-center active:scale-[0.96] transition-transform">
+          <Link href="/coach/publish-wod" className="mt-2 h-11 px-5 rounded-full bg-ac text-onac font-bold text-sm grid place-items-center active:scale-[0.96] transition-transform">
             Publicar WOD
           </Link>
         </Card>
@@ -116,7 +116,7 @@ export default function CoachWodLivePage() {
             {meta && <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide ${meta.cls}`}>{meta.label}</span>}
             {wod.duration_mins && <span className="text-mu text-xs tabular-nums">{wod.duration_mins} min</span>}
             <span className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-rd">
-              <span className="size-2 rounded-full bg-rd animate-pulse" aria-hidden /> En vivo
+              <span className="relative flex size-2" aria-hidden><span className="absolute inset-0 rounded-full bg-rd animate-ping-slow" /><span className="relative size-2 rounded-full bg-rd" /></span> En vivo
             </span>
           </div>
           <h2 className="font-barlow text-3xl font-black tracking-wide text-balance">{wod.title}</h2>
@@ -126,7 +126,11 @@ export default function CoachWodLivePage() {
               <div className="font-barlow text-5xl font-black leading-none tabular-nums">
                 {doneCount}<span className="text-mu text-2xl"> / {athleteCount}</span>
               </div>
-              <div className="text-mu text-xs mt-1">atletas registraron su resultado</div>
+              <div className="text-mu text-xs mt-1">
+                {athleteCount === 0
+                  ? <>Aún no tienes atletas. Comparte el código <span className="text-ac font-bold tracking-widest">{wod.box?.invite_code}</span></>
+                  : 'atletas registraron su resultado'}
+              </div>
             </div>
             <div className="font-barlow text-2xl font-black text-ac tabular-nums">{pct}%</div>
           </div>

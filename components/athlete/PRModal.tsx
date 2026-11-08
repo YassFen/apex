@@ -7,11 +7,12 @@ import { parseWeightToLb } from '@/lib/utils/units'
 import { todayISO, toDateInput, dateInputToTimestamp } from '@/lib/utils/dates'
 import { friendlyError } from '@/lib/utils/errors'
 import type { Profile, Movement, MovementCategory } from '@/lib/types/database'
+import type { Celebration, CelebrationKind } from '@/components/athlete/RmCelebrationModal'
 
 interface Props {
   profile: Profile
   onClose: () => void
-  onSaved: (isNewPr?: boolean, diffLb?: number) => void
+  onSaved: (result: Celebration) => void
   editingPr?: any
 }
 
@@ -178,25 +179,28 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
     setSaving(false)
     if (dbErr) { setError(friendlyError(dbErr.message)); return }
 
-    // Did we beat it?
-    const prev = (prevBest as any)?.value_lb ?? null
-    let newPr = false
-    let diff = 0
-    if (prev !== null) {
-      if (isTime) {
-        // Lower time = better
-        newPr = valueLb > 0 && valueLb < prev
-        diff = prev - valueLb
-      } else {
-        newPr = valueLb > prev
-        diff = valueLb - prev
+    // Did we beat it? (Editing compares against itself, so it's just "saved".)
+    const prev: number | null = isEditing ? null : (prevBest as any)?.value_lb ?? null
+    const delta = prev === null ? 0 : isTime ? prev - valueLb : valueLb - prev
+    const kind: CelebrationKind =
+      isEditing ? 'saved' : prev === null ? 'first' : delta > 0 ? 'new' : delta === 0 ? 'equal' : 'saved'
+
+    const fmt = (v: number) => {
+      if (isWeight) {
+        const n = unit === 'kg' ? Math.round(v * 0.453592 * 10) / 10 : Math.round(v * 10) / 10
+        return `${n} ${unit}`
       }
-    } else {
-      newPr = true
+      if (isTime) return `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, '0')}`
+      return `${Math.round(v)} ${isCals ? 'cal' : 'reps'}`
     }
 
     setSaved(true)
-    setTimeout(() => onSaved(newPr, diff), 900)
+    setTimeout(() => onSaved({
+      kind,
+      movement: [selectedMov?.name, isWeight ? metric.toUpperCase() : null].filter(Boolean).join(' · '),
+      value: fmt(valueLb),
+      diff: kind === 'new' && prev !== null ? `${isTime ? '−' : '+'}${fmt(Math.abs(delta))}` : null,
+    }), 500)
   }
 
   // Group movements with custom merged labels
@@ -248,7 +252,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
               {(['1rm', '2rm', '3rm'] as const).map(m => (
                 <button key={m} type="button" onClick={() => setMetric(m)}
                   className={`flex-1 py-2.5 text-sm font-bold tracking-wider transition-colors ${
-                    metric === m ? 'bg-ac text-bg' : 'bg-p3 text-mu hover:text-t'
+                    metric === m ? 'bg-ac text-onac' : 'bg-p3 text-mu hover:text-t'
                   }`}>
                   {m.toUpperCase()}
                 </button>
@@ -269,13 +273,13 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
             <div className="flex rounded-xl border border-[var(--ln)] overflow-hidden">
               <button type="button" onClick={() => { setMetric('max_reps'); setWeight('') }}
                 className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
-                  metric === 'max_reps' ? 'bg-ac text-bg' : 'bg-p3 text-mu hover:text-t'
+                  metric === 'max_reps' ? 'bg-ac text-onac' : 'bg-p3 text-mu hover:text-t'
                 }`}>
                 Máx. Repeticiones
               </button>
               <button type="button" onClick={() => { setMetric('1rm'); setReps('') }}
                 className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
-                  metric === '1rm' ? 'bg-ac text-bg' : 'bg-p3 text-mu hover:text-t'
+                  metric === '1rm' ? 'bg-ac text-onac' : 'bg-p3 text-mu hover:text-t'
                 }`}>
                 Con Peso Añadido
               </button>
@@ -295,13 +299,13 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
             <div className="flex rounded-xl border border-[var(--ln)] overflow-hidden">
               <button type="button" onClick={() => { setMetric('time'); setCalories('') }}
                 className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
-                  metric === 'time' ? 'bg-ac text-bg' : 'bg-p3 text-mu hover:text-t'
+                  metric === 'time' ? 'bg-ac text-onac' : 'bg-p3 text-mu hover:text-t'
                 }`}>
                 Tiempo
               </button>
               <button type="button" onClick={() => { setMetric('calories'); setTime('') }}
                 className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
-                  metric === 'calories' ? 'bg-ac text-bg' : 'bg-p3 text-mu hover:text-t'
+                  metric === 'calories' ? 'bg-ac text-onac' : 'bg-p3 text-mu hover:text-t'
                 }`}>
                 Calorías
               </button>
@@ -332,7 +336,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
                 {(['kg', 'lb'] as const).map(u => (
                   <button key={u} type="button" onClick={() => setUnit(u)}
                     className={`flex-1 text-sm font-bold transition-colors ${
-                      unit === u ? 'bg-ac text-bg' : 'bg-p3 text-mu hover:text-t'
+                      unit === u ? 'bg-ac text-onac' : 'bg-p3 text-mu hover:text-t'
                     }`}>{u}</button>
                 ))}
               </div>

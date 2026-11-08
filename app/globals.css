@@ -149,19 +149,94 @@ select, option { background-color: var(--p2); color: var(--t); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────────
+   Short, ease-out, transform/opacity only. Everything is disabled by the
+   prefers-reduced-motion block above. Entrance animations use fill-mode
+   "backwards" so no transform is left behind once they finish: a leftover
+   transform would turn the element into the containing block of any
+   position:fixed child (modals, banners) and break them. */
+:root {
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
 }
 
 @keyframes fadeUp {
   from { opacity:0; transform: translateY(12px); }
   to   { opacity:1; transform: translateY(0); }
 }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes pop {
+  0%   { transform: scale(.4); opacity: 0; }
+  60%  { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes confetti {
+  0%   { transform: translate3d(0, 0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate3d(var(--dx), var(--dy), 0) rotate(var(--rot)); opacity: 0; }
+}
+@keyframes shimmer { 100% { transform: translateX(100%); } }
 @keyframes pulse {
   0%, 100% { opacity:1; transform: scale(1); }
   50%       { opacity:.6; transform: scale(.8); }
 }
+@keyframes ping {
+  75%, 100% { transform: scale(2.2); opacity: 0; }
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.animate-fade-up { animation: fadeUp .3s cubic-bezier(.22,1,.36,1) both; }
+.animate-fade-up  { animation: fadeUp .35s var(--ease-out) backwards; }
+.animate-fade-in  { animation: fadeIn .25s ease-out backwards; }
+.animate-scale-in { animation: scaleIn .28s var(--ease-out) backwards; }
+.animate-pop      { animation: pop .5s var(--ease-spring) backwards; }
+.animate-toast-in { animation: toastIn .32s var(--ease-out) backwards; }
+.animate-ping-slow { animation: ping 1.6s cubic-bezier(0, 0, .2, 1) infinite; }
+
+/* Phones: modal slides up as a sheet. Larger screens: it scales in. */
+.animate-sheet { animation: sheetUp .34s var(--ease-out) backwards; }
+@media (min-width: 640px) { .animate-sheet { animation: scaleIn .26s var(--ease-out) backwards; } }
+
+/* Children enter one after another (cards, list rows). */
+.stagger > * { animation: fadeUp .4s var(--ease-out) backwards; }
+.stagger > *:nth-child(1)  { animation-delay: 0ms; }
+.stagger > *:nth-child(2)  { animation-delay: 40ms; }
+.stagger > *:nth-child(3)  { animation-delay: 80ms; }
+.stagger > *:nth-child(4)  { animation-delay: 120ms; }
+.stagger > *:nth-child(5)  { animation-delay: 160ms; }
+.stagger > *:nth-child(6)  { animation-delay: 200ms; }
+.stagger > *:nth-child(7)  { animation-delay: 240ms; }
+.stagger > *:nth-child(8)  { animation-delay: 280ms; }
+.stagger > *:nth-child(n+9) { animation-delay: 300ms; }
+
+/* Lift on hover for tappable cards (pointer devices only), press on tap. */
+.tap-card { transition: transform .18s var(--ease-out), background-color .18s ease-out, box-shadow .18s ease-out; }
+.tap-card:active { transform: scale(.98); }
+@media (hover: hover) {
+  .tap-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -12px rgb(0 0 0 / .35); }
+  .tap-card:hover:active { transform: scale(.98); }
+}
+
+/* Loading placeholder with a soft moving sheen. */
+.skeleton { position: relative; overflow: hidden; background: rgb(var(--c-p2)); border-radius: 14px; }
+.skeleton::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(var(--c-t) / .05), transparent);
+  animation: shimmer 1.4s infinite;
+}

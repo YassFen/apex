@@ -54,7 +54,7 @@ export default async function AthletesPage() {
                   <tr key={m.id} className="border-b border-[var(--ln)] hover:bg-t/[.03] transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-ac to-bl grid place-items-center font-black text-xs text-bg flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-ac to-bl grid place-items-center font-black text-xs text-onac flex-shrink-0">
                           {initials}
                         </div>
                         <div>

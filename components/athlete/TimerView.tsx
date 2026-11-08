@@ -336,7 +336,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
                 {amrapRounds}
               </div>
               <button onClick={() => setAmrapRounds(r => r + 1)} aria-label="Sumar una ronda"
-                className="size-16 rounded-full bg-ac text-bg grid place-items-center active:scale-[0.96] transition-transform">
+                className="size-16 rounded-full bg-ac text-onac grid place-items-center active:scale-[0.96] transition-transform">
                 <Plus size={24} strokeWidth={3} aria-hidden />
               </button>
             </div>
@@ -351,7 +351,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
             </button>
           ) : !running ? (
             <button onClick={start} disabled={state === 'done'}
-              className="h-14 px-9 rounded-full bg-ac text-bg font-barlow text-lg font-black tracking-wide uppercase active:scale-[0.96] transition-transform flex items-center gap-2 min-w-[160px] justify-center disabled:opacity-40">
+              className="h-14 px-9 rounded-full bg-ac text-onac font-barlow text-lg font-black tracking-wide uppercase active:scale-[0.96] transition-transform flex items-center gap-2 min-w-[160px] justify-center disabled:opacity-40">
               <Play size={18} fill="currentColor" aria-hidden />
               {state === 'paused' ? 'Continuar' : 'Iniciar'}
             </button>
@@ -387,7 +387,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
             <div className="font-barlow text-4xl font-black text-gr leading-none">¡Tiempo!</div>
             <div className="text-t mt-2 text-lg font-semibold tabular-nums">{resultLine}</div>
             {(mode === 'fortime' || mode === 'amrap') && (
-              <Link href="/wod" className="mt-5 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-ac text-bg font-bold active:scale-[0.96] transition-transform">
+              <Link href="/wod" className="mt-5 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-ac text-onac font-bold active:scale-[0.96] transition-transform">
                 <ClipboardCheck size={18} aria-hidden />
                 Registrar en el WOD del día
               </Link>

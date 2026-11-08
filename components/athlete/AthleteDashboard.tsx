@@ -1,16 +1,20 @@
 'use client'
 import { useMemo, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Settings2, Flame, Trophy, ChevronUp, ChevronDown, X } from 'lucide-react'
+import { Plus, Settings2, Flame, Trophy, ChevronUp, ChevronDown, X, ChevronRight, History, Calculator, Check, Users } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { PRModal } from '@/components/athlete/PRModal'
 import { StrengthChart } from '@/components/athlete/StrengthChart'
-import { RmCelebrationModal } from '@/components/athlete/RmCelebrationModal'
+import { RmCelebrationModal, type Celebration } from '@/components/athlete/RmCelebrationModal'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
 import type { Profile, Movement } from '@/lib/types/database'
-import { toDateInput } from '@/lib/utils/dates'
+import { toDateInput, todayISO, formatDateOnly } from '@/lib/utils/dates'
+import { CountUp } from '@/components/ui/CountUp'
+import { WOD_TYPE_META } from '@/components/wod/WodView'
+import { cn } from '@/lib/utils/cn'
 
 interface PR {
   id: string
@@ -40,10 +44,8 @@ function formatPrValue(pr: PR, unit: 'kg' | 'lb'): { value: string; unit: string
   return { value: String(Math.round(raw)), unit: 'lb' }
 }
 
-function computeStreakDays(prs: PR[]): number {
-  if (prs.length === 0) return 0
-  // Calendar days in the gym's time zone, not UTC
-  const days = new Set(prs.map(p => toDateInput(p.recorded_at)))
+function computeStreakDays(days: Set<string>): number {
+  if (days.size === 0) return 0
   const cursor = new Date()
   // A streak is still alive if the last log was yesterday
   if (!days.has(toDateInput(cursor))) cursor.setDate(cursor.getDate() - 1)
@@ -55,11 +57,14 @@ function computeStreakDays(prs: PR[]): number {
   return streak
 }
 
-export function AthleteDashboard({ profile, prs, movements = [] }: {
-  profile: Profile; prs: PR[]; movements?: Movement[]
+type TodayWod = { title: string; type: string; durationMins: number | null; myResult: string | null }
+
+export function AthleteDashboard({ profile, prs, movements = [], today = null, hasBox = false, resultDates = [] }: {
+  profile: Profile; prs: PR[]; movements?: Movement[]; today?: TodayWod | null; hasBox?: boolean; resultDates?: string[]
 }) {
+  const router = useRouter()
   const [prModalOpen, setPrModalOpen] = useState(false)
-  const [celebration, setCelebration] = useState<{ open: boolean; isNew: boolean; diff: number }>({ open: false, isNew: false, diff: 0 })
+  const [celebration, setCelebration] = useState<Celebration | null>(null)
   const [editKpis, setEditKpis] = useState(false)
   const unit = profile.preferred_unit
 
@@ -140,7 +145,23 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
   )
 
   const totalRecords = prs.length
-  const streak = useMemo(() => computeStreakDays(prs), [prs])
+  // Training days = days with a PR logged or a WOD result, in the gym's time zone.
+  const activeDays = useMemo(
+    () => new Set([...prs.map(p => p.recorded_at), ...resultDates].map(d => toDateInput(d))),
+    [prs, resultDates],
+  )
+  const streak = useMemo(() => computeStreakDays(activeDays), [activeDays])
+  const week = useMemo(() => {
+    const out: { ymd: string; label: string; active: boolean; isToday: boolean }[] = []
+    const base = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(base); d.setDate(base.getDate() - i)
+      const ymd = toDateInput(d)
+      out.push({ ymd, label: formatDateOnly(ymd, { weekday: 'narrow' }), active: activeDays.has(ymd), isToday: i === 0 })
+    }
+    return out
+  }, [activeDays])
+  const firstName = profile.full_name.split(' ')[0]
 
   function toggleKpi(name: string) {
     if (kpiMovements.includes(name)) {
@@ -167,40 +188,95 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
   return (
     <>
       <Topbar
-        title="Dashboard"
+        title="Inicio"
         profile={profile}
         actions={
-          <Button onClick={() => setPrModalOpen(true)} size="md" aria-label="Nuevo registro">
-            <Plus size={14} strokeWidth={2.5} />
+          <Button onClick={() => setPrModalOpen(true)} size="md" aria-label="Nuevo registro" className="!px-3 sm:!px-5">
+            <Plus size={16} strokeWidth={2.5} aria-hidden />
             <span className="hidden sm:inline">Nuevo registro</span>
           </Button>
         }
       />
 
-      <div className="p-4 lg:p-6 flex flex-col gap-4">
+      <div className="p-4 lg:p-6 flex flex-col gap-4 stagger">
+        <div className="px-1">
+          <p className="text-mu text-sm first-letter:uppercase">{formatDateOnly(todayISO(), { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h2 className="font-barlow text-4xl font-black tracking-wide uppercase leading-tight">Hola, {firstName}</h2>
+        </div>
+
+        {/* Today's WOD */}
+        {today ? (
+          <Link href="/wod" className={cn('tap-card block rounded-[20px] p-5 relative overflow-hidden', today.myResult ? 'bg-p' : 'bg-ac text-onac')}>
+            {!today.myResult && <Flame size={120} className="absolute -right-6 -bottom-8 opacity-15" aria-hidden />}
+            <div className="flex items-center gap-2">
+              <span className={cn('text-[11px] uppercase tracking-[1.4px] font-bold', today.myResult ? 'text-mu' : 'opacity-80')}>WOD de hoy</span>
+              {today.myResult && WOD_TYPE_META[today.type] && (
+                <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-bold uppercase', WOD_TYPE_META[today.type].cls)}>{WOD_TYPE_META[today.type].label}</span>
+              )}
+            </div>
+            <div className="font-barlow text-3xl font-black uppercase leading-tight mt-1 text-balance max-w-[18ch]">{today.title}</div>
+            {today.myResult ? (
+              <div className="mt-3 flex items-center gap-2 text-sm">
+                <span className="size-6 rounded-full bg-gr/15 text-gr grid place-items-center"><Check size={14} strokeWidth={3} aria-hidden /></span>
+                <span className="text-mu">Registraste <span className="text-t font-bold tabular-nums">{today.myResult}</span> · mira el leaderboard</span>
+              </div>
+            ) : (
+              <span className="mt-4 inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-onac text-ac text-sm font-bold">
+                {WOD_TYPE_META[today.type]?.label ?? 'Ver WOD'}{today.durationMins ? ` · ${today.durationMins} min` : ''} <ChevronRight size={16} aria-hidden />
+              </span>
+            )}
+          </Link>
+        ) : (
+          <Link href={hasBox ? '/wod' : '/settings'} className="tap-card flex items-center gap-4 rounded-[20px] bg-p p-4">
+            <span className="size-11 rounded-xl bg-p2 grid place-items-center text-mu flex-shrink-0">
+              {hasBox ? <Flame size={20} aria-hidden /> : <Users size={20} aria-hidden />}
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-semibold text-sm">{hasBox ? 'Aún no hay WOD hoy' : 'Únete a tu box'}</span>
+              <span className="block text-mu text-xs mt-0.5">{hasBox ? 'Te aparecerá en vivo apenas tu coach lo publique' : 'Ingresa el código de tu coach para ver el WOD diario'}</span>
+            </span>
+            <ChevronRight size={18} className="text-fa" aria-hidden />
+          </Link>
+        )}
+
+        {/* This week */}
+        <Card padding={false} className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] uppercase tracking-[1.4px] text-mu font-bold">Esta semana</span>
+            <span className="flex items-center gap-1 text-sm font-bold tabular-nums">
+              <Flame size={16} className={streak > 0 ? 'text-or' : 'text-fa'} fill={streak > 0 ? 'currentColor' : 'none'} aria-hidden />
+              {streak} {streak === 1 ? 'día' : 'días'} de racha
+            </span>
+          </div>
+          <ol className="grid grid-cols-7 gap-1.5">
+            {week.map(d => (
+              <li key={d.ymd} className="flex flex-col items-center gap-1.5">
+                <span className={cn('text-[10px] font-bold uppercase', d.isToday ? 'text-t' : 'text-fa')}>{d.label}</span>
+                <span className={cn(
+                  'size-8 rounded-full grid place-items-center transition-colors',
+                  d.active ? 'bg-ac text-onac' : d.isToday ? 'ring-2 ring-inset ring-ac/40' : 'bg-p2',
+                )} aria-label={d.active ? 'Entrenaste' : 'Sin registro'}>
+                  {d.active && <Check size={14} strokeWidth={3} aria-hidden />}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Card>
 
         {/* Mini stats row */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="p-3">
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1">Records</div>
-            <div className="font-barlow text-3xl font-black leading-none tabular-nums">{totalRecords}</div>
-            <div className="text-fa text-[11px] mt-0.5">RMs registrados</div>
+        <div className="grid grid-cols-2 gap-3">
+          <Card padding={false} className="p-4">
+            <div className="text-[10px] uppercase tracking-[1.6px] text-mu font-bold mb-1">Registros</div>
+            <div className="font-barlow text-4xl font-black leading-none"><CountUp value={totalRecords} /></div>
+            <div className="text-fa text-[11px] mt-1">RMs anotados</div>
           </Card>
-          <Card className="p-3">
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1">Racha</div>
-            <div className="font-barlow text-3xl font-black leading-none tabular-nums flex items-center gap-1.5">
-              {streak}
-              {streak > 0 && <Flame size={18} className="text-or" fill="currentColor" />}
+          <Card padding={false} className="p-4">
+            <div className="text-[10px] uppercase tracking-[1.6px] text-mu font-bold mb-1">Récords vigentes</div>
+            <div className="font-barlow text-4xl font-black leading-none flex items-center gap-1.5">
+              <CountUp value={prs.filter(p => p.is_pr).length} />
+              <Trophy size={18} className="text-ac" aria-hidden />
             </div>
-            <div className="text-fa text-[11px] mt-0.5">{streak === 1 ? 'día' : 'días'} consecutivos</div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1">PRs activos</div>
-            <div className="font-barlow text-3xl font-black leading-none tabular-nums flex items-center gap-1.5">
-              {prs.filter(p => p.is_pr).length}
-              <Trophy size={16} className="text-ac" />
-            </div>
-            <div className="text-fa text-[11px] mt-0.5">vigentes</div>
+            <div className="text-fa text-[11px] mt-1">tus mejores marcas</div>
           </Card>
         </div>
 
@@ -292,14 +368,14 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
               const prFmt = pr ? formatPrValue(pr, unit) : null
               const prevFmt = prev ? formatPrValue(prev, unit) : null
               return (
-                <Card key={i} className="p-[18px]">
+                <Card key={i} padding={false} className="p-[18px]">
                   <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2.5">
                     {slot.name}
                   </div>
                   {pr && prFmt ? (
                     <>
                       <div className="font-barlow text-[46px] lg:text-[50px] font-black leading-none">
-                        {prFmt.value}
+                        <CountUp value={prFmt.value} />
                         <span className="text-[16px] text-mu font-normal ml-1">{prFmt.unit}</span>
                       </div>
                       <div className="text-fa text-[11px] mt-1">
@@ -338,8 +414,7 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
 
           <Card padding={false} className="p-5">
             <div className="font-barlow text-[17px] font-extrabold tracking-wide uppercase mb-4">
-              Tops RM actuales
-              <span className="text-[10px] text-fa font-normal font-sans tracking-normal ml-2">↗ click para historial</span>
+              Tus récords
             </div>
             <div className="flex flex-col gap-2.5">
               {topPRs.length === 0 && (
@@ -349,7 +424,7 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
                 const fmt = formatPrValue(pr, unit)
                 return (
                   <Link key={pr.id} href="/prs"
-                    className="flex items-center justify-between p-3 bg-p3 rounded-xl hover:bg-p3 transition-colors cursor-pointer">
+                    className="flex items-center justify-between p-3 bg-p2 rounded-xl hover:bg-p3 transition-colors">
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-sm truncate">{pr.movements?.name}</div>
                       <div className="text-mu text-[11px]">
@@ -372,20 +447,21 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
           </Card>
         </div>
 
-        {/* Quick links — minimal: white text, subtle dark surface */}
-        <div className="grid grid-cols-3 gap-3.5">
+        {/* Quick links */}
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { href: '/wod',        label: 'WOD',          desc: 'El de hoy' },
-            { href: '/timer',      label: 'Timer',         desc: 'AMRAP, EMOM…' },
-            { href: '/benchmarks', label: 'Benchmarks',    desc: 'Girls & Heroes' },
-          ].map(item => (
-            <Link key={item.href} href={item.href}>
-              <Card className="p-4 hover:bg-p2 active:scale-[.98] transition-all cursor-pointer">
-                <div className="font-barlow text-[15px] font-extrabold tracking-wide uppercase text-t">{item.label}</div>
-                <div className="text-mu text-xs mt-0.5">{item.desc}</div>
-              </Card>
-            </Link>
-          ))}
+            { href: '/wod/history', label: 'Historial',   icon: History },
+            { href: '/benchmarks',  label: 'Benchmarks',  icon: Trophy },
+            { href: '/calc',        label: 'Calculadora', icon: Calculator },
+          ].map(item => {
+            const Icon = item.icon
+            return (
+              <Link key={item.href} href={item.href} className="tap-card rounded-[20px] bg-p p-4 flex flex-col items-center gap-2 text-center">
+                <span className="size-10 rounded-xl bg-p2 grid place-items-center text-t"><Icon size={18} aria-hidden /></span>
+                <span className="text-xs font-bold">{item.label}</span>
+              </Link>
+            )
+          })}
         </div>
       </div>
 
@@ -393,18 +469,16 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
         <PRModal
           profile={profile}
           onClose={() => setPrModalOpen(false)}
-          onSaved={(isNew, diff) => {
+          onSaved={result => {
             setPrModalOpen(false)
-            setCelebration({ open: true, isNew: !!isNew, diff: diff ?? 0 })
+            setCelebration(result)
+            router.refresh()
           }}
         />
       )}
 
-      {celebration.open && (
-        <RmCelebrationModal
-          isNew={celebration.isNew}
-          onClose={() => { setCelebration({ open: false, isNew: false, diff: 0 }); window.location.reload() }}
-        />
+      {celebration && (
+        <RmCelebrationModal celebration={celebration} onClose={() => setCelebration(null)} />
       )}
     </>
   )

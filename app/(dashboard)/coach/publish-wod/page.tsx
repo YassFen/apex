@@ -20,7 +20,8 @@ export default async function PublishWodPage() {
   const { data: movs } = await supabase.from('movements').select('*').order('category').order('name')
   const today = todayISO()
   const { data: todayWod } = await supabase
-    .from('daily_wods').select('*').eq('box_id', box.id).eq('scheduled_for', today).single()
+    .from('daily_wods').select('*').eq('box_id', box.id).eq('scheduled_for', today)
+    .order('published_at', { ascending: false }).limit(1).maybeSingle()
 
   return (
     <PublishWodPanel

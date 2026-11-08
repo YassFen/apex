@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutGrid, TrendingUp, Timer, Flame, Activity,
   BarChart3, Calculator, Users, User, Trophy, Dumbbell,
-  ArrowLeftRight, ChevronDown,
+  ArrowLeftRight, ChevronDown, History,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useShell } from '@/lib/hooks/useShell'
@@ -13,26 +13,27 @@ import type { Profile } from '@/lib/types/database'
 
 // Analytics is coach-only (box-level stats). Athletes see their own history in /prs.
 const ATHLETE_NAV = [
-  { label: 'Training', items: [
-    { href: '/dashboard',    icon: LayoutGrid, label: 'Dashboard' },
-    { href: '/prs',          icon: TrendingUp, label: 'Historial & RMs' },
-    { href: '/benchmarks',   icon: Trophy,     label: 'Benchmarks' },
-  ]},
-  { label: 'Build', items: [
-    { href: '/wod',          icon: Flame,      label: 'WOD del Día', dot: true },
+  { label: 'Entrenar', items: [
+    { href: '/dashboard',    icon: LayoutGrid, label: 'Inicio' },
+    { href: '/wod',          icon: Flame,      label: 'WOD del día', dot: true },
+    { href: '/wod/history',  icon: History,    label: 'Historial de WODs' },
     { href: '/timer',        icon: Timer,      label: 'Timer' },
+  ]},
+  { label: 'Progreso', items: [
+    { href: '/prs',          icon: TrendingUp, label: 'RMs' },
+    { href: '/benchmarks',   icon: Trophy,     label: 'Benchmarks' },
   ]},
   { label: 'Herramientas', items: [
     { href: '/calc',         icon: Calculator, label: 'Calculadora RM' },
   ]},
   { label: 'Cuenta', items: [
-    { href: '/settings',     icon: User,       label: 'Mi Perfil' },
+    { href: '/settings',     icon: User,       label: 'Mi perfil' },
   ]},
 ]
 
 const COACH_NAV = [
   { label: 'Box', items: [
-    { href: '/dashboard',           icon: LayoutGrid, label: 'Dashboard' },
+    { href: '/dashboard',           icon: LayoutGrid, label: 'Inicio' },
     { href: '/coach/publish-wod',   icon: Flame,      label: 'WOD' },
     { href: '/coach/wod-live',      icon: Activity,   label: 'Seguimiento WOD', dot: true },
     { href: '/coach/athletes',      icon: Users,      label: 'Atletas' },
@@ -43,7 +44,7 @@ const COACH_NAV = [
     { href: '/timer',               icon: Timer,      label: 'Timer' },
   ]},
   { label: 'Cuenta', items: [
-    { href: '/settings',            icon: User,       label: 'Mi Perfil' },
+    { href: '/settings',            icon: User,       label: 'Mi perfil' },
   ]},
 ]
 
@@ -58,7 +59,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 bg-black/70 z-[29] lg:hidden" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[29] lg:hidden animate-fade-in" onClick={onClose} />
       )}
 
       <aside className={cn(
@@ -67,7 +68,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
       )}>
         <div className="px-5 py-[22px] flex items-center gap-3">
           <div className="w-[38px] h-[38px] rounded-xl bg-ac grid place-items-center flex-shrink-0">
-            <Dumbbell size={20} className="text-bg" strokeWidth={2.5} />
+            <Dumbbell size={20} className="text-onac" strokeWidth={2.5} />
           </div>
           <div className="font-barlow text-[26px] font-black tracking-[3px]">AP<span className="text-ac">E</span>X</div>
         </div>
@@ -111,7 +112,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
             <div key={group.label}>
               <div className="px-2.5 pt-3 pb-1.5 text-[10px] uppercase tracking-[2px] text-fa font-bold">{group.label}</div>
               {group.items.map(item => {
-                const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+                const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/') && !nav.some(g => g.items.some(i => i.href !== item.href && pathname.startsWith(i.href) && i.href.length > item.href.length)))
                 const Icon = item.icon
                 return (
                   <Link

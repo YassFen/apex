@@ -234,7 +234,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="w-20 h-20 rounded-2xl object-cover" />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-ac to-bl grid place-items-center font-black text-2xl text-bg">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-ac to-bl grid place-items-center font-black text-2xl text-onac">
                   {initials}
                 </div>
               )}
@@ -242,7 +242,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={uploadingAvatar}
-                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-ac text-bg grid place-items-center border-2 border-bg hover:scale-105 transition-transform disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-ac text-onac grid place-items-center border-2 border-bg hover:scale-105 transition-transform disabled:opacity-50"
                 aria-label="Cambiar foto"
               >
                 <Upload size={13} strokeWidth={2.5} />
@@ -313,7 +313,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
               <div className="flex rounded-xl border border-[var(--ln)] overflow-hidden w-fit">
                 {(['kg', 'lb'] as const).map(u => (
                   <button key={u} type="button" onClick={() => setUnit(u)}
-                    className={`px-6 py-2.5 text-sm font-bold transition-colors ${unit === u ? 'bg-ac text-bg' : 'bg-p3 text-mu hover:text-t'}`}>
+                    className={`px-6 py-2.5 text-sm font-bold transition-colors ${unit === u ? 'bg-ac text-onac' : 'bg-p3 text-mu hover:text-t'}`}>
                     {u}
                   </button>
                 ))}
@@ -381,7 +381,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
                   type="button"
                   onClick={() => logoInputRef.current?.click()}
                   disabled={uploadingLogo}
-                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-ac text-bg grid place-items-center border-2 border-bg hover:scale-105 transition-transform disabled:opacity-50"
+                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-ac text-onac grid place-items-center border-2 border-bg hover:scale-105 transition-transform disabled:opacity-50"
                   aria-label="Cambiar logo"
                 >
                   <Upload size={13} strokeWidth={2.5} />

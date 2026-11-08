@@ -23,8 +23,11 @@ export function StrengthChart({ prs, movement, unit }: Props) {
       const Chart = mod.default
       if (destroyed) return
 
-      const filtered = prs
-        .filter(p => p.movements?.name === movement && (p.metric === '1rm' || p.metric === '3rm'))
+      // One metric per line: mixing 1RM and 3RM draws fake drops. Prefer 1RM.
+      const ofMovement = prs.filter(p => p.movements?.name === movement)
+      const metric = ofMovement.some(p => p.metric === '1rm') ? '1rm' : '3rm'
+      const filtered = ofMovement
+        .filter(p => p.metric === metric)
         .sort((a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime())
 
       const labels = filtered.map(p =>
@@ -51,7 +54,8 @@ export function StrengthChart({ prs, movement, unit }: Props) {
             borderColor: themeColor('ac'),
             backgroundColor: themeColor('ac', .1),
             fill: true,
-            tension: 0.4,
+            tension: 0.35,
+            cubicInterpolationMode: 'monotone' as const, // no overshoot below/above real values
             pointBackgroundColor: themeColor('ac'),
             pointRadius: 5,
             pointHoverRadius: 7,

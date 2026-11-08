@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CalendarClock, Users, Timer, Pencil } from 'lucide-react'
+import { CalendarClock, Users, Timer, Pencil, History, Dumbbell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { rankResults } from '@/lib/utils/wod-ranking'
 import { Topbar } from '@/components/layout/Topbar'
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { WodResultModal } from './WodResultModal'
 import { WodLeaderboard } from './WodLeaderboard'
+import { useToast } from '@/components/ui/Toast'
 import type { Profile, DailyWod } from '@/lib/types/database'
 
 interface Props {
@@ -19,7 +20,11 @@ interface Props {
   results: any[]
   myResult: any | null
   memberships: any[]
+  maxes?: { name: string; valueLb: number }[]
+  bumps?: Bump[] | null
 }
+
+type Bump = { result_id: string; user_id: string }
 
 export const WOD_TYPE_META: Record<string, { label: string; cls: string }> = {
   fortime:  { label: 'For Time', cls: 'text-or bg-or/15' },
@@ -31,13 +36,15 @@ export const WOD_TYPE_META: Record<string, { label: string; cls: string }> = {
 
 const MAX_EDITS = 2
 
-export function WodView({ profile, wod: initialWod, results: initialResults, memberships }: Props) {
+export function WodView({ profile, wod: initialWod, results: initialResults, memberships, maxes = [], bumps: initialBumps = [] }: Props) {
   const router = useRouter()
   const [supabase] = useState(() => createClient())
   const [wod, setWod]           = useState(initialWod)
   const [results, setResults]   = useState<any[]>(initialResults)
   const [resultModalOpen, setResultModalOpen] = useState(false)
   const [justPublished, setJustPublished]     = useState(false)
+  const [bumps, setBumps] = useState<Bump[] | null>(initialBumps)
+  const { fire } = useToast()
 
   const ranked = useMemo(() => rankResults(results), [results])
   const myResult = results.find(r => r.user_id === profile.id) ?? null
@@ -48,6 +55,24 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
       .select('*, profiles(full_name, avatar_url)')
       .eq('daily_wod_id', wodId)
     setResults(data ?? [])
+    const ids = (data ?? []).map((r: any) => r.id)
+    if (ids.length === 0) return
+    const { data: b, error } = await supabase.from('wod_result_bumps').select('result_id, user_id').in('result_id', ids)
+    setBumps(error ? null : ((b ?? []) as Bump[]))
+  }
+
+  async function toggleBump(resultId: string) {
+    if (!bumps) return
+    const mine = bumps.some(b => b.result_id === resultId && b.user_id === profile.id)
+    const prev = bumps
+    // Optimistic: the tap feels instant, and we roll back if the server says no.
+    setBumps(mine
+      ? bumps.filter(b => !(b.result_id === resultId && b.user_id === profile.id))
+      : [...bumps, { result_id: resultId, user_id: profile.id }])
+    const { error } = mine
+      ? await supabase.from('wod_result_bumps').delete().eq('result_id', resultId).eq('user_id', profile.id)
+      : await supabase.from('wod_result_bumps').insert({ result_id: resultId, user_id: profile.id })
+    if (error) { setBumps(prev); fire('No se pudo enviar. Inténtalo de nuevo.', 'error') }
   }
 
   useEffect(() => {
@@ -74,6 +99,9 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
         event: '*', schema: 'public', table: 'wod_results',
         filter: `daily_wod_id=eq.${wod.id}`,
       }, () => reloadResults(wod.id))
+      channel.on('postgres_changes', {
+        event: '*', schema: 'public', table: 'wod_result_bumps',
+      }, () => reloadResults(wod.id))
     }
 
     channel.subscribe()
@@ -90,11 +118,16 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
 
   return (
     <>
-      <Topbar title="WOD del Día" profile={profile} />
+      <Topbar title="WOD del día" profile={profile} actions={
+        <Link href="/wod/history" aria-label="Historial de WODs" title="Historial de WODs"
+          className="size-10 grid place-items-center rounded-xl text-mu hover:text-t hover:bg-p2 transition-colors">
+          <History size={18} aria-hidden />
+        </Link>
+      } />
 
       {justPublished && (
         <div className="fixed top-[70px] inset-x-0 flex justify-center z-50 px-4 animate-fade-up pointer-events-none" role="status">
-          <div className="bg-ac text-bg font-bold text-sm px-4 py-2 rounded-full">
+          <div className="bg-ac text-onac font-bold text-sm px-4 py-2 rounded-full">
             Tu coach actualizó el WOD
           </div>
         </div>
@@ -115,7 +148,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
                 : 'Tu coach aún no publica el WOD de hoy. Aparecerá aquí apenas lo haga, sin recargar.'}
             </p>
             {memberships.length === 0 ? (
-              <Link href="/settings" className="mt-2 h-11 px-5 rounded-full bg-ac text-bg font-bold text-sm grid place-items-center active:scale-[0.96] transition-transform">
+              <Link href="/settings" className="mt-2 h-11 px-5 rounded-full bg-ac text-onac font-bold text-sm grid place-items-center active:scale-[0.96] transition-transform">
                 Ingresar código de box
               </Link>
             ) : (
@@ -189,7 +222,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
                         <Timer size={18} aria-hidden /> Timer
                       </Link>
                     )}
-                    <button type="button" onClick={() => setResultModalOpen(true)} className="w-full h-14 rounded-full bg-ac text-bg font-bold text-base hover:bg-ac/90 active:scale-[0.96] transition-[transform,background-color]">
+                    <button type="button" onClick={() => setResultModalOpen(true)} className="w-full h-14 rounded-full bg-ac text-onac font-bold text-base hover:bg-ac/90 active:scale-[0.96] transition-[transform,background-color]">
                       Registrar resultado
                     </button>
                   </div>
@@ -197,7 +230,9 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
               </div>
             </Card>
 
-            <WodLeaderboard results={ranked} currentUserId={profile.id} />
+            <YourNumbers movements={movements} maxes={maxes} unit={profile.preferred_unit ?? 'kg'} />
+
+            <WodLeaderboard results={ranked} currentUserId={profile.id} bumps={bumps} onBump={toggleBump} />
           </>
         )}
       </div>
@@ -208,9 +243,61 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
           profile={profile}
           existingResult={myResult ?? undefined}
           onClose={() => setResultModalOpen(false)}
-          onSaved={() => { setResultModalOpen(false); reloadResults(wod.id); router.refresh() }}
+          onSaved={() => {
+            setResultModalOpen(false); reloadResults(wod.id); router.refresh()
+            fire(myResult ? 'Resultado corregido' : 'Resultado registrado. ¡Bien hecho!', 'pr')
+          }}
         />
       )}
     </>
+  )
+}
+
+const PERCENTS = [60, 70, 80, 90]
+
+/** Today's lifts matched against the athlete's 1RMs, with quick working percentages. */
+function YourNumbers({ movements, maxes, unit }: { movements: any[]; maxes: { name: string; valueLb: number }[]; unit: 'kg' | 'lb' }) {
+  const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+  const matches = movements
+    .map(m => {
+      const name = norm(m.name ?? '')
+      const max = maxes.find(x => { const n = norm(x.name); return name && (name.includes(n) || n.includes(name)) })
+      return max ? { label: max.name, valueLb: max.valueLb } : null
+    })
+    .filter((m, i, arr): m is { label: string; valueLb: number } => !!m && arr.findIndex(x => x?.label === m.label) === i)
+
+  if (matches.length === 0) return null
+
+  const toUnit = (lb: number) => {
+    const v = unit === 'kg' ? lb * 0.453592 : lb
+    // Round to what you can actually load: 0.5 kg / 1 lb steps.
+    return unit === 'kg' ? Math.round(v * 2) / 2 : Math.round(v)
+  }
+
+  return (
+    <Card>
+      <div className="flex items-center gap-2 mb-3">
+        <Dumbbell size={16} className="text-ac" aria-hidden />
+        <h3 className="font-barlow text-lg font-extrabold tracking-wide uppercase">Tus números</h3>
+      </div>
+      <ul className="flex flex-col gap-3">
+        {matches.map(m => (
+          <li key={m.label}>
+            <div className="flex items-baseline justify-between gap-3 mb-1.5">
+              <span className="font-semibold text-sm truncate">{m.label}</span>
+              <span className="text-mu text-xs tabular-nums">1RM <span className="text-t font-bold">{toUnit(m.valueLb)} {unit}</span></span>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {PERCENTS.map(p => (
+                <div key={p} className="rounded-xl bg-p2 py-2 text-center">
+                  <div className="text-[10px] text-mu font-bold">{p}%</div>
+                  <div className="font-barlow text-lg font-black tabular-nums leading-tight">{toUnit(m.valueLb * p / 100)}</div>
+                </div>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }

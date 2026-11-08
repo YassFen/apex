@@ -1,10 +1,18 @@
-import { Trophy } from 'lucide-react'
+import { Flame, Trophy } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils/cn'
 
+const PODIUM = ['bg-ac text-onac', 'bg-t/15 text-t', 'bg-or/20 text-or']
+
 // Expects results already ordered with rankResults().
-export function WodLeaderboard({ results, currentUserId }: { results: any[]; currentUserId: string }) {
+// `bumps` null hides reactions (table not migrated yet).
+export function WodLeaderboard({ results, currentUserId, bumps = null, onBump }: {
+  results: any[]
+  currentUserId: string
+  bumps?: { result_id: string; user_id: string }[] | null
+  onBump?: (resultId: string) => void
+}) {
   if (results.length === 0) {
     return (
       <Card className="text-center py-8 flex flex-col items-center gap-2">
@@ -27,37 +35,62 @@ export function WodLeaderboard({ results, currentUserId }: { results: any[]; cur
           {myIndex >= 0 && <> · vas <span className="text-t font-semibold">#{myIndex + 1}</span></>}
         </span>
       </div>
-      <ol className="px-2 pb-2">
+      <ol className="px-2 pb-2 stagger">
         {results.map((r, i) => {
           const isMe = r.user_id === currentUserId
           const name = r.profiles?.full_name ?? 'Atleta'
           const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+          const count = bumps?.filter(b => b.result_id === r.id).length ?? 0
+          const bumped = !!bumps?.some(b => b.result_id === r.id && b.user_id === currentUserId)
           return (
             <li key={r.id ?? r.user_id}
-              className={cn('flex items-center gap-3 px-3 py-2.5 rounded-xl', isMe && 'bg-ac/10')}
+              className={cn('flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl', isMe && 'bg-ac/10')}
               aria-current={isMe ? 'true' : undefined}
             >
               <span className={cn(
-                'w-7 text-center font-barlow text-2xl font-black tabular-nums',
-                i === 0 ? 'text-ac' : i < 3 ? 'text-t' : 'text-fa',
+                'size-7 flex-shrink-0 rounded-full grid place-items-center font-barlow text-base font-black tabular-nums',
+                i < 3 ? PODIUM[i] : 'text-fa',
               )}>
                 {i + 1}
               </span>
               {r.profiles?.avatar_url ? (
                 <img src={r.profiles.avatar_url} alt="" width={32} height={32}
-                  className="size-8 rounded-full object-cover flex-shrink-0 outline outline-1 -outline-offset-1 outline-white/10" />
+                  className="size-8 rounded-full object-cover flex-shrink-0 outline outline-1 -outline-offset-1 outline-t/10" />
               ) : (
                 <span className="size-8 rounded-full bg-p3 grid place-items-center font-bold text-xs text-mu flex-shrink-0">
                   {initials}
                 </span>
               )}
-              <span className={cn('flex-1 min-w-0 truncate text-sm font-semibold', isMe ? 'text-ac' : 'text-t')}>
-                {name}{isMe && <span className="text-mu font-normal"> (tú)</span>}
+              <span className="flex-1 min-w-0">
+                <span className={cn('block truncate text-sm font-semibold', isMe ? 'text-ac' : 'text-t')}>
+                  {name}{isMe && <span className="text-mu font-normal"> (tú)</span>}
+                </span>
+                <span className="flex items-center gap-1.5 mt-0.5">
+                  <span className="font-barlow text-lg font-bold tabular-nums leading-none">{r.result_value}</span>
+                  <Badge color={r.rx_level === 'rx+' ? 'orange' : r.rx_level === 'scaled' ? 'blue' : 'lime'} className="!px-1.5 !py-0 text-[10px]">
+                    {r.rx_level.toUpperCase()}
+                  </Badge>
+                </span>
               </span>
-              <span className="font-barlow text-xl font-bold tabular-nums">{r.result_value}</span>
-              <Badge color={r.rx_level === 'rx+' ? 'orange' : r.rx_level === 'scaled' ? 'blue' : 'lime'} className="w-[58px] justify-center">
-                {r.rx_level.toUpperCase()}
-              </Badge>
+              {bumps && onBump && (
+                isMe ? (
+                  count > 0 && (
+                    <span className="flex items-center gap-1 text-or text-xs font-bold tabular-nums px-2" aria-label={`${count} te dieron fuego`}>
+                      <Flame size={15} fill="currentColor" aria-hidden />{count}
+                    </span>
+                  )
+                ) : (
+                  <button type="button" onClick={() => onBump(r.id)} aria-pressed={bumped}
+                    aria-label={bumped ? `Quitar fuego a ${name}` : `Dar fuego a ${name}`}
+                    className={cn(
+                      'h-9 min-w-[52px] px-2.5 rounded-full flex items-center justify-center gap-1 text-xs font-bold tabular-nums transition-[background-color,color,transform] active:scale-90',
+                      bumped ? 'bg-or/20 text-or' : 'bg-p2 text-mu hover:text-t',
+                    )}>
+                    <Flame size={15} fill={bumped ? 'currentColor' : 'none'} aria-hidden className={bumped ? 'animate-pop' : ''} />
+                    {count > 0 && count}
+                  </button>
+                )
+              )}
             </li>
           )
         })}

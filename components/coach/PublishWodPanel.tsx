@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { ChevronDown, ChevronUp, Plus, Trash2, Check, Send, Copy, FileText, Settings2, Dumbbell, Pencil } from 'lucide-react'
 import type { Profile, Box, Movement, MovementCategory } from '@/lib/types/database'
 
@@ -102,7 +103,7 @@ export function PublishWodPanel({
 }: { profile: Profile; box: Box; movements: Movement[]; todayWod: any }) {
   const supabase = createClient()
   const router   = useRouter()
-  const { fire, element: toastEl } = useToast()
+  const { fire } = useToast()
 
   const [title, setTitle]       = useState(todayWod?.title ?? '')
   const [type, setType]         = useState<WodType>(todayWod?.type ?? 'fortime')
@@ -205,6 +206,14 @@ export function PublishWodPanel({
     cancelMovEditor()
   }
 
+  // Enter inside the movement editor adds the movement instead of submitting
+  // (publishing) the whole WOD form.
+  function addOnEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    saveMovement()
+  }
+
   function removeMovement(i: number) {
     setWodMovs(prev => prev.filter((_, idx) => idx !== i))
   }
@@ -230,10 +239,32 @@ export function PublishWodPanel({
     setTimeout(() => router.push('/dashboard'), 1500)
   }
 
+  const [confirm, setConfirm] = useState<null | 'clear' | 'remove'>(null)
+  const [removing, setRemoving] = useState(false)
+
   function handleClear() {
-    if (!confirm('¿Limpiar todo el WOD?')) return
     setTitle(''); setDesc(''); setDuration(''); setWodMovs([])
     setOpenStep({ format: true, movs: true, publish: true })
+    setConfirm(null)
+  }
+
+  // Delete today's WOD. Without the delete policy from migration 005 RLS
+  // silently deletes nothing, so fall back to hiding it (is_live = false).
+  async function handleRemove() {
+    if (!todayWod) return
+    setRemoving(true)
+    const { data, error } = await supabase.from('daily_wods').delete().eq('id', todayWod.id).select('id')
+    let failed = !!error
+    if (!error && (data ?? []).length === 0) {
+      const { error: hideErr } = await supabase.from('daily_wods').update({ is_live: false }).eq('id', todayWod.id)
+      failed = !!hideErr
+    }
+    setRemoving(false)
+    setConfirm(null)
+    if (failed) { fire('No se pudo quitar el WOD. Inténtalo de nuevo.', 'error'); return }
+    fire('WOD quitado. Tus atletas ya no lo ven.', 'ok')
+    router.push('/dashboard')
+    router.refresh()
   }
 
   function handleExportText() {
@@ -250,7 +281,6 @@ export function PublishWodPanel({
   return (
     <>
       <Topbar title="WOD" profile={profile} />
-      {toastEl}
 
       <div className="p-4 lg:p-6 max-w-3xl mx-auto flex flex-col gap-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -258,18 +288,47 @@ export function PublishWodPanel({
             <div className="font-barlow text-xl font-black tracking-wide uppercase">WOD Builder</div>
             <div className="text-mu text-xs mt-0.5">Construye, exporta y publica el WOD del día</div>
           </div>
-          <button onClick={handleClear}
+          <button type="button" onClick={() => setConfirm('clear')}
                   className="px-3 py-1.5 rounded-lg bg-rd/10 border border-rd/18 text-rd text-xs font-bold hover:bg-rd/15 transition flex items-center gap-1.5">
             <Trash2 size={12} strokeWidth={2.5} />
             Limpiar
           </button>
         </div>
 
-        {todayWod && (
-          <div className="p-3 rounded-xl bg-or/10 border border-or/20 text-or text-sm font-semibold">
-            Ya hay un WOD publicado hoy — guardar reemplazará el actual.
+        {todayWod && !todayWod.is_live && (
+          <div className="p-3 pl-4 rounded-xl bg-p2 text-mu text-sm font-semibold">
+            Quitaste el WOD de hoy. Si lo guardas, se vuelve a publicar.
           </div>
         )}
+        {todayWod?.is_live && (
+          <div className="p-3 pl-4 rounded-xl bg-or/10 text-or text-sm font-semibold flex items-center gap-3">
+            <span className="flex-1">Ya hay un WOD publicado hoy. Guardar lo actualiza en vivo.</span>
+            <button type="button" onClick={() => setConfirm('remove')}
+              className="flex-shrink-0 h-9 px-3 rounded-full bg-rd/15 text-rd text-xs font-bold hover:bg-rd/25 transition">
+              Quitar WOD
+            </button>
+          </div>
+        )}
+
+        <ConfirmDialog
+          open={confirm === 'clear'}
+          title="¿Limpiar el formulario?"
+          body="Se borran el título, la descripción y los movimientos que estás editando. El WOD publicado no cambia hasta que guardes."
+          confirmLabel="Limpiar"
+          danger
+          onConfirm={handleClear}
+          onClose={() => setConfirm(null)}
+        />
+        <ConfirmDialog
+          open={confirm === 'remove'}
+          title="¿Quitar el WOD de hoy?"
+          body="Tus atletas dejarán de verlo, junto con los resultados registrados en él."
+          confirmLabel="Quitar"
+          danger
+          busy={removing}
+          onConfirm={handleRemove}
+          onClose={() => setConfirm(null)}
+        />
 
         <form onSubmit={handlePublish} className="flex flex-col gap-3">
 
@@ -380,7 +439,7 @@ export function PublishWodPanel({
                     {movsForCat.map(mov => (
                       <button key={mov.id} type="button" onClick={() => { setMName(mov.name); setMError(null) }}
                               className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition ${
-                                mName === mov.name ? 'bg-ac text-bg border-ac' : 'bg-p2 border-[var(--ln)] text-mu hover:text-t'
+                                mName === mov.name ? 'bg-ac text-onac border-ac' : 'bg-p2 border-[var(--ln)] text-mu hover:text-t'
                               }`}>
                         {mov.name}
                       </button>
@@ -391,20 +450,20 @@ export function PublishWodPanel({
                   <div className={`grid grid-cols-1 ${weightRequired ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-2.5`}>
                     <div>
                       <Label small>Movimiento (o custom)</Label>
-                      <input value={mName} onChange={e => { setMName(e.target.value); setMError(null) }}
+                      <input value={mName} onChange={e => { setMName(e.target.value); setMError(null) }} onKeyDown={addOnEnter}
                         className="w-full px-3 py-2 rounded-lg bg-p2 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                         placeholder="Ej: Burpee, Custom mov…" />
                     </div>
                     <div>
                       <Label small>Reps / Distancia *</Label>
-                      <input value={mReps} onChange={e => { setMReps(e.target.value); setMError(null) }}
+                      <input value={mReps} onChange={e => { setMReps(e.target.value); setMError(null) }} onKeyDown={addOnEnter}
                         className="w-full px-3 py-2 rounded-lg bg-p2 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                         placeholder="10, 21, 400m" />
                     </div>
                     {weightRequired && (
                       <div>
                         <Label small>Carga *</Label>
-                        <input value={mWeight} onChange={e => { setMWeight(e.target.value); setMError(null) }}
+                        <input value={mWeight} onChange={e => { setMWeight(e.target.value); setMError(null) }} onKeyDown={addOnEnter}
                           className="w-full px-3 py-2 rounded-lg bg-p2 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                           placeholder="220 lb, 75% RM" />
                       </div>
@@ -421,7 +480,7 @@ export function PublishWodPanel({
                       Cancelar
                     </button>
                     <button type="button" onClick={saveMovement}
-                            className="flex-1 py-2 rounded-lg bg-ac text-bg text-sm font-bold">
+                            className="flex-1 py-2 rounded-lg bg-ac text-onac text-sm font-bold">
                       {editingIdx !== null ? 'Guardar cambios' : 'Agregar'}
                     </button>
                   </div>
@@ -444,13 +503,13 @@ export function PublishWodPanel({
             done={false} open={openStep.publish} onToggle={() => toggle('publish')}
           >
             <div className="flex flex-col sm:flex-row gap-2.5">
-              <Button type="submit" size="lg" className="flex-1" disabled={publishing}>
+              <Button type="submit" size="lg" className="sm:flex-1 h-14 text-base" disabled={publishing}>
                 <Send size={16} strokeWidth={2.2} />
                 {publishing ? 'Publicando…' : todayWod ? 'Actualizar WOD en vivo' : 'Publicar WOD en vivo'}
               </Button>
               <Button type="button" variant="secondary" size="lg" className="sm:w-auto" onClick={handleExportText}>
                 <Copy size={14} strokeWidth={2.2} />
-                Exportar texto
+                Copiar para WhatsApp
               </Button>
             </div>
           </Step>
@@ -472,7 +531,7 @@ function Step({ n, title, sub, icon, done, open, onToggle, children }: {
       <button type="button" onClick={onToggle}
               className="w-full flex items-center gap-3 p-4 text-left">
         <div className={`w-8 h-8 rounded-full grid place-items-center font-barlow font-black text-sm flex-shrink-0 ${
-          done ? 'bg-ac text-bg' : 'bg-p3 text-mu border border-[var(--ln2)]'
+          done ? 'bg-ac text-onac' : 'bg-p3 text-mu border border-[var(--ln2)]'
         }`}>
           {done ? <Check size={14} strokeWidth={3} /> : n}
         </div>
@@ -509,7 +568,7 @@ function MovDisplayRow({ index, mov, onEdit, onDelete }: {
   const showWeight = shouldShowWeight(mov.category)
   return (
     <div className="rounded-xl border border-[var(--ln)] bg-p3 flex items-center gap-3 px-3 py-3">
-      <div className="w-7 h-7 rounded-full bg-ac text-bg grid place-items-center font-barlow font-black text-xs flex-shrink-0">
+      <div className="w-7 h-7 rounded-full bg-ac text-onac grid place-items-center font-barlow font-black text-xs flex-shrink-0">
         {index + 1}
       </div>
       <div className="flex-1 min-w-0">

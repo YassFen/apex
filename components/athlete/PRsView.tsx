@@ -6,6 +6,9 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { PRModal } from './PRModal'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useToast } from '@/components/ui/Toast'
+import { RmCelebrationModal, type Celebration } from './RmCelebrationModal'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { friendlyError } from '@/lib/utils/errors'
@@ -66,16 +69,24 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
   const [view, setView]               = useState<'table' | 'cards'>('table')
   const [prModalOpen, setPrModalOpen] = useState(false)
   const [editingPr, setEditingPr]     = useState<any>(null)
+  const [celebration, setCelebration] = useState<Celebration | null>(null)
   const [deletingId, setDeletingId]   = useState<string | null>(null)
   const router = useRouter()
 
-  async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return
-    setDeletingId(id)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+  const { fire } = useToast()
+
+  function handleDelete(id: string) { setConfirmId(id) }
+
+  async function confirmDelete() {
+    if (!confirmId) return
+    setDeletingId(confirmId)
     const supabase = createClient()
-    const { error } = await supabase.from('pr_records').delete().eq('id', id)
+    const { error } = await supabase.from('pr_records').delete().eq('id', confirmId)
     setDeletingId(null)
-    if (error) { alert(friendlyError(error.message)); return }
+    setConfirmId(null)
+    if (error) { fire(friendlyError(error.message), 'error'); return }
+    fire('Registro eliminado', 'ok')
     router.refresh()
   }
 
@@ -152,12 +163,12 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
           </div>
           <div className="flex items-center gap-1 p-1 rounded-xl bg-p border border-[var(--ln)]">
             <button onClick={() => setView('table')}
-                    className={`p-1.5 rounded-lg transition ${view === 'table' ? 'bg-ac text-bg' : 'text-mu hover:text-t'}`}
+                    className={`p-1.5 rounded-lg transition ${view === 'table' ? 'bg-ac text-onac' : 'text-mu hover:text-t'}`}
                     aria-label="Vista tabla">
               <List size={15} strokeWidth={2.2} />
             </button>
             <button onClick={() => setView('cards')}
-                    className={`p-1.5 rounded-lg transition ${view === 'cards' ? 'bg-ac text-bg' : 'text-mu hover:text-t'}`}
+                    className={`p-1.5 rounded-lg transition ${view === 'cards' ? 'bg-ac text-onac' : 'text-mu hover:text-t'}`}
                     aria-label="Vista cards">
               <LayoutGrid size={15} strokeWidth={2.2} />
             </button>
@@ -352,8 +363,23 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
           profile={profile}
           editingPr={editingPr}
           onClose={closeModal}
-          onSaved={() => { closeModal(); router.refresh() }}
+          onSaved={result => { closeModal(); setCelebration(result); router.refresh() }}
         />
+      )}
+
+      <ConfirmDialog
+        open={!!confirmId}
+        title="¿Eliminar registro?"
+        body="Esta acción no se puede deshacer. Si era tu récord, tu récord pasa al siguiente mejor registro."
+        confirmLabel="Eliminar"
+        danger
+        busy={!!deletingId}
+        onConfirm={confirmDelete}
+        onClose={() => setConfirmId(null)}
+      />
+
+      {celebration && (
+        <RmCelebrationModal celebration={celebration} onClose={() => setCelebration(null)} />
       )}
     </>
   )

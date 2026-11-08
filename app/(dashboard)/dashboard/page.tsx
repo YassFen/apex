@@ -16,7 +16,9 @@ export default async function DashboardPage() {
   // Fetch coach box + stats
   let coachBox: Box | null = null
   let athleteCount = 0
-  let todayWodTitle: string | null = null
+  let todayWod: { id: string; title: string; type: string } | null = null
+  let todayResults = 0
+  let recentMembers: { id: string; name: string; avatar: string | null; joinedAt: string }[] = []
 
   if (profile.role === 'coach' || profile.role === 'admin') {
     const { data: b } = await supabase
@@ -30,17 +32,42 @@ export default async function DashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('box_id', coachBox.id)
         .eq('is_active', true)
+        .neq('user_id', user.id) // the coach is a member of their own box; don't count them
       athleteCount = count ?? 0
 
       // Today's WOD
       const today = todayISO()
-      const { data: wod } = await supabase
-        .from('daily_wods')
-        .select('title, type')
-        .eq('box_id', coachBox.id)
-        .eq('scheduled_for', today)
-        .maybeSingle()
-      todayWodTitle = wod?.title ?? null
+      const [{ data: wod }, { data: members }] = await Promise.all([
+        supabase
+          .from('daily_wods')
+          .select('id, title, type')
+          .eq('box_id', coachBox.id)
+          .eq('scheduled_for', today)
+          .eq('is_live', true)
+          .order('published_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('box_members')
+          .select('user_id, joined_at, profiles(full_name, avatar_url)')
+          .eq('box_id', coachBox.id)
+          .eq('is_active', true)
+          .neq('user_id', user.id)
+          .order('joined_at', { ascending: false })
+          .limit(5),
+      ])
+      todayWod = (wod as any) ?? null
+      recentMembers = ((members ?? []) as any[]).map(m => ({
+        id: m.user_id, name: m.profiles?.full_name ?? 'Atleta', avatar: m.profiles?.avatar_url ?? null, joinedAt: m.joined_at,
+      }))
+
+      if (todayWod) {
+        const { count: rc } = await supabase
+          .from('wod_results')
+          .select('*', { count: 'exact', head: true })
+          .eq('daily_wod_id', todayWod.id)
+        todayResults = rc ?? 0
+      }
     }
   }
 
@@ -51,6 +78,36 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .order('recorded_at', { ascending: false })
     .limit(50)
+
+  // Athlete home: today's WOD in any of my boxes, and whether I already logged it.
+  const { data: myBoxes } = await supabase
+    .from('box_members').select('box_id').eq('user_id', user.id).eq('is_active', true)
+  const myBoxIds = ((myBoxes ?? []) as any[]).map(m => m.box_id as string)
+  let athleteToday: { title: string; type: string; durationMins: number | null; myResult: string | null } | null = null
+  if (myBoxIds.length > 0) {
+    const { data: w } = await supabase
+      .from('daily_wods')
+      .select('id, title, type, duration_mins')
+      .in('box_id', myBoxIds)
+      .eq('scheduled_for', todayISO())
+      .eq('is_live', true)
+      .order('published_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (w) {
+      const { data: r } = await supabase
+        .from('wod_results').select('result_value').eq('daily_wod_id', (w as any).id).eq('user_id', user.id).maybeSingle()
+      athleteToday = { title: (w as any).title, type: (w as any).type, durationMins: (w as any).duration_mins, myResult: (r as any)?.result_value ?? null }
+    }
+  }
+
+  // Days with a logged WOD result (last 60), for the streak and the week strip.
+  const { data: rawResultDays } = await supabase
+    .from('wod_results')
+    .select('recorded_at')
+    .eq('user_id', user.id)
+    .gte('recorded_at', new Date(Date.now() - 60 * 86_400_000).toISOString())
+  const resultDates = ((rawResultDays ?? []) as any[]).map(r => r.recorded_at as string)
 
   // All movements — used by AthleteDashboard for KPI customization picker
   // so the user can choose any movement, not just ones they've already PR'd.
@@ -68,7 +125,12 @@ export default async function DashboardPage() {
       prs={(rawPrs ?? []) as any[]}
       movements={allMovements}
       athleteCount={athleteCount}
-      todayWodTitle={todayWodTitle}
+      todayWod={todayWod}
+      todayResults={todayResults}
+      recentMembers={recentMembers}
+      athleteToday={athleteToday}
+      hasBox={myBoxIds.length > 0}
+      resultDates={resultDates}
     />
   )
 }

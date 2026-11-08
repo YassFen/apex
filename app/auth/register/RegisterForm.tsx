@@ -84,7 +84,7 @@ export function RegisterForm() {
         </div>
         <Link
           href={`/auth/login?email=${encodeURIComponent(sentTo)}`}
-          className="h-12 rounded-full bg-ac text-bg font-bold grid place-items-center hover:bg-ac/90 active:scale-[0.96] transition-[transform,background-color]"
+          className="h-12 rounded-full bg-ac text-onac font-bold grid place-items-center hover:bg-ac/90 active:scale-[0.96] transition-[transform,background-color]"
         >
           Ir a iniciar sesión
         </Link>

@@ -75,7 +75,7 @@ export default function CreateBoxPage() {
     <div className="min-h-dvh bg-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="size-14 mx-auto mb-4 rounded-2xl bg-ac grid place-items-center"><Dumbbell size={26} className="text-bg" aria-hidden /></div>
+          <div className="size-14 mx-auto mb-4 rounded-2xl bg-ac grid place-items-center"><Dumbbell size={26} className="text-onac" aria-hidden /></div>
           <h1 className="font-barlow text-4xl font-black tracking-wide">CREA TU BOX</h1>
           <p className="text-mu text-sm mt-2">Configura tu box para gestionar atletas y publicar WODs</p>
         </div>

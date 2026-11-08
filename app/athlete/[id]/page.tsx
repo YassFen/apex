@@ -58,7 +58,7 @@ export default async function PublicAthletePage({ params }: { params: Promise<{ 
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-2xl object-cover" />
           ) : (
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-ac to-bl grid place-items-center font-black text-2xl text-bg">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-ac to-bl grid place-items-center font-black text-2xl text-onac">
               {initials}
             </div>
           )}

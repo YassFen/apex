@@ -39,7 +39,7 @@ export function Modal({ open, onClose, title, subtitle, children, className }: M
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
+      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in flex items-end sm:items-center justify-center sm:p-4"
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div
@@ -48,7 +48,7 @@ export function Modal({ open, onClose, title, subtitle, children, className }: M
         tabIndex={-1}
         className={cn(
           'relative w-full sm:max-w-[520px] bg-p rounded-t-[24px] sm:rounded-[24px] p-5 sm:p-6 ring-1 ring-t/[0.07]',
-          'max-h-[92dvh] overflow-y-auto overscroll-contain outline-none animate-fade-up',
+          'max-h-[92dvh] overflow-y-auto overscroll-contain outline-none animate-sheet shadow-2xl',
           'pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:pb-6',
           className,
         )}

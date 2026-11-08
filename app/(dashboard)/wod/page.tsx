@@ -45,12 +45,37 @@ export default async function WodPage() {
 
   const myResult = results.find((r: any) => r.user_id === user.id) ?? null
 
+  // "Fuego" reactions. null = table not created yet (migration 005), so the UI hides them.
+  let bumps: { result_id: string; user_id: string }[] | null = []
+  if (results.length > 0) {
+    const { data, error } = await supabase
+      .from('wod_result_bumps')
+      .select('result_id, user_id')
+      .in('result_id', results.map((r: any) => r.id))
+    bumps = error ? null : ((data ?? []) as any[])
+  }
+
+  // Current 1RMs, so the WOD can show "your numbers" for today's lifts.
+  const { data: rawMaxes } = wod
+    ? await supabase
+        .from('pr_records')
+        .select('value_lb, movements(name)')
+        .eq('user_id', user.id)
+        .eq('metric', '1rm')
+        .eq('is_pr', true)
+    : { data: [] as any[] }
+  const maxes = ((rawMaxes ?? []) as any[])
+    .filter(r => r.movements?.name)
+    .map(r => ({ name: r.movements.name as string, valueLb: Number(r.value_lb) }))
+
   return (
     <WodView
       profile={profile}
       wod={wod}
       results={results}
       myResult={myResult}
+      maxes={maxes}
+      bumps={bumps}
       memberships={(memberships ?? []) as any[]}
     />
   )
