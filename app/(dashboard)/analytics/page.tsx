@@ -1,5 +1,6 @@
 import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 import { createClient } from '@/lib/supabase/server'
+import { getUser, getProfile } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
@@ -13,10 +14,10 @@ const CAT_LABELS: Record<string, string> = {
 
 export default async function AnalyticsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const profileData = await getProfile(user.id)
   const profile = profileData as Profile | null
   if (!profile) redirect('/auth/login')
 

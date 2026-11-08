@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getUser, getProfile } from '@/lib/supabase/session'
 import { notFound, redirect } from 'next/navigation'
 import { todayISO } from '@/lib/utils/dates'
 import { EventView, type EventDetail } from '@/components/calendar/EventView'
@@ -8,10 +9,10 @@ import type { Profile } from '@/lib/types/database'
 export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const p = await getProfile(user.id)
   const profile = p as Profile | null
   if (!profile) redirect('/auth/login')
 

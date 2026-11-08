@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getUser, getProfile } from '@/lib/supabase/session'
 import { todayISO } from '@/lib/utils/dates'
 import { redirect } from 'next/navigation'
 import { WodView } from '@/components/wod/WodView'
@@ -6,10 +7,10 @@ import type { Profile } from '@/lib/types/database'
 
 export default async function WodPage({ searchParams }: { searchParams: Promise<{ box?: string; wod?: string }> }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const p = await getProfile(user.id)
   const profile = p as Profile | null
   if (!profile) redirect('/auth/login')
 

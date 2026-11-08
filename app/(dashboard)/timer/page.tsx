@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getUser, getProfile } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import { TimerView, type TimerMode } from '@/components/athlete/TimerView'
 import type { Profile } from '@/lib/types/database'
@@ -8,9 +9,9 @@ const MODES: TimerMode[] = ['fortime', 'amrap', 'emom', 'tabata']
 // /timer?mode=amrap&mins=12&wod=Cindy preloads the timer from the WOD of the day.
 export default async function TimerPage({ searchParams }: { searchParams: Promise<{ mode?: string; mins?: string; wod?: string }> }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) redirect('/auth/login')
-  const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const p = await getProfile(user.id)
   const profile = p as Profile | null
   if (!profile) redirect('/auth/login')
 

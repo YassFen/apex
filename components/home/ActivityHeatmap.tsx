@@ -1,5 +1,4 @@
 'use client'
-import { motion } from 'motion/react'
 import { addDaysISO, formatDateOnly, todayISO } from '@/lib/utils/dates'
 import { cn } from '@/lib/utils/cn'
 
@@ -23,14 +22,12 @@ export function ActivityHeatmap({ counts }: { counts: Map<string, number> }) {
       <div className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${WEEKS}, minmax(0, 1fr))` }}>
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-rows-7 gap-[3px]">
-            {week.map((day, di) => {
+            {week.map(day => {
               const n = day > today ? -1 : counts.get(day) ?? 0
               return (
-                <motion.span key={day}
-                  initial={{ opacity: 0, scale: 0.4 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}
-                  transition={{ delay: (wi * 7 + di) * 0.003, duration: 0.25 }}
+                <span key={day} style={{ animationDelay: `${wi * 18}ms` }}
                   title={`${formatDateOnly(day, { day: 'numeric', month: 'short' })}${n > 0 ? ` · ${n} registro${n > 1 ? 's' : ''}` : ''}`}
-                  className={cn('aspect-square rounded-[3px]', n < 0 ? 'bg-transparent' : LEVEL[Math.min(3, n)], day === today && 'ring-1 ring-t/60')} />
+                  className={cn('aspect-square rounded-[3px] animate-pop', n < 0 ? 'bg-transparent' : LEVEL[Math.min(3, n)], day === today && 'ring-1 ring-t/60')} />
               )
             })}
           </div>

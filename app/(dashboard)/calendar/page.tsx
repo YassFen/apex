@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getUser, getProfile } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import { addDaysISO, todayISO } from '@/lib/utils/dates'
 import { isMissingTable } from '@/lib/utils/errors'
@@ -15,10 +16,10 @@ function windowFor(month: string) {
 
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const p = await getProfile(user.id)
   const profile = p as Profile | null
   if (!profile) redirect('/auth/login')
 

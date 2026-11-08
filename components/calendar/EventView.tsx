@@ -117,7 +117,7 @@ export function EventView({ profile, event, today, prs, benchmarks, canEdit }: {
         <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE_OUT }}
           className="rounded-[28px] bg-p p-1.5 ring-1 ring-t/[.05]">
           <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-rd/20 via-p2 to-p2 p-5 sm:p-6">
-            <div className="absolute -right-16 -top-16 size-56 rounded-full bg-rd/15 blur-3xl" aria-hidden />
+            <div className="absolute -right-16 -top-16 size-56 rounded-full bg-[radial-gradient(closest-side,rgb(var(--c-rd)/0.25),transparent)]" aria-hidden />
             <div className="relative flex items-start gap-4">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">

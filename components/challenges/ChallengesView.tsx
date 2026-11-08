@@ -74,7 +74,7 @@ export function ChallengesView({ profile, boxes, challenges, today, openId, move
               ) : shown.map((c, i) => {
                 const pct = Math.min(100, Math.round(((c.joined ? c.myTotal : c.ranking[0]?.total ?? 0) / c.target) * 100))
                 return (
-                  <motion.button key={c.id} type="button" layout onClick={() => setOpenC(c.id)}
+                  <motion.button key={c.id} type="button" onClick={() => setOpenC(c.id)}
                     initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04, ease: EASE_OUT }}
                     className="tap-card w-full flex items-stretch rounded-[20px] bg-p overflow-hidden text-left">
                     <span className="flex-1 min-w-0 p-4">
@@ -177,7 +177,7 @@ function ChallengeSheet({ challenge: c, profile, today, onClose }: { challenge: 
             {c.ranking.length === 0 ? <p className="text-mu text-sm">Nadie se ha sumado todavía.</p> : (
               <ol className="flex flex-col gap-1.5">
                 {c.ranking.map((r, i) => (
-                  <motion.li key={r.userId} layout initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                  <motion.li key={r.userId} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
                     className={cn('flex items-center gap-3 p-2.5 pr-4 rounded-2xl', r.userId === profile.id ? 'bg-or/15' : 'bg-p2')}>
                     <span className="w-6 text-center font-display font-bold text-mu">{i === 0 ? <Crown size={18} weight="fill" className="text-or mx-auto" /> : i + 1}</span>
                     {r.avatar ? <img src={r.avatar} alt="" className="size-9 rounded-full object-cover" />

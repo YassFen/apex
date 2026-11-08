@@ -152,13 +152,18 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
   }, [activeDays])
   const maxesLb = useMemo(() => new Map(prs.filter(p => p.is_pr && p.metric === '1rm' && p.movements?.name).map(p => [p.movements!.name, p.value_lb])), [prs])
   const firstName = profile.full_name.split(' ')[0]
+  const heroData = useMemo(() => ({
+    hits, unit, streak, weekDays: week.filter(d => d.active).length,
+    readiness: nextEvent && nextEvent.readiness !== null ? { name: nextEvent.name, score: nextEvent.readiness, days: nextEvent.days } : null,
+    maxes: [...maxesLb.entries()].map(([name, valueLb]) => ({ name, valueLb })),
+    goals: goals.map(g => ({ id: g.id, movement: g.movement, target: g.target, done: g.done, period: g.period })),
+    challenges: (challenges ?? []).map(c => ({ id: c.id, title: c.title, target: c.target, myTotal: c.myTotal, joined: c.joined })),
+  }), [hits, unit, streak, week, nextEvent, maxesLb, goals, challenges])
 
   function renderWidget(id: WidgetId) {
     switch (id) {
       case 'hero':
-        return <HeroRings hits={hits} weekDays={week.filter(d => d.active).length}
-          readiness={nextEvent && nextEvent.readiness !== null ? { name: nextEvent.name, score: nextEvent.readiness, days: nextEvent.days } : null}
-          onLog={() => setAddOpen(true)} onGenerate={() => setGenOpen(true)} />
+        return <HeroRings data={heroData} onLog={() => setAddOpen(true)} onGenerate={() => setGenOpen(true)} />
       case 'today':
         return today ? (
           <Link href="/wod" className={cn('tap-card block rounded-[24px] p-5 relative overflow-hidden', today.myResult ? 'bg-p' : 'bg-ac text-onac')}>

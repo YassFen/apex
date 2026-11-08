@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { Geist } from 'next/font/google'
+
+// Self-hosted, preloaded font (no render-blocking request to Google Fonts).
+const geist = Geist({ subsets: ['latin'], variable: '--font-geist', display: 'swap' })
 import { themeBootScript } from '@/lib/utils/theme'
 
 export const metadata: Metadata = {
@@ -24,7 +28,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // The boot script sets data-theme/data-accent before React hydrates.
-    <html lang="es" data-accent="lima" suppressHydrationWarning>
+    <html lang="es" data-accent="lima" className={geist.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>

@@ -71,7 +71,7 @@ export function MobileNav({ profile }: { profile: Profile }) {
   return (
     <>
       <nav aria-label="Navegación principal"
-        className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-p/90 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_0_var(--ln)]">
+        className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-p pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_0_var(--ln)]">
         <div className="grid grid-cols-5 h-[62px] px-1.5">
           {tabs.map(item => (
             <TabLink key={item.href} item={item} active={isActive(pathname, item.href)} />

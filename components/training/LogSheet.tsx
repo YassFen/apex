@@ -97,7 +97,7 @@ export function LogSheet({ open, onClose, tab: initialTab = 'log', movements = [
       </div>
 
       {/* The contrasting picker card */}
-      <motion.div layout className="rounded-[28px] bg-t text-bg p-4 flex flex-col gap-4">
+      <motion.div className="rounded-[28px] bg-t text-bg p-4 flex flex-col gap-4">
         <div className="flex items-center gap-2">
           {searching ? (
             <input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar ejercicio"

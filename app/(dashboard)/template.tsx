@@ -1,17 +1,4 @@
-'use client'
-import { motion } from 'motion/react'
-import { EASE_OUT } from '@/components/ui/motion'
-
-// A template re-mounts on every navigation, so each page glides in.
+// A template re-mounts on every navigation, so each page fades in (opacity only: cheap and quick).
 export default function DashboardTemplate({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      className="flex-1 flex flex-col"
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0, transitionEnd: { transform: 'none' } }}
-      transition={{ duration: 0.38, ease: EASE_OUT }}
-    >
-      {children}
-    </motion.div>
-  )
+  return <div className="flex-1 flex flex-col animate-fade-in">{children}</div>
 }

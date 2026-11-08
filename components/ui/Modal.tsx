@@ -54,7 +54,7 @@ export function Modal({ open, onClose, title, subtitle, eyebrow, children, class
           key="overlay"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.22 }}
-          className="fixed inset-0 z-[60] bg-black/55 backdrop-blur-[3px] flex items-end sm:items-center justify-center sm:p-4"
+          className="fixed inset-0 z-[60] bg-black/55 flex items-end sm:items-center justify-center sm:p-4"
           onClick={e => e.target === e.currentTarget && onClose()}
         >
           <motion.div

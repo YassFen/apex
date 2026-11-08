@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getUser, getProfile } from '@/lib/supabase/session'
 import { addDaysISO, daysBetween, todayISO } from '@/lib/utils/dates'
 import type { Hit } from '@/lib/utils/movement-guide'
 import type { TodayWod, GoalProgress } from '@/components/athlete/AthleteDashboard'
@@ -12,10 +13,10 @@ import type { Profile, Box, Movement } from '@/lib/types/database'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+  const p = await getProfile(user.id)
   const profile = p as Profile | null
   if (!profile) redirect('/auth/login')
 

@@ -13,7 +13,7 @@ export function Card({ className, padding = true, children, ...props }: CardProp
     <div
       {...props}
       className={cn(
-        'bg-p rounded-[20px] reveal-scroll',
+        'bg-p rounded-[20px]',
         padding && 'p-5',
         className
       )}

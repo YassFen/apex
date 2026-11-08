@@ -71,7 +71,7 @@ export function StrengthChart({ prs, movement, unit }: Props) {
             borderWidth: 1,
             titleColor: themeColor('mu'),
             bodyColor: themeColor('t'),
-            bodyFont: { family: 'Geist', size: 15, weight: 'bold' as const },
+            bodyFont: { family: typeof document !== 'undefined' ? getComputedStyle(document.body).fontFamily : undefined, size: 15, weight: 'bold' as const },
             callbacks: { label: (ctx: any) => ` ${ctx.raw} ${suffix}` },
           }},
           scales: {

@@ -293,7 +293,7 @@ function NextEventHero({ event, today }: { event: CalEvent; today: string }) {
         whileTap={{ scale: 0.985 }}
         className="relative overflow-hidden rounded-[28px] bg-p p-1.5 ring-1 ring-t/[.05]">
         <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-rd/20 via-p2 to-p2 p-5 flex items-center gap-4">
-          <div className="absolute -right-10 -top-10 size-40 rounded-full bg-rd/20 blur-3xl" aria-hidden />
+          <div className="absolute -right-10 -top-10 size-40 rounded-full bg-[radial-gradient(closest-side,rgb(var(--c-rd)/0.25),transparent)]" aria-hidden />
           <div className="relative text-center flex-shrink-0 w-20">
             <div className="font-display text-6xl font-extrabold leading-none tabular-nums tracking-tight">{live ? '¡Ya!' : days}</div>
             <div className="text-[10px] uppercase tracking-[1.6px] text-mu font-bold mt-1">{live ? 'En curso' : days === 1 ? 'día' : 'días'}</div>

@@ -39,8 +39,9 @@ const config: Config = {
       },
       fontFamily: {
         // One modern sans for everything (SF-like). Display = headings and big numbers.
-        sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+        // Geist is self-hosted by next/font (app/layout.tsx) and exposed as --font-geist.
+        sans: ['var(--font-geist)', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['var(--font-geist)', 'system-ui', '-apple-system', 'sans-serif'],
       },
       borderRadius: {
         card: '20px',

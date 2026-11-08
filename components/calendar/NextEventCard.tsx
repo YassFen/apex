@@ -28,7 +28,7 @@ export function NextEventCard({ event }: { event: NextEvent | null }) {
   return (
     <Link href={`/calendar/event/${event.id}`} className="block group">
       <motion.div whileTap={{ scale: 0.985 }} className="relative overflow-hidden rounded-[20px] bg-p p-4 flex items-center gap-4">
-        <div className="absolute -left-10 -bottom-12 size-36 rounded-full bg-rd/15 blur-3xl" aria-hidden />
+        <div className="absolute -left-10 -bottom-12 size-36 rounded-full bg-[radial-gradient(closest-side,rgb(var(--c-rd)/0.25),transparent)]" aria-hidden />
         <div className="relative w-16 text-center flex-shrink-0">
           <div className="font-display text-5xl font-extrabold leading-none tabular-nums tracking-tight">{event.days <= 0 ? '¡Ya!' : event.days}</div>
           <div className="text-[10px] uppercase tracking-[1.4px] text-mu font-bold mt-0.5">{event.days <= 0 ? 'hoy' : event.days === 1 ? 'día' : 'días'}</div>

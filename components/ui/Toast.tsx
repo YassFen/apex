@@ -50,7 +50,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               type="button"
               role={t.type === 'error' ? 'alert' : 'status'}
               onClick={() => dismiss(t.id)}
-              className="pointer-events-auto animate-toast-in flex items-center gap-3 w-full lg:w-auto lg:max-w-sm pl-3.5 pr-3 py-3 rounded-2xl bg-p3/95 backdrop-blur-xl text-t text-sm font-semibold text-left shadow-[0_12px_40px_-12px_rgb(0_0_0/.5)] ring-1 ring-inset ring-t/[0.06]"
+              className="pointer-events-auto animate-toast-in flex items-center gap-3 w-full lg:w-auto lg:max-w-sm pl-3.5 pr-3 py-3 rounded-2xl bg-p3/95  text-t text-sm font-semibold text-left shadow-[0_12px_40px_-12px_rgb(0_0_0/.5)] ring-1 ring-inset ring-t/[0.06]"
             >
               <span className={cn('size-8 rounded-full grid place-items-center flex-shrink-0', TONES[t.type])}>
                 <Icon size={18} strokeWidth={2.4} aria-hidden className={t.type === 'pr' ? 'animate-pop' : ''} />

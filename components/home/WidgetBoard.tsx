@@ -72,7 +72,7 @@ export function WidgetBoard({ scope, profile, widgets, header }: { scope: BoardS
       <div className="px-1 flex items-end justify-between gap-3">
         <div className="min-w-0">{header}</div>
         {!editing && (
-          <button type="button" onClick={() => setEditing(true)} aria-label="Personalizar inicio"
+          <button type="button" data-tour="personalize" onClick={() => setEditing(true)} aria-label="Personalizar inicio"
             className="flex-shrink-0 h-9 px-3 rounded-full bg-p text-sm font-medium flex items-center gap-1.5 hover:bg-p2">
             <SlidersHorizontal size={16} /> <span className="hidden sm:inline">Personalizar</span>
           </button>
@@ -102,8 +102,8 @@ export function WidgetBoard({ scope, profile, widgets, header }: { scope: BoardS
         ) : (
           <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
             {visible.map((item, i) => (
-              <motion.div key={item.id} layout initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: Math.min(i, 6) * 0.05, ease: [0.22, 1, 0.36, 1] }}>
+              <motion.div key={item.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: Math.min(i, 4) * 0.04, ease: [0.22, 1, 0.36, 1] }}>
                 {byId.get(item.id)?.render()}
               </motion.div>
             ))}

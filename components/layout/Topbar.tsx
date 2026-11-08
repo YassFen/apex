@@ -16,7 +16,7 @@ interface TopbarProps {
  */
 export function Topbar({ title, actions }: TopbarProps) {
   return (
-    <header className="h-[64px] flex items-center justify-between gap-3 px-4 lg:px-6 sticky top-0 bg-bg/80 backdrop-blur-xl z-20 pt-[env(safe-area-inset-top)] box-content">
+    <header className="h-[64px] flex items-center justify-between gap-3 px-4 lg:px-6 sticky top-0 bg-bg z-20 pt-[env(safe-area-inset-top)] box-content">
       <h1 className="font-display text-[28px] font-bold tracking-tight truncate min-w-0">{title}</h1>
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {actions}

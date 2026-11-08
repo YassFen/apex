@@ -1,4 +1,4 @@
-const CACHE = 'apex-v1'
+const CACHE = 'apex-v2'
 const STATIC = ['/', '/dashboard', '/wod', '/timer', '/prs', '/benchmarks', '/calc']
 
 self.addEventListener('install', e => {
@@ -12,9 +12,11 @@ self.addEventListener('activate', e => {
   self.clients.claim()
 })
 
+// Only full page loads go through the worker (offline fallback). App data requests (RSC,
+// /demo/api, Supabase) and static chunks go straight to the network/HTTP cache: routing every
+// request through the worker added latency to each tap.
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return
-  if (e.request.url.includes('supabase.co')) return // Never cache Supabase
+  if (e.request.method !== 'GET' || e.request.mode !== 'navigate') return
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   )
