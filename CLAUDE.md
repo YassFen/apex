@@ -165,7 +165,23 @@ These are used throughout all RLS policies. An athlete sees WODs/results only fo
 
 ### Realtime Setup
 
-`daily_wods` and `wod_results` must be added to the `supabase_realtime` publication via **Supabase Dashboard → Database → Publications**. This cannot be done via SQL (free plan restriction).
+`daily_wods` and `wod_results` are added to the `supabase_realtime` publication by `supabase/migrations/004_production_sync.sql` (plain `alter publication` works from the SQL Editor).
+
+### Migrations
+
+Migrations are run by hand in **Supabase Dashboard → SQL Editor**. `004_production_sync.sql` is idempotent and also contains everything from 002 and 003, which were never applied in production. Code that writes columns added in 004 (`wod_results.edit_count`, box profile fields) falls back gracefully if 004 is missing — see `isMissingColumn()` in `lib/utils/errors.ts`.
+
+### Dates and time zones
+
+Never compute "today" with `new Date().toISOString()` — Vercel runs in UTC, so in Chile the WOD vanishes every evening. Use `todayISO()` / `toDateInput()` / `dateInputToTimestamp()` / `formatDateOnly()` from `lib/utils/dates.ts` (`APP_TIME_ZONE = 'America/Santiago'`).
+
+### Leaderboards
+
+`wod_results.result_value` is text. Never sort it in SQL; use `rankResults()` from `lib/utils/wod-ranking.ts` (Rx+ > Rx > Scaled, then time ascending / rounds, reps and weight descending).
+
+### Joining a box
+
+Use `joinBoxByCode()` from `lib/utils/join-box.ts`. It calls the `join_box_by_code` RPC, which validates the invite code server-side and always inserts the member as `athlete`.
 
 ---
 

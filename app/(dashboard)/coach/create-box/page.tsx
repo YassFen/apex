@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { Dumbbell } from 'lucide-react'
+import { friendlyError } from '@/lib/utils/errors'
 
 function slugify(name: string): string {
   return name.toLowerCase()
@@ -49,7 +51,7 @@ export default function CreateBoxPage() {
       .single()
 
     if (boxErr || !box) {
-      setError(boxErr?.message ?? 'Error al crear el box')
+      setError(friendlyError(boxErr?.message ?? 'No se pudo crear el box'))
       setLoading(false)
       return
     }
@@ -62,15 +64,18 @@ export default function CreateBoxPage() {
       is_active: true,
     })
 
+    // Owning a box makes you a coach, so the coach view and tools unlock.
+    await supabase.from('profiles').update({ role: 'coach' }).eq('id', user.id).eq('role', 'athlete')
+
     router.push('/dashboard')
     router.refresh()
   }
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-bg flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="text-[48px] mb-3">🏋️</div>
+          <div className="size-14 mx-auto mb-4 rounded-2xl bg-ac grid place-items-center"><Dumbbell size={26} className="text-bg" aria-hidden /></div>
           <h1 className="font-barlow text-4xl font-black tracking-wide">CREA TU BOX</h1>
           <p className="text-mu text-sm mt-2">Configura tu box para gestionar atletas y publicar WODs</p>
         </div>
@@ -89,7 +94,7 @@ export default function CreateBoxPage() {
               </label>
               <input
                 required value={name} onChange={e => setName(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac transition-colors"
+                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors"
                 placeholder="CrossFit Santiago"
                 maxLength={60}
               />
@@ -102,7 +107,7 @@ export default function CreateBoxPage() {
                 </label>
                 <input
                   value={city} onChange={e => setCity(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac transition-colors"
+                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors"
                   placeholder="Santiago"
                   maxLength={60}
                 />
@@ -113,7 +118,7 @@ export default function CreateBoxPage() {
                 </label>
                 <select
                   value={country} onChange={e => setCountry(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                 >
                   {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>

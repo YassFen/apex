@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import type { Profile } from '@/lib/types/database'
+import { formatDateOnly } from '@/lib/utils/dates'
 
 const CAT_LABELS: Record<string, string> = {
   weightlifting: 'Halterofilia', olympic: 'Olímpicos',
@@ -105,7 +106,7 @@ export default async function AnalyticsPage() {
                   <div key={w.id} className="flex items-center justify-between py-2.5">
                     <div>
                       <div className="text-sm font-semibold">{w.title}</div>
-                      <div className="text-[11px] text-mu">{new Date(w.scheduled_for).toLocaleDateString('es-CL', { day: '2-digit', month: 'short' })}</div>
+                      <div className="text-[11px] text-mu">{formatDateOnly(w.scheduled_for, { day: '2-digit', month: 'short' })}</div>
                     </div>
                     <span className="text-[10px] uppercase font-extrabold tracking-wide text-mu border border-[var(--ln2)] px-2 py-1 rounded-full">{w.type}</span>
                   </div>
@@ -179,7 +180,7 @@ export default async function AnalyticsPage() {
                     <div className="flex-1 h-2 bg-[rgba(255,255,255,.07)] rounded-full overflow-hidden">
                       <div className="h-full bg-ac rounded-full" style={{ width: `${(count / (prBests.length || 1)) * 100}%` }} />
                     </div>
-                    <div className="font-barlaw font-bold text-sm w-4 text-right">{count}</div>
+                    <div className="font-barlow font-bold text-sm w-4 text-right">{count}</div>
                   </div>
                 ))}
               </div>

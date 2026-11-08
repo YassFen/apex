@@ -3,13 +3,14 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'APEX – CrossFit Platform',
-  description: 'Track PRs, WODs, and compete with your box',
+  description: 'El WOD de tu box, tus récords y el leaderboard en vivo.',
   manifest: '/manifest.json',
+  icons: { icon: '/icons/icon-192.png', apple: '/icons/apple-touch-icon.png' },
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'APEX' },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0a0c0f',
+  themeColor: '#000000',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',

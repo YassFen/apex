@@ -28,6 +28,8 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { color-scheme: dark; }
+
 html, body {
   background: var(--bg);
   color: var(--t);
@@ -52,6 +54,27 @@ input, textarea, select {
   color: var(--t);
 }
 input::placeholder, textarea::placeholder { color: var(--fa); }
+
+/* Keyboard focus is always visible; mouse/touch clicks stay clean. */
+:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
+
+::selection { background: rgba(200,245,62,.35); color: #fff; }
+
+/* No 300ms double-tap delay, no grey flash on tap */
+a, button, [role="button"], label, input, select, textarea { touch-action: manipulation; }
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Native <select> popups in Windows dark mode */
+select, option { background-color: var(--p2); color: var(--t); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
 
 @keyframes fadeUp {
   from { opacity:0; transform: translateY(12px); }

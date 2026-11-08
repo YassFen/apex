@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import { LineChart } from 'lucide-react'
 
 interface Props {
   prs: any[]
@@ -85,7 +86,7 @@ export function StrengthChart({ prs, movement, unit }: Props) {
       <canvas ref={canvasRef} />
       <div ref={emptyRef} className="absolute inset-0 items-center justify-center text-center text-mu text-sm" style={{ display: 'none' }}>
         <div>
-          <div className="text-3xl mb-2 opacity-50">📉</div>
+          <LineChart size={28} className="mx-auto mb-2 text-fa" aria-hidden />
           <div>Sin datos de <span className="font-bold text-t">{movement}</span></div>
           <div className="text-fa text-xs mt-1">Registra un RM para ver tu evolución</div>
         </div>

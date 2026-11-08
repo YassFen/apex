@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { parseWeightToLb } from '@/lib/utils/units'
+import { todayISO, toDateInput, dateInputToTimestamp } from '@/lib/utils/dates'
+import { friendlyError } from '@/lib/utils/errors'
 import type { Profile, Movement, MovementCategory } from '@/lib/types/database'
 
 interface Props {
@@ -72,8 +74,8 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
   const [time, setTime]           = useState(initialTime)
   const [date, setDate]           = useState(
     editingPr?.recorded_at
-      ? new Date(editingPr.recorded_at).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0]
+      ? toDateInput(editingPr.recorded_at)
+      : todayISO()
   )
   const [notes, setNotes]         = useState(editingPr?.notes ?? '')
   const [saving, setSaving]       = useState(false)
@@ -84,8 +86,10 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
     supabase.from('movements').select('*').order('category').order('name').then(({ data }) => {
       setMovements(data ?? [])
       if (data?.length && !movId) {
-        setMovId(data[0].id)
-        applyDefaultMetric(data[0].category as MovementCategory)
+        // Most logs are lifts; start there instead of the alphabetically-first benchmark.
+        const first = data.find(m => m.category === 'weightlifting') ?? data[0]
+        setMovId(first.id)
+        applyDefaultMetric(first.category as MovementCategory)
       }
     })
   }, [])
@@ -153,7 +157,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
       movement_id: movId,
       value_lb:    valueLb,
       metric:      storedMetric,
-      recorded_at: new Date(date).toISOString(),
+      recorded_at: dateInputToTimestamp(date),
       notes:       notes || null,
     }
 
@@ -172,7 +176,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
       : await supabase.from('pr_records').insert({ ...payload, is_pr: false })
 
     setSaving(false)
-    if (dbErr) { setError(dbErr.message); return }
+    if (dbErr) { setError(friendlyError(dbErr.message)); return }
 
     // Did we beat it?
     const prev = (prevBest as any)?.value_lb ?? null
@@ -209,7 +213,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
     <Modal open onClose={onClose} title={isEditing ? 'EDITAR REGISTRO' : 'NUEVO REGISTRO'} subtitle={isEditing ? 'Corrige tu registro' : 'Tu nuevo máximo personal'}>
       {saved && (
         <div className="mb-4 p-3 rounded-xl bg-ac/10 border border-ac/20 text-ac font-bold text-sm">
-          ✅ ¡Registro guardado exitosamente!
+          Registro guardado
         </div>
       )}
       {error && (
@@ -224,7 +228,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
         <div>
           <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Movimiento</label>
           <select value={movId} onChange={e => handleMovChange(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac">
+            className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac">
             {Object.entries(byCategory).map(([label, movs]) => (
               <optgroup key={label} label={label}>
                 {movs.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -381,10 +385,10 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
         <div>
           <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Fecha</label>
           <input
-            type="date" value={date}
+            type="date" value={date} max={todayISO()}
             onChange={e => setDate(e.target.value)}
             onClick={(e) => { try { (e.currentTarget as any).showPicker?.() } catch {} }}
-            className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac cursor-pointer [color-scheme:dark]"
+            className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac cursor-pointer [color-scheme:dark]"
           />
         </div>
 
@@ -394,7 +398,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
             Notas <span className="text-fa normal-case">(opcional)</span>
           </label>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
-            className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac resize-none"
+            className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac resize-none"
             placeholder="Sensaciones, condiciones, equipamiento…" />
         </div>
 

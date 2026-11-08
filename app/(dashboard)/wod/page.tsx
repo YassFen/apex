@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { todayISO } from '@/lib/utils/dates'
 import { redirect } from 'next/navigation'
 import { WodView } from '@/components/wod/WodView'
 import type { Profile } from '@/lib/types/database'
@@ -19,7 +20,7 @@ export default async function WodPage() {
     .eq('is_active', true)
 
   const boxIds = ((memberships ?? []) as any[]).map((m: any) => m.box_id as string)
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayISO()
 
   const { data: dailyWods } = boxIds.length > 0
     ? await supabase
@@ -39,7 +40,6 @@ export default async function WodPage() {
       .from('wod_results')
       .select('*, profiles(full_name, avatar_url)')
       .eq('daily_wod_id', wod.id)
-      .order('result_value', { ascending: true })
     results = (data ?? []) as any[]
   }
 

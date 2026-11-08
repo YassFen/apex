@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Plus, Award, Medal, Trophy, PenLine } from 'lucide-react'
 import type { Profile, Benchmark } from '@/lib/types/database'
+import { useRouter } from 'next/navigation'
+import { friendlyError } from '@/lib/utils/errors'
+import { Alert } from '@/components/ui/Field'
 
 // Canonical list — shown as cards. Extra benchmarks recorded in DB appear below.
 const BENCHMARK_LIST = [
@@ -70,6 +73,8 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
   const [result, setResult]   = useState('')
   const [notes, setNotes]     = useState('')
   const [saving, setSaving]   = useState(false)
+  const [saveErr, setSaveErr] = useState('')
+  const router = useRouter()
 
   function fmtTimeInput(raw: string): string {
     const digits = raw.replace(/\D/g, '').slice(0, 5)
@@ -85,7 +90,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
   }
 
   function closeModal() {
-    setModalBm(null); setCustomMode(false)
+    setModalBm(null); setCustomMode(false); setSaveErr('')
     setResult(''); setNotes(''); setCustomName('')
   }
 
@@ -97,16 +102,17 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
     setSaving(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { setSaving(false); setSaveErr('Tu sesión expiró. Vuelve a iniciar sesión.'); return }
     const level = estimateLevel(name, result, unit)
-    await supabase.from('benchmarks').insert({
+    const { error } = await supabase.from('benchmarks').insert({
       user_id: user.id, name, result,
       notes: notes || null, level: level.label,
       recorded_at: new Date().toISOString(),
     })
     setSaving(false)
+    if (error) { setSaveErr(friendlyError(error.message)); return }
     closeModal()
-    window.location.reload()
+    router.refresh()
   }
 
   const bmByName: Record<string, Benchmark[]> = {}
@@ -159,7 +165,6 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
             onClick={openCustom}
             className="relative overflow-hidden text-left p-5 rounded-2xl border border-dashed border-ac/30 bg-ac/5 hover:bg-ac/10 transition group"
           >
-            <div className="text-3xl mb-2">📝</div>
             <div className="font-barlow text-lg font-black tracking-wide uppercase text-ac">Benchmark personalizado</div>
             <div className="text-mu text-[11px] mt-1 leading-snug">Registra cualquier WOD, Hero WOD o benchmark de tu box</div>
             <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac text-bg text-[11px] font-bold">
@@ -180,7 +185,6 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                   onClick={() => { setModalBm(bm); setCustomMode(false); setResult(''); setNotes('') }}
                   className="relative overflow-hidden text-left p-5 rounded-2xl border border-dashed border-[var(--ln2)] bg-transparent hover:bg-ac/5 hover:border-ac/30 transition group"
                 >
-                  <div className="text-3xl mb-2 opacity-60">{bm.icon}</div>
                   <div className="font-barlow text-lg font-black tracking-wide uppercase">{bm.name}</div>
                   <div className="text-mu text-[11px] mt-1 leading-snug">{bm.desc}</div>
                   <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac/10 text-ac text-[11px] font-bold border border-ac/20 group-hover:bg-ac group-hover:text-bg transition">
@@ -194,14 +198,11 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
             return (
               <div key={bm.name}
                    className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[rgba(255,255,255,.13)] transition">
-                <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none"
-                     style={{ background: 'radial-gradient(circle, rgba(200,245,62,.06) 0%, transparent 70%)' }} />
                 <div className="flex items-start justify-between mb-2">
                   <div className="font-barlow text-lg font-black tracking-wide uppercase">{bm.name}</div>
-                  <div className="text-2xl opacity-70">{bm.icon}</div>
                 </div>
 
-                <div className="font-barlow font-black leading-none text-ac my-2"
+                <div className="font-barlow font-black leading-none text-ac my-2 tabular-nums"
                      style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
                   {best.result}
                 </div>
@@ -210,8 +211,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                 <div className="mt-3 pt-3 border-t border-[var(--ln)] flex items-center justify-between">
                   {level && (
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${LEVEL_CLS[level.color]}`}>
-                      <span>{level.icon}</span>
-                      {level.label}
+                                            {level.label}
                     </span>
                   )}
                   <span className="text-[11px] text-fa">
@@ -241,12 +241,11 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                      style={{ background: 'radial-gradient(circle, rgba(200,245,62,.04) 0%, transparent 70%)' }} />
                 <div className="flex items-start justify-between mb-2">
                   <div className="font-barlow text-lg font-black tracking-wide uppercase">{name}</div>
-                  <div className="text-2xl opacity-70">📝</div>
                 </div>
 
                 {best && (
                   <>
-                    <div className="font-barlow font-black leading-none text-ac my-2"
+                    <div className="font-barlow font-black leading-none text-ac my-2 tabular-nums"
                          style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
                       {best.result}
                     </div>
@@ -256,8 +255,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                     <div className="mt-3 pt-3 border-t border-[var(--ln)] flex items-center justify-between">
                       {level && (
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${LEVEL_CLS[level.color]}`}>
-                          <span>{level.icon}</span>
-                          {level.label}
+                                                    {level.label}
                         </span>
                       )}
                       <span className="text-[11px] text-fa">
@@ -322,7 +320,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                             : 'border-[var(--ln2)] text-mu hover:text-t'
                         }`}
                       >
-                        {u === 'time' ? '⏱ Tiempo' : '🔁 Rondas'}
+                        {u === 'time' ? 'Tiempo' : 'Rondas'}
                       </button>
                     ))}
                   </div>
@@ -351,10 +349,12 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac resize-none"
+                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac resize-none"
                 placeholder="Condiciones, cómo te sentiste…"
               />
             </div>
+
+            {saveErr && <Alert tone="error">{saveErr}</Alert>}
 
             <div className="flex gap-3">
               <Button type="button" variant="secondary" className="flex-1" onClick={closeModal}>Cancelar</Button>

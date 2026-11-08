@@ -9,9 +9,9 @@ export function DashboardShell({ profile, boxes, children }: { profile: Profile;
   const [sidebarOpen, setSidebarOpen] = useState(false)
   return (
     <ShellProvider profile={profile} boxes={boxes} openSidebar={() => setSidebarOpen(true)}>
-      <div className="flex min-h-screen bg-bg">
+      <div className="flex min-h-dvh bg-bg">
         <Sidebar profile={profile} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 flex flex-col lg:ml-[240px] min-h-screen pb-[72px] lg:pb-0">
+        <main className="flex-1 flex flex-col lg:ml-[240px] min-h-dvh pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-0">
           {children}
         </main>
         <MobileNav profile={profile} />

@@ -1,5 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
+import { todayISO } from '@/lib/utils/dates'
+import { friendlyError } from '@/lib/utils/errors'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/Topbar'
@@ -210,7 +212,7 @@ export function PublishWodPanel({
   async function handlePublish(e: React.FormEvent) {
     e.preventDefault()
     setPublishing(true)
-    const today = new Date().toISOString().split('T')[0]
+    const today = todayISO()
     const payload = {
       box_id: box.id, coach_id: profile.id, title, type,
       description: desc,
@@ -218,13 +220,13 @@ export function PublishWodPanel({
       movements: wodMovs.filter(m => m.name),
       scheduled_for: today, is_live: true,
     }
-    if (todayWod) {
-      await supabase.from('daily_wods').update(payload).eq('id', todayWod.id)
-    } else {
-      await supabase.from('daily_wods').insert(payload)
-    }
+    if (!title.trim()) { setPublishing(false); fire('Ponle un nombre al WOD antes de publicar', 'error'); return }
+    const { error } = todayWod
+      ? await supabase.from('daily_wods').update(payload).eq('id', todayWod.id)
+      : await supabase.from('daily_wods').insert(payload)
     setPublishing(false)
-    fire('¡WOD publicado en vivo! 🔴', 'pr')
+    if (error) { fire(friendlyError(error.message), 'error'); return }
+    fire('WOD publicado. Tus atletas ya lo ven.', 'pr')
     setTimeout(() => router.push('/dashboard'), 1500)
   }
 
@@ -237,8 +239,8 @@ export function PublishWodPanel({
   function handleExportText() {
     const text = buildWodText({ title, type, duration, desc, movs: wodMovs.filter(m => m.name), boxName: box.name })
     navigator.clipboard.writeText(text)
-      .then(() => fire('Texto del WOD copiado al portapapeles 📋', 'pr'))
-      .catch(() => fire('No se pudo copiar — revisa la consola', 'error'))
+      .then(() => fire('Texto del WOD copiado. Pégalo en WhatsApp.', 'pr'))
+      .catch(() => fire('No se pudo copiar. Selecciona el texto y cópialo a mano.', 'error'))
   }
 
   const step1Done = !!title
@@ -300,14 +302,14 @@ export function PublishWodPanel({
                 <div>
                   <Label>Título *</Label>
                   <input required value={title} onChange={e => setTitle(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                     placeholder="Ej: Fran, Thursday Chipper…" />
                 </div>
                 {(type === 'amrap' || type === 'emom' || type === 'tabata' || type === 'fortime') && (
                   <div>
                     <Label>{type === 'emom' ? 'Duración (min · 1 movimiento por minuto)' : 'Duración (min)'}</Label>
                     <input type="number" value={duration} onChange={e => setDuration(e.target.value)} min="1"
-                      className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                      className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                       placeholder="20" />
                   </div>
                 )}
@@ -315,7 +317,7 @@ export function PublishWodPanel({
               <div>
                 <Label>Instrucciones / descripción</Label>
                 <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac resize-none"
                   placeholder={`Ej: 3 rounds for time\n21 Thrusters (95/65 lb)\n21 Pull-ups`} />
               </div>
 
@@ -369,7 +371,7 @@ export function PublishWodPanel({
                               className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition ${
                                 mCat === c.label ? 'bg-ac/10 text-ac border-ac/22' : 'border-[var(--ln2)] text-mu hover:text-t'
                               }`}>
-                        <span className="mr-1">{c.icon}</span>{c.label}
+                        {c.label}
                       </button>
                     ))}
                   </div>
@@ -390,20 +392,20 @@ export function PublishWodPanel({
                     <div>
                       <Label small>Movimiento (o custom)</Label>
                       <input value={mName} onChange={e => { setMName(e.target.value); setMError(null) }}
-                        className="w-full px-3 py-2 rounded-lg bg-p2 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                        className="w-full px-3 py-2 rounded-lg bg-p2 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                         placeholder="Ej: Burpee, Custom mov…" />
                     </div>
                     <div>
                       <Label small>Reps / Distancia *</Label>
                       <input value={mReps} onChange={e => { setMReps(e.target.value); setMError(null) }}
-                        className="w-full px-3 py-2 rounded-lg bg-p2 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                        className="w-full px-3 py-2 rounded-lg bg-p2 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                         placeholder="10, 21, 400m" />
                     </div>
                     {weightRequired && (
                       <div>
                         <Label small>Carga *</Label>
                         <input value={mWeight} onChange={e => { setMWeight(e.target.value); setMError(null) }}
-                          className="w-full px-3 py-2 rounded-lg bg-p2 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                          className="w-full px-3 py-2 rounded-lg bg-p2 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                           placeholder="220 lb, 75% RM" />
                       </div>
                     )}
@@ -444,7 +446,7 @@ export function PublishWodPanel({
             <div className="flex flex-col sm:flex-row gap-2.5">
               <Button type="submit" size="lg" className="flex-1" disabled={publishing}>
                 <Send size={16} strokeWidth={2.2} />
-                {publishing ? 'Publicando…' : todayWod ? 'Actualizar WOD en vivo' : 'Publicar WOD en vivo 🔴'}
+                {publishing ? 'Publicando…' : todayWod ? 'Actualizar WOD en vivo' : 'Publicar WOD en vivo'}
               </Button>
               <Button type="button" variant="secondary" size="lg" className="sm:w-auto" onClick={handleExportText}>
                 <Copy size={14} strokeWidth={2.2} />

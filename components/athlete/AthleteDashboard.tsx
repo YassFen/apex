@@ -10,6 +10,7 @@ import { RmCelebrationModal } from '@/components/athlete/RmCelebrationModal'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
 import type { Profile, Movement } from '@/lib/types/database'
+import { toDateInput } from '@/lib/utils/dates'
 
 interface PR {
   id: string
@@ -20,7 +21,7 @@ interface PR {
   is_pr: boolean
 }
 
-const DEFAULT_KPI = ['Deadlift', 'Back Squat', 'Squat Snatch', 'Clean & Jerk']
+const DEFAULT_KPI = ['Deadlift', 'Back Squat', 'Snatch', 'Clean & Jerk']
 const KPI_STORAGE_KEY = 'apex.dashboard.kpis'
 
 function formatPrValue(pr: PR, unit: 'kg' | 'lb'): { value: string; unit: string } {
@@ -41,14 +42,15 @@ function formatPrValue(pr: PR, unit: 'kg' | 'lb'): { value: string; unit: string
 
 function computeStreakDays(prs: PR[]): number {
   if (prs.length === 0) return 0
-  const days = new Set(prs.map(p => new Date(p.recorded_at).toISOString().slice(0, 10)))
-  let streak = 0
+  // Calendar days in the gym's time zone, not UTC
+  const days = new Set(prs.map(p => toDateInput(p.recorded_at)))
   const cursor = new Date()
-  for (;;) {
-    const key = cursor.toISOString().slice(0, 10)
-    if (days.has(key)) { streak++; cursor.setDate(cursor.getDate() - 1) }
-    else if (streak === 0) { cursor.setDate(cursor.getDate() - 1); if (streak === 0 && (new Date().getTime() - cursor.getTime()) > 86400000) break }
-    else break
+  // A streak is still alive if the last log was yesterday
+  if (!days.has(toDateInput(cursor))) cursor.setDate(cursor.getDate() - 1)
+  let streak = 0
+  while (days.has(toDateInput(cursor))) {
+    streak++
+    cursor.setDate(cursor.getDate() - 1)
   }
   return streak
 }
@@ -180,12 +182,12 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
         <div className="grid grid-cols-3 gap-3">
           <Card className="p-3">
             <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1">Records</div>
-            <div className="font-barlow text-3xl font-black leading-none">{totalRecords}</div>
+            <div className="font-barlow text-3xl font-black leading-none tabular-nums">{totalRecords}</div>
             <div className="text-fa text-[11px] mt-0.5">RMs registrados</div>
           </Card>
           <Card className="p-3">
             <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1">Racha</div>
-            <div className="font-barlow text-3xl font-black leading-none flex items-center gap-1.5">
+            <div className="font-barlow text-3xl font-black leading-none tabular-nums flex items-center gap-1.5">
               {streak}
               {streak > 0 && <Flame size={18} className="text-or" fill="currentColor" />}
             </div>
@@ -193,7 +195,7 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
           </Card>
           <Card className="p-3">
             <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1">PRs activos</div>
-            <div className="font-barlow text-3xl font-black leading-none flex items-center gap-1.5">
+            <div className="font-barlow text-3xl font-black leading-none tabular-nums flex items-center gap-1.5">
               {prs.filter(p => p.is_pr).length}
               <Trophy size={16} className="text-ac" />
             </div>
@@ -222,16 +224,16 @@ export function AthleteDashboard({ profile, prs, movements = [] }: {
                   className="flex items-center gap-2 px-3 py-2 rounded-xl bg-p3 border border-ac/20">
                   <span className="text-[10px] font-bold text-ac w-4 text-center">{idx + 1}</span>
                   <span className="flex-1 text-sm font-semibold text-t">{name}</span>
-                  <button onClick={() => moveKpi(idx, -1)} disabled={idx === 0}
-                    className="p-1 text-mu hover:text-t disabled:opacity-30 transition-colors">
+                  <button onClick={() => moveKpi(idx, -1)} disabled={idx === 0} aria-label={`Subir ${name}`}
+                    className="size-9 grid place-items-center rounded-lg text-mu hover:text-t disabled:opacity-30 transition-colors">
                     <ChevronUp size={14} strokeWidth={2.5} />
                   </button>
-                  <button onClick={() => moveKpi(idx, 1)} disabled={idx === kpiMovements.length - 1}
-                    className="p-1 text-mu hover:text-t disabled:opacity-30 transition-colors">
+                  <button onClick={() => moveKpi(idx, 1)} disabled={idx === kpiMovements.length - 1} aria-label={`Bajar ${name}`}
+                    className="size-9 grid place-items-center rounded-lg text-mu hover:text-t disabled:opacity-30 transition-colors">
                     <ChevronDown size={14} strokeWidth={2.5} />
                   </button>
-                  <button onClick={() => toggleKpi(name)} disabled={kpiMovements.length <= 1}
-                    className="p-1 text-fa hover:text-rd disabled:opacity-30 transition-colors">
+                  <button onClick={() => toggleKpi(name)} disabled={kpiMovements.length <= 1} aria-label={`Quitar ${name}`}
+                    className="size-9 grid place-items-center rounded-lg text-fa hover:text-rd disabled:opacity-30 transition-colors">
                     <X size={14} strokeWidth={2.5} />
                   </button>
                 </div>

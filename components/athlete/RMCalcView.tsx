@@ -8,11 +8,11 @@ import { ChevronDown, Search, X } from 'lucide-react'
 import type { Profile } from '@/lib/types/database'
 
 const CAT_LABEL: Record<string, string> = {
-  weightlifting: '🏋️ Levantamiento',
-  olympic:       '⚡ Olímpico',
-  gymnastics:    '🤸 Gimnástico',
-  cardio:        '🏃 Cardio',
-  benchmark:     '🔥 Benchmark',
+  weightlifting: 'Levantamiento',
+  olympic:       'Olímpico',
+  gymnastics:    'Gimnástico',
+  cardio:        'Monoestructural',
+  benchmark:     'Benchmark',
 }
 
 /* IWF/CrossFit standard plate colors */

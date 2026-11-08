@@ -45,7 +45,7 @@ export default async function PublicAthletePage({ params }: { params: Promise<{ 
   }
 
   return (
-    <main className="min-h-screen bg-bg text-t">
+    <main className="min-h-dvh bg-bg text-t">
       <div className="max-w-2xl mx-auto px-4 py-6 lg:py-10">
         {/* Back to APEX logo */}
         <Link href="/" className="inline-flex items-center gap-2 text-mu hover:text-t text-sm font-semibold mb-6">
@@ -65,7 +65,7 @@ export default async function PublicAthletePage({ params }: { params: Promise<{ 
             <div className="font-barlow text-2xl font-black tracking-wide uppercase truncate">{profile.full_name}</div>
             <div className="text-mu text-sm capitalize">{profile.role}{profile.city ? ` · ${profile.city}` : ''}</div>
             {profile.favorite_movement && (
-              <div className="text-ac text-xs mt-1.5 font-semibold">⭐ {profile.favorite_movement}</div>
+              <div className="text-ac text-xs mt-1.5 font-semibold">Movimiento favorito: {profile.favorite_movement}</div>
             )}
           </div>
         </div>

@@ -7,6 +7,9 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { AthleteRadar } from '@/components/athlete/AthleteRadar'
+import { PasswordField, Alert } from '@/components/ui/Field'
+import { friendlyError } from '@/lib/utils/errors'
+import { joinBoxByCode } from '@/lib/utils/join-box'
 import type { Profile, Movement, Box } from '@/lib/types/database'
 
 interface Props {
@@ -51,6 +54,10 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
   const [boxSaved, setBoxSaved]       = useState(false)
   const [boxErr, setBoxErr]           = useState('')
   const [codeCopied, setCodeCopied]   = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [pwSaving, setPwSaving]       = useState(false)
+  const [pwMsg, setPwMsg]             = useState('')
+  const [pwErr, setPwErr]             = useState('')
 
   const DISCIPLINES = ['CrossFit', 'Weightlifting', 'Gymnastics', 'Endurance', 'HIIT', 'Yoga', 'Functional Fitness']
 
@@ -83,7 +90,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
     const { error: upErr } = await supabase.storage
       .from('avatars').upload(path, file, { upsert: true, contentType: file.type })
 
-    if (upErr) { setUploadingAvatar(false); setProfileErr(upErr.message); return }
+    if (upErr) { setUploadingAvatar(false); setProfileErr(upErr.message.includes("Bucket not found") ? "El almacenamiento de fotos no está activado. Falta aplicar la migración 004." : friendlyError(upErr.message)); return }
 
     const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path)
     const newUrl = pub.publicUrl
@@ -91,7 +98,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
       .from('profiles').update({ avatar_url: newUrl }).eq('id', profile.id)
 
     setUploadingAvatar(false)
-    if (updErr) { setProfileErr(updErr.message); return }
+    if (updErr) { setProfileErr(friendlyError(updErr.message)); return }
     setAvatarUrl(newUrl)
     router.refresh()
   }
@@ -107,7 +114,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
     const { error: upErr } = await supabase.storage
       .from('box-logos').upload(path, file, { upsert: true, contentType: file.type })
 
-    if (upErr) { setUploadingLogo(false); setBoxErr(upErr.message); return }
+    if (upErr) { setUploadingLogo(false); setBoxErr(upErr.message.includes("Bucket not found") ? "El almacenamiento de logos no está activado. Falta aplicar la migración 004." : friendlyError(upErr.message)); return }
 
     const { data: pub } = supabase.storage.from('box-logos').getPublicUrl(path)
     const newUrl = pub.publicUrl
@@ -115,7 +122,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
       .from('boxes').update({ logo_url: newUrl }).eq('id', ownedBox.id)
 
     setUploadingLogo(false)
-    if (updErr) { setBoxErr(updErr.message); return }
+    if (updErr) { setBoxErr(friendlyError(updErr.message)); return }
     setBoxLogoUrl(newUrl)
     router.refresh()
   }
@@ -136,7 +143,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
       })
       .eq('id', profile.id)
     setSaving(false)
-    if (error) { setProfileErr(error.message); return }
+    if (error) { setProfileErr(friendlyError(error.message)); return }
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 3000)
     router.refresh()
@@ -161,7 +168,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
       })
       .eq('id', ownedBox.id)
     setBoxSaving(false)
-    if (error) { setBoxErr(error.message); return }
+    if (error) { setBoxErr(friendlyError(error.message)); return }
     setBoxSaved(true)
     setTimeout(() => setBoxSaved(false), 3000)
     router.refresh()
@@ -171,32 +178,31 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
     e.preventDefault()
     if (!inviteCode.trim()) return
     setJoining(true); setJoinErr(''); setJoinMsg('')
-
-    const code = inviteCode.trim().toUpperCase()
-    const { data: box } = await supabase
-      .from('boxes').select('id, name').eq('invite_code', code).single()
-
-    if (!box) {
-      setJoinErr('Código de invitación inválido. Revisa que esté escrito correctamente.')
-      setJoining(false); return
-    }
-
-    const { data: existing } = await supabase
-      .from('box_members').select('id').eq('box_id', box.id).eq('user_id', profile.id).maybeSingle()
-
-    if (existing) {
-      setJoinErr(`Ya eres miembro de ${box.name}.`)
-      setJoining(false); return
-    }
-
-    const { error } = await supabase.from('box_members').insert({
-      box_id: box.id, user_id: profile.id, role: 'athlete', is_active: true,
-    })
+    const res = await joinBoxByCode(supabase, inviteCode, profile.id)
     setJoining(false)
-    if (error) { setJoinErr(error.message); return }
-    setJoinMsg(`¡Te uniste a ${box.name}! 🎉`)
+    if (!res.ok) {
+      setJoinErr(
+        res.reason === 'invalid_code' ? 'Código de invitación inválido. Revisa que esté escrito correctamente.'
+        : res.reason === 'already_member' ? `Ya eres miembro de ${res.boxName}.`
+        : friendlyError(res.message)
+      )
+      return
+    }
+    setJoinMsg(`Te uniste a ${res.boxName}.`)
     setInviteCode('')
     setTimeout(() => router.refresh(), 1200)
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    setPwMsg(''); setPwErr('')
+    if (newPassword.length < 8) { setPwErr('Usa al menos 8 caracteres.'); return }
+    setPwSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setPwSaving(false)
+    if (error) { setPwErr(friendlyError(error.message)); return }
+    setNewPassword('')
+    setPwMsg('Contraseña actualizada.')
   }
 
   async function handleSignOut() {
@@ -255,7 +261,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
 
           {savedOk && (
             <div className="mb-4 p-3 rounded-xl bg-ac/10 border border-ac/20 text-ac text-sm font-semibold">
-              ✅ Perfil actualizado correctamente
+              Perfil actualizado
             </div>
           )}
           {profileErr && (
@@ -268,21 +274,21 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
             <div>
               <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Nombre completo</label>
               <input value={name} onChange={e => setName(e.target.value)} required
-                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac transition-colors"
+                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors"
                 placeholder="Tu nombre" />
             </div>
 
             <div>
               <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Ciudad</label>
               <input value={city} onChange={e => setCity(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac transition-colors"
+                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors"
                 placeholder="Santiago, Lima, CDMX…" />
             </div>
 
             <div>
               <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Bio <span className="text-fa normal-case">(opcional)</span></label>
               <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} maxLength={280}
-                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac transition-colors resize-none"
+                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors resize-none"
                 placeholder="Cuéntanos un poco de ti, tu historial en CrossFit…" />
               <div className="text-right text-[10px] text-fa mt-1">{bio.length}/280</div>
             </div>
@@ -291,7 +297,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
               <div>
                 <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Ejercicio favorito</label>
                 <select value={favMov} onChange={e => setFavMov(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac transition-colors">
+                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors">
                   <option value="">— Selecciona uno —</option>
                   {movements.map(m => (
                     <option key={m.id} value={m.name}>{m.name}</option>
@@ -401,7 +407,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
 
             {boxSaved && (
               <div className="mb-4 p-3 rounded-xl bg-ac/10 border border-ac/20 text-ac text-sm font-semibold">
-                ✅ Box actualizado correctamente
+                Box actualizado
               </div>
             )}
             {boxErr && (
@@ -415,18 +421,18 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
               <div>
                 <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Nombre del box</label>
                 <input value={boxName} onChange={e => setBoxName(e.target.value)} required
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac" />
+                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Ciudad</label>
                   <input value={boxCity} onChange={e => setBoxCity(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac" />
+                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac" />
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">País</label>
                   <input value={boxCountry} onChange={e => setBoxCountry(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac" />
+                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac" />
                 </div>
               </div>
 
@@ -434,7 +440,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
               <div>
                 <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Descripción <span className="normal-case text-fa">(opcional)</span></label>
                 <textarea value={boxDesc} onChange={e => setBoxDesc(e.target.value)} rows={3} maxLength={320}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac resize-none"
                   placeholder="Cuéntanos sobre tu box, tu filosofía, tu comunidad…" />
                 <div className="text-right text-[10px] text-fa mt-1">{boxDesc.length}/320</div>
               </div>
@@ -466,7 +472,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
                   <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Horario</label>
                 </div>
                 <textarea value={boxSchedule} onChange={e => setBoxSchedule(e.target.value)} rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac resize-none"
                   placeholder="Lun-Vie: 6am, 9am, 12pm, 6pm, 8pm · Sáb: 9am" />
               </div>
 
@@ -480,7 +486,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
                       <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Sitio web</label>
                     </div>
                     <input value={boxWebsite} onChange={e => setBoxWebsite(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                      className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                       placeholder="https://mibox.com" type="url" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -492,7 +498,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
                       <div className="flex items-center bg-p3 border border-[var(--ln)] rounded-xl overflow-hidden focus-within:border-ac transition-colors">
                         <span className="pl-3 text-mu text-sm font-bold">@</span>
                         <input value={boxInstagram} onChange={e => setBoxInstagram(e.target.value.replace('@', ''))}
-                          className="flex-1 px-2 py-2.5 bg-transparent text-t text-sm outline-none"
+                          className="flex-1 px-2 py-2.5 bg-transparent text-t text-base sm:text-sm outline-none"
                           placeholder="mibox_cf" />
                       </div>
                     </div>
@@ -502,7 +508,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
                         <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">WhatsApp</label>
                       </div>
                       <input value={boxWhatsapp} onChange={e => setBoxWhatsapp(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac"
+                        className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
                         placeholder="+56 9 1234 5678" type="tel" />
                     </div>
                   </div>
@@ -562,7 +568,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
 
             <form onSubmit={handleJoinBox} className="flex gap-3">
               <input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
-                className="flex-1 px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-sm outline-none focus:border-ac uppercase tracking-widest font-barlow font-bold text-lg"
+                className="flex-1 px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac uppercase tracking-widest font-barlow font-bold text-lg"
                 placeholder="XXXXXXXX" maxLength={8} />
               <Button type="submit" disabled={joining || !inviteCode.trim()}>
                 {joining ? 'Uniendo…' : 'Unirme'}
@@ -582,6 +588,15 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
         <Card>
           <h2 className="font-barlow text-lg font-black tracking-wide mb-1">CUENTA</h2>
           <p className="text-mu text-sm mb-4">{profile.email}</p>
+          <form onSubmit={handleChangePassword} className="flex flex-col gap-3 mb-5">
+            <PasswordField label="Nueva contraseña" name="new-password" autoComplete="new-password" minLength={8}
+              value={newPassword} onChange={e => setNewPassword(e.target.value)} hint="Mínimo 8 caracteres." />
+            {pwErr && <Alert tone="error">{pwErr}</Alert>}
+            {pwMsg && <Alert tone="success">{pwMsg}</Alert>}
+            <Button type="submit" variant="secondary" disabled={pwSaving || !newPassword} className="self-start">
+              {pwSaving ? 'Guardando…' : 'Cambiar contraseña'}
+            </Button>
+          </form>
           <Button variant="secondary" disabled={signingOut} onClick={handleSignOut} className="text-rd border-rd/20 hover:bg-rd/10">
             <LogOut size={14} strokeWidth={2} />
             {signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { todayISO } from '@/lib/utils/dates'
 import { redirect } from 'next/navigation'
 import { PublishWodPanel } from '@/components/coach/PublishWodPanel'
 import type { Profile, Box, Movement } from '@/lib/types/database'
@@ -17,7 +18,7 @@ export default async function PublishWodPage() {
   if (!box) redirect('/dashboard')
 
   const { data: movs } = await supabase.from('movements').select('*').order('category').order('name')
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayISO()
   const { data: todayWod } = await supabase
     .from('daily_wods').select('*').eq('box_id', box.id).eq('scheduled_for', today).single()
 

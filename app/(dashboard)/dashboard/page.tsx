@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { todayISO } from '@/lib/utils/dates'
 import { redirect } from 'next/navigation'
 import { DashboardDispatcher } from '@/components/layout/DashboardDispatcher'
 import type { Profile, Box, Movement } from '@/lib/types/database'
@@ -32,7 +33,7 @@ export default async function DashboardPage() {
       athleteCount = count ?? 0
 
       // Today's WOD
-      const today = new Date().toISOString().split('T')[0]
+      const today = todayISO()
       const { data: wod } = await supabase
         .from('daily_wods')
         .select('title, type')
