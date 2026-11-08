@@ -45,17 +45,6 @@ export function LoginForm({ confirmed = false, initialError = '', initialEmail =
     setNotice(`Te reenviamos el correo de confirmación a ${email.trim()}.`)
   }
 
-  async function resetPassword() {
-    if (!email.trim()) { setError('Escribe tu email arriba y te enviamos un enlace para cambiar la contraseña.'); return }
-    const supabase = createClient()
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${location.origin}/auth/callback?next=/auth/reset-password`,
-    })
-    if (error) { setError(friendlyError(error.message)); return }
-    setError('')
-    setNotice(`Si existe una cuenta con ${email.trim()}, te llegará un enlace para cambiar la contraseña.`)
-  }
-
   async function handleGoogle() {
     setError('')
     const supabase = createClient()
@@ -96,9 +85,9 @@ export function LoginForm({ confirmed = false, initialError = '', initialEmail =
           label="Contraseña" name="password" required autoComplete="current-password"
           value={password} onChange={e => setPassword(e.target.value)}
         />
-        <button type="button" onClick={resetPassword} className="self-end -mt-2 text-xs font-semibold text-mu hover:text-t min-h-10">
+        <Link href="/auth/reset-password" className="self-end -mt-2 text-xs font-semibold text-mu hover:text-t min-h-10 grid place-items-center">
           ¿Olvidaste tu contraseña?
-        </button>
+        </Link>
         <Button type="submit" size="lg" disabled={loading} className="w-full">
           {loading ? 'Entrando…' : 'Iniciar sesión'}
         </Button>

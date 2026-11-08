@@ -57,7 +57,7 @@ app/
 │   ├── layout.tsx                  # Centered card layout for auth pages
 │   ├── login/page.tsx              # Email/password + Google OAuth
 │   ├── register/page.tsx           # Signup with role selector (athlete/coach) + optional invite code
-│   ├── reset-password/page.tsx     # Pick a new password (reset link lands here) or request a new link
+│   ├── reset-password/page.tsx     # Password recovery: 6-digit email code (verifyOtp recovery) → new password
 │   └── callback/route.ts           # OAuth, email confirmation and reset links (code or token_hash)
 └── (dashboard)/
     ├── layout.tsx                  # Server component: verifies auth, fetches profile, wraps DashboardShell
