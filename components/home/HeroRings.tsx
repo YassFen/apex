@@ -54,7 +54,7 @@ function allTiles(d: HeroData): Tile[] {
     return {
       id, kind: 'recovery', group: g, title: auto ? `${MUSCLE_LABEL[g]}` : MUSCLE_LABEL[g], value: r.pct, number: r.pct, suffix: '%',
       sub: r.daysToFull > 0 ? `${r.daysToFull} ${r.daysToFull === 1 ? 'día' : 'días'} para recuperar` : 'Listo para entrenar',
-      subTone: r.daysToFull > 0 ? 'text-rd' : 'text-gr', foot: auto ? `Tu grupo más cargado. ${lastHitLabel(r.lastAt)}` : lastHitLabel(r.lastAt), tone, glow,
+      subTone: r.daysToFull > 0 ? 'text-rd' : 'text-gr', foot: lastHitLabel(r.lastAt), tone, glow,
     }
   }
   const worst = rec.filter(r => r.group !== 'motor')[0]?.group ?? 'piernas'
@@ -181,7 +181,7 @@ export function HeroRings({ data, onLog, onGenerate }: { data: HeroData; onLog: 
             <div className="absolute left-1/2 top-[47%] -translate-x-1/2 -translate-y-1/2 w-[164px] flex flex-col items-center text-center">
               <motion.span initial={{ scale: 0.5, rotate: -12 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 16, delay: 0.05 }}
                 className="h-11 grid place-items-center animate-floaty">
-                <TileIcon tile={page} className={page.kind === 'recovery' && page.group !== 'motor' ? 'h-11 w-7' : 'size-9'} />
+                <TileIcon tile={page} className={page.kind === 'recovery' && page.group !== 'motor' ? 'h-12 w-8' : 'size-10'} />
               </motion.span>
               <div className="text-base font-bold tracking-tight truncate max-w-full mt-1.5 leading-tight">{page.title}</div>
               <div className="font-display text-[44px] leading-none font-bold tracking-tight tabular-nums mt-1 whitespace-nowrap">
@@ -191,12 +191,12 @@ export function HeroRings({ data, onLog, onGenerate }: { data: HeroData; onLog: 
               <div className={cn('text-[12px] font-semibold mt-1.5 leading-tight max-w-full line-clamp-2', page.subTone)}>{page.sub}</div>
             </div>
             {/* footnote in the opening at the bottom of the ring */}
-            <div className="absolute inset-x-12 bottom-1 text-center text-mu text-[11px] leading-tight line-clamp-2">{page.foot}</div>
+            <div className="absolute inset-x-14 bottom-2 text-center text-mu text-[11px] leading-tight truncate">{page.foot}</div>
           </motion.div>
         </AnimatePresence>
       </motion.div>
 
-      <div className="flex justify-center gap-1.5 -mt-2 mb-5" role="tablist" aria-label="Indicadores">
+      <div className="flex justify-center gap-1.5 mt-3 mb-5" role="tablist" aria-label="Indicadores">
         {shown.map((p, k) => (
           <button key={p.id} type="button" role="tab" aria-selected={k === i} aria-label={p.title}
             onClick={() => { setDir(k > i ? 1 : -1); setI(k) }}
