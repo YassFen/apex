@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutGrid, TrendingUp, Timer, Flame, Activity,
   BarChart3, Calculator, Users, User, Trophy, Dumbbell,
-  ArrowLeftRight, ChevronDown, History,
+  ArrowLeftRight, ChevronDown, History, CalendarDays,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { useShell } from '@/lib/hooks/useShell'
@@ -16,6 +16,7 @@ const ATHLETE_NAV = [
   { label: 'Entrenar', items: [
     { href: '/dashboard',    icon: LayoutGrid, label: 'Inicio' },
     { href: '/wod',          icon: Flame,      label: 'WOD del día', dot: true },
+    { href: '/calendar',     icon: CalendarDays, label: 'Calendario' },
     { href: '/wod/history',  icon: History,    label: 'Historial de WODs' },
     { href: '/timer',        icon: Timer,      label: 'Timer' },
   ]},
@@ -35,6 +36,7 @@ const COACH_NAV = [
   { label: 'Box', items: [
     { href: '/dashboard',           icon: LayoutGrid, label: 'Inicio' },
     { href: '/coach/publish-wod',   icon: Flame,      label: 'WOD' },
+    { href: '/calendar',            icon: CalendarDays, label: 'Calendario' },
     { href: '/coach/wod-live',      icon: Activity,   label: 'Seguimiento WOD', dot: true },
     { href: '/coach/athletes',      icon: Users,      label: 'Atletas' },
     { href: '/analytics',           icon: BarChart3,  label: 'Analytics' },

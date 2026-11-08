@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { WodView } from '@/components/wod/WodView'
 import type { Profile } from '@/lib/types/database'
 
-export default async function WodPage() {
+export default async function WodPage({ searchParams }: { searchParams: Promise<{ box?: string }> }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -32,7 +32,13 @@ export default async function WodPage() {
         .order('published_at', { ascending: false })
     : { data: [] as any[] }
 
-  const wod = ((dailyWods ?? []) as any[])[0] ?? null
+  // An athlete in several boxes can have several WODs today: ?box= picks one.
+  const { box: boxParam } = await searchParams
+  const todays = (dailyWods ?? []) as any[]
+  const wod = todays.find(w => w.box_id === boxParam) ?? todays[0] ?? null
+  const todayWods = todays
+    .filter((w, i) => todays.findIndex(x => x.box_id === w.box_id) === i)
+    .map(w => ({ boxId: w.box_id as string, boxName: (w.boxes?.name as string) ?? 'Box' }))
 
   let results: any[] = []
   if (wod) {
@@ -70,7 +76,9 @@ export default async function WodPage() {
 
   return (
     <WodView
+      key={wod?.id ?? 'none'}
       profile={profile}
+      todayWods={todayWods}
       wod={wod}
       results={results}
       myResult={myResult}

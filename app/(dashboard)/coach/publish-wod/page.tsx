@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
-import { todayISO } from '@/lib/utils/dates'
+import { addDaysISO, todayISO } from '@/lib/utils/dates'
 import { redirect } from 'next/navigation'
-import { PublishWodPanel } from '@/components/coach/PublishWodPanel'
+import { PublishWodPanel, type ScheduledDay } from '@/components/coach/PublishWodPanel'
 import type { Profile, Box, Movement } from '@/lib/types/database'
 
-export default async function PublishWodPage() {
+const AHEAD_DAYS = 13
+
+export default async function PublishWodPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -17,18 +19,35 @@ export default async function PublishWodPage() {
   const box = b as Box | null
   if (!box) redirect('/dashboard')
 
-  const { data: movs } = await supabase.from('movements').select('*').order('category').order('name')
   const today = todayISO()
-  const { data: todayWod } = await supabase
-    .from('daily_wods').select('*').eq('box_id', box.id).eq('scheduled_for', today)
-    .order('published_at', { ascending: false }).limit(1).maybeSingle()
+  const { date: rawDate } = await searchParams
+  // Programming is for today and the next two weeks; anything else falls back to today.
+  const date = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) && rawDate >= today && rawDate <= addDaysISO(today, AHEAD_DAYS)
+    ? rawDate : today
+
+  const [{ data: movs }, { data: dayWod }, { data: upcoming }] = await Promise.all([
+    supabase.from('movements').select('*').order('category').order('name'),
+    supabase.from('daily_wods').select('*').eq('box_id', box.id).eq('scheduled_for', date)
+      .order('published_at', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('daily_wods').select('scheduled_for, title, is_live').eq('box_id', box.id)
+      .gte('scheduled_for', today).lte('scheduled_for', addDaysISO(today, AHEAD_DAYS)),
+  ])
+
+  const scheduled: ScheduledDay[] = ((upcoming ?? []) as any[]).map(w => ({
+    date: w.scheduled_for as string, title: w.title as string, isLive: !!w.is_live,
+  }))
 
   return (
     <PublishWodPanel
+      key={date}
       profile={profile}
       box={box}
       movements={(movs ?? []) as Movement[]}
-      todayWod={todayWod ?? null}
+      todayWod={dayWod ?? null}
+      date={date}
+      today={today}
+      scheduled={scheduled}
+      aheadDays={AHEAD_DAYS}
     />
   )
 }

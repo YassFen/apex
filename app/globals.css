@@ -240,3 +240,24 @@ select, option { background-color: var(--p2); color: var(--t); }
   background: linear-gradient(90deg, transparent, rgb(var(--c-t) / .05), transparent);
   animation: shimmer 1.4s infinite;
 }
+
+/* Horizontal chip rows that scroll without a visible bar */
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* Scroll-driven reveal for cards below the fold. Ends at translate/scale "none" so a finished card
+   never becomes a containing block for fixed children. Cards already on screen start fully shown. */
+@keyframes revealScroll {
+  from { opacity: 0; translate: 0 28px; scale: .97; }
+  to   { opacity: 1; translate: none; scale: none; }
+}
+@supports (animation-timeline: view()) {
+  .reveal-scroll {
+    animation: revealScroll linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 35%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-scroll { animation: none; }
+}

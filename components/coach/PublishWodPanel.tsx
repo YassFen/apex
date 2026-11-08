@@ -1,14 +1,17 @@
 'use client'
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { todayISO } from '@/lib/utils/dates'
-import { friendlyError } from '@/lib/utils/errors'
+import Link from 'next/link'
+import { addDaysISO, formatDateOnly, relativeDayLabel } from '@/lib/utils/dates'
+import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
+import { ActivePill } from '@/components/ui/motion'
+import { cn } from '@/lib/utils/cn'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { ChevronDown, ChevronUp, Plus, Trash2, Check, Send, Copy, FileText, Settings2, Dumbbell, Pencil } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, Check, Send, Copy, FileText, Settings2, Dumbbell, Pencil, Eye, EyeOff, CalendarClock } from 'lucide-react'
 import type { Profile, Box, Movement, MovementCategory } from '@/lib/types/database'
 
 type WodType = 'fortime' | 'amrap' | 'emom' | 'tabata' | 'strength'
@@ -98,9 +101,14 @@ function buildWodText(args: {
 
 type StepKey = 'format' | 'movs' | 'publish'
 
+export interface ScheduledDay { date: string; title: string; isLive: boolean }
+
 export function PublishWodPanel({
-  profile, box, movements: allMovements, todayWod,
-}: { profile: Profile; box: Box; movements: Movement[]; todayWod: any }) {
+  profile, box, movements: allMovements, todayWod, date, today, scheduled, aheadDays,
+}: {
+  profile: Profile; box: Box; movements: Movement[]; todayWod: any
+  date: string; today: string; scheduled: ScheduledDay[]; aheadDays: number
+}) {
   const supabase = createClient()
   const router   = useRouter()
   const { fire } = useToast()
@@ -110,6 +118,10 @@ export function PublishWodPanel({
   const [desc, setDesc]         = useState(todayWod?.description ?? '')
   const [duration, setDuration] = useState(todayWod?.duration_mins?.toString() ?? '')
   const [publishing, setPublishing] = useState(false)
+  const isToday = date === today
+  const dayLabel = isToday ? 'hoy' : `el ${formatDateOnly(date, { weekday: 'long', day: 'numeric', month: 'long' })}`
+  // Future WODs: the coach decides if athletes see them before the day.
+  const [showEarly, setShowEarly] = useState<boolean>(todayWod?.show_early ?? false)
 
   const [wodMovs, setWodMovs] = useState<WodMovement[]>(
     (todayWod?.movements as any[] ?? []).map((m: any) => ({
@@ -119,13 +131,13 @@ export function PublishWodPanel({
   )
 
   // Draft autosave (new WODs only): a reload or a closed tab doesn't lose the work.
-  const draftKey = `apex.wodDraft.${box.id}`
+  const draftKey = `apex.wodDraft.${box.id}.${date}`
   const draftLoaded = useRef(false)
   useEffect(() => {
     if (todayWod) { draftLoaded.current = true; return }
     try {
       const d = JSON.parse(localStorage.getItem(draftKey) ?? 'null')
-      if (d && d.date === todayISO() && (d.title || d.movs?.length)) {
+      if (d && d.date === date && (d.title || d.movs?.length)) {
         setTitle(d.title ?? ''); setType(d.type ?? 'fortime'); setDesc(d.desc ?? '')
         setDuration(d.duration ?? ''); setWodMovs(d.movs ?? [])
         fire('Recuperamos tu borrador', 'info')
@@ -137,9 +149,9 @@ export function PublishWodPanel({
   useEffect(() => {
     if (todayWod || !draftLoaded.current) return
     try {
-      localStorage.setItem(draftKey, JSON.stringify({ date: todayISO(), title, type, desc, duration, movs: wodMovs }))
+      localStorage.setItem(draftKey, JSON.stringify({ date, title, type, desc, duration, movs: wodMovs }))
     } catch {}
-  }, [todayWod, draftKey, title, type, desc, duration, wodMovs])
+  }, [todayWod, draftKey, date, title, type, desc, duration, wodMovs])
 
   const [openStep, setOpenStep] = useState<Record<StepKey, boolean>>({
     format: !title, movs: true, publish: true,
@@ -244,23 +256,34 @@ export function PublishWodPanel({
   async function handlePublish(e: React.FormEvent) {
     e.preventDefault()
     setPublishing(true)
-    const today = todayISO()
-    const payload = {
+    const payload: Record<string, unknown> = {
       box_id: box.id, coach_id: profile.id, title, type,
       description: desc,
       duration_mins: duration ? Number(duration) : null,
       movements: wodMovs.filter(m => m.name),
-      scheduled_for: today, is_live: true,
+      scheduled_for: date, is_live: true,
+      ...(isToday ? {} : { show_early: showEarly }),
     }
     if (!title.trim()) { setPublishing(false); fire('Ponle un nombre al WOD antes de publicar', 'error'); return }
-    const { error } = todayWod
-      ? await supabase.from('daily_wods').update(payload).eq('id', todayWod.id)
-      : await supabase.from('daily_wods').insert(payload)
+    const save = (body: Record<string, unknown>) => todayWod
+      ? supabase.from('daily_wods').update(body).eq('id', todayWod.id)
+      : supabase.from('daily_wods').insert(body)
+    let { error } = await save(payload)
+    // Without migration 006 there is no show_early column: save without it.
+    if (error && isMissingColumn(error) && 'show_early' in payload) {
+      const { show_early: _omit, ...rest } = payload
+      ;({ error } = await save(rest))
+    }
     setPublishing(false)
     if (error) { fire(friendlyError(error.message), 'error'); return }
     try { localStorage.removeItem(draftKey) } catch {}
-    fire('WOD publicado. Tus atletas ya lo ven.', 'pr')
-    setTimeout(() => router.push('/dashboard'), 1500)
+    if (isToday) {
+      fire('WOD publicado. Tus atletas ya lo ven.', 'pr')
+      setTimeout(() => router.push('/dashboard'), 1500)
+    } else {
+      fire(`WOD programado para ${dayLabel}${showEarly ? '. Tus atletas ya lo pueden ver.' : '. Se revela ese día.'}`, 'pr')
+      router.refresh()
+    }
   }
 
   const [confirm, setConfirm] = useState<null | 'clear' | 'remove'>(null)
@@ -306,11 +329,17 @@ export function PublishWodPanel({
     <>
       <Topbar title="WOD" profile={profile} />
 
-      <div className="p-4 lg:p-6 max-w-3xl mx-auto flex flex-col gap-4">
+      <div className="p-4 lg:p-6 max-w-3xl mx-auto flex flex-col gap-4 w-full">
+        <DayStrip date={date} today={today} scheduled={scheduled} aheadDays={aheadDays} />
+
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
-            <div className="font-barlow text-xl font-black tracking-wide uppercase">WOD Builder</div>
-            <div className="text-mu text-xs mt-0.5">Construye, exporta y publica el WOD del día</div>
+            <div className="font-barlow text-xl font-black tracking-wide uppercase">
+              {isToday ? 'WOD de hoy' : `WOD · ${relativeDayLabel(date, today)}`}
+            </div>
+            <div className="text-mu text-xs mt-0.5 first-letter:uppercase">
+              {isToday ? 'Construye, exporta y publica el WOD del día' : `Programa el WOD para ${dayLabel}`}
+            </div>
           </div>
           <button type="button" onClick={() => setConfirm('clear')}
                   className="px-3 py-1.5 rounded-lg bg-rd/10 border border-rd/18 text-rd text-xs font-bold hover:bg-rd/15 transition flex items-center gap-1.5">
@@ -321,12 +350,12 @@ export function PublishWodPanel({
 
         {todayWod && !todayWod.is_live && (
           <div className="p-3 pl-4 rounded-xl bg-p2 text-mu text-sm font-semibold">
-            Quitaste el WOD de hoy. Si lo guardas, se vuelve a publicar.
+            Quitaste el WOD de {dayLabel}. Si lo guardas, se vuelve a publicar.
           </div>
         )}
         {todayWod?.is_live && (
           <div className="p-3 pl-4 rounded-xl bg-or/10 text-or text-sm font-semibold flex items-center gap-3">
-            <span className="flex-1">Ya hay un WOD publicado hoy. Guardar lo actualiza en vivo.</span>
+            <span className="flex-1">{isToday ? 'Ya hay un WOD publicado hoy. Guardar lo actualiza en vivo.' : `Ya programaste un WOD para ${dayLabel}. Guardar lo actualiza.`}</span>
             <button type="button" onClick={() => setConfirm('remove')}
               className="flex-shrink-0 h-9 px-3 rounded-full bg-rd/15 text-rd text-xs font-bold hover:bg-rd/25 transition">
               Quitar WOD
@@ -526,10 +555,28 @@ export function PublishWodPanel({
             icon={<FileText size={14} />}
             done={false} open={openStep.publish} onToggle={() => toggle('publish')}
           >
+            {!isToday && (
+              <div className="grid grid-cols-2 gap-2 mb-3" role="radiogroup" aria-label="Cuándo lo ven los atletas">
+                {([
+                  [false, EyeOff, 'Revelar ese día', 'Los atletas ven que hay WOD, pero no cuál'],
+                  [true,  Eye,    'Mostrar desde ya', 'Aparece en su calendario ahora'],
+                ] as const).map(([v, Icon, label, sub]) => (
+                  <button key={label} type="button" role="radio" aria-checked={showEarly === v} onClick={() => setShowEarly(v)}
+                    className={cn('relative isolate text-left p-3 rounded-xl transition-colors', showEarly === v ? 'text-t' : 'text-mu bg-p2 hover:text-t')}>
+                    {showEarly === v && <ActivePill layoutId="wod-visibility" className="rounded-xl bg-ac/15 ring-1 ring-ac/40" />}
+                    <Icon size={16} className={showEarly === v ? 'text-ac' : ''} aria-hidden />
+                    <div className="text-sm font-bold mt-1.5">{label}</div>
+                    <div className="text-[11px] text-mu leading-snug mt-0.5">{sub}</div>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-2.5">
               <Button type="submit" size="lg" className="sm:flex-1 h-14 text-base" disabled={publishing}>
-                <Send size={16} strokeWidth={2.2} />
-                {publishing ? 'Publicando…' : todayWod ? 'Actualizar WOD en vivo' : 'Publicar WOD en vivo'}
+                {isToday ? <Send size={16} strokeWidth={2.2} /> : <CalendarClock size={16} strokeWidth={2.2} />}
+                {publishing ? 'Guardando…'
+                  : isToday ? (todayWod ? 'Actualizar WOD en vivo' : 'Publicar WOD en vivo')
+                  : (todayWod ? 'Actualizar WOD programado' : 'Programar WOD')}
               </Button>
               <Button type="button" variant="secondary" size="lg" className="sm:w-auto" onClick={handleExportText}>
                 <Copy size={14} strokeWidth={2.2} />
@@ -617,5 +664,31 @@ function MovDisplayRow({ index, mov, onEdit, onDelete }: {
         <Trash2 size={13} strokeWidth={2} />
       </button>
     </div>
+  )
+}
+
+// ── Day strip: today + the next two weeks, with a dot on programmed days ───────
+function DayStrip({ date, today, scheduled, aheadDays }: { date: string; today: string; scheduled: ScheduledDay[]; aheadDays: number }) {
+  const days = Array.from({ length: aheadDays + 1 }, (_, i) => addDaysISO(today, i))
+  const byDate = new Map(scheduled.map(s => [s.date, s]))
+  return (
+    <nav aria-label="Elegir día" className="-mx-4 lg:mx-0 px-4 lg:px-0 flex gap-1.5 overflow-x-auto scrollbar-none snap-x">
+      {days.map(d => {
+        const active = d === date
+        const wod = byDate.get(d)
+        return (
+          <Link key={d} href={d === today ? '/coach/publish-wod' : `/coach/publish-wod?date=${d}`} scroll={false}
+            aria-current={active ? 'date' : undefined}
+            aria-label={`${formatDateOnly(d, { weekday: 'long', day: 'numeric', month: 'long' })}${wod ? ', con WOD' : ''}`}
+            className={cn('relative isolate snap-start flex-shrink-0 w-[52px] h-[68px] rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-colors',
+              active ? 'text-onac' : 'bg-p text-mu hover:text-t')}>
+            {active && <ActivePill layoutId="publish-day" className="rounded-2xl bg-ac" />}
+            <span className="text-[10px] font-bold uppercase">{d === today ? 'Hoy' : formatDateOnly(d, { weekday: 'short' }).replace('.', '')}</span>
+            <span className="font-barlow text-2xl font-black leading-none">{Number(d.slice(8, 10))}</span>
+            <span className={cn('size-1.5 rounded-full', wod ? (active ? 'bg-onac' : wod.isLive ? 'bg-ac' : 'bg-fa') : 'bg-transparent')} aria-hidden />
+          </Link>
+        )
+      })}
+    </nav>
   )
 }

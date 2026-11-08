@@ -34,3 +34,9 @@ export function isMissingColumn(err: { code?: string; message?: string } | null 
   if (!err) return false
   return err.code === '42703' || err.code === 'PGRST204' || /column .* (does not exist|of .* in the schema cache)/i.test(err.message ?? '')
 }
+
+/** True when the query failed because a table doesn't exist yet (migration not run). */
+export function isMissingTable(err: { code?: string; message?: string } | null | undefined): boolean {
+  if (!err) return false
+  return err.code === '42P01' || err.code === 'PGRST205' || /(relation|table) .* (does not exist|in the schema cache)/i.test(err.message ?? '')
+}

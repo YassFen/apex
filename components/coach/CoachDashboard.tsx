@@ -13,6 +13,7 @@ import {
   ChevronRight, Radio, Copy, Check, Share2, Pencil,
 } from 'lucide-react'
 import type { Profile, Box } from '@/lib/types/database'
+import { NextEventCard, type NextEvent } from '@/components/calendar/NextEventCard'
 
 interface Props {
   profile: Profile
@@ -21,6 +22,7 @@ interface Props {
   todayWod: { id: string; title: string; type: string } | null
   todayResults: number
   recentMembers: { id: string; name: string; avatar: string | null; joinedAt: string }[]
+  nextEvent?: NextEvent | null
 }
 
 const TOOLS = [
@@ -29,7 +31,7 @@ const TOOLS = [
   { href: '/calc',      icon: Calculator, label: 'Calculadora' },
 ]
 
-export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResults, recentMembers }: Props) {
+export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResults, recentMembers, nextEvent = null }: Props) {
   const { setViewMode } = useShell()
   const { fire } = useToast()
   const [copied, setCopied] = useState(false)
@@ -136,6 +138,9 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                 </span>
               </Link>
             )}
+
+            {/* Calendar: programmed WODs and box events */}
+            <NextEventCard event={nextEvent} />
 
             {/* Box + invite */}
             <Card>

@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { CalendarClock, Users, Timer, Pencil, History, Dumbbell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { rankResults } from '@/lib/utils/wod-ranking'
+import { todayISO } from '@/lib/utils/dates'
+import { ActivePill } from '@/components/ui/motion'
+import { cn } from '@/lib/utils/cn'
 import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 
 import { Topbar } from '@/components/layout/Topbar'
@@ -24,6 +27,7 @@ interface Props {
   memberships: any[]
   maxes?: { name: string; valueLb: number }[]
   bumps?: Bump[] | null
+  todayWods?: { boxId: string; boxName: string }[]
 }
 
 type Bump = { result_id: string; user_id: string }
@@ -31,7 +35,7 @@ type Bump = { result_id: string; user_id: string }
 
 const MAX_EDITS = 2
 
-export function WodView({ profile, wod: initialWod, results: initialResults, memberships, maxes = [], bumps: initialBumps = [] }: Props) {
+export function WodView({ profile, wod: initialWod, results: initialResults, memberships, maxes = [], bumps: initialBumps = [], todayWods = [] }: Props) {
   const router = useRouter()
   const [supabase] = useState(() => createClient())
   const [wod, setWod]           = useState(initialWod)
@@ -82,7 +86,9 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
     }, payload => {
       if (payload.eventType !== 'INSERT' && payload.eventType !== 'UPDATE') return
       const next = payload.new as DailyWod
-      if (!next.is_live) return
+      // Ignore WODs programmed for other days and other boxes' WODs when one is already shown.
+      if (!next.is_live || next.scheduled_for !== todayISO()) return
+      if (wod?.box_id && next.box_id !== wod.box_id) return
       setWod((prev: any) => ({ ...prev, ...next }))
       setJustPublished(true)
       setTimeout(() => setJustPublished(false), 4000)
@@ -129,6 +135,21 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
       )}
 
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full">
+        {todayWods.length > 1 && (
+          <nav aria-label="WOD de cada box" className="-mx-4 px-4 lg:mx-0 lg:px-0 flex gap-1.5 overflow-x-auto scrollbar-none">
+            {todayWods.map(t => {
+              const active = t.boxId === wod?.box_id
+              return (
+                <Link key={t.boxId} href={`/wod?box=${t.boxId}`} scroll={false} aria-current={active ? 'page' : undefined}
+                  className={cn('relative isolate flex-shrink-0 h-9 px-4 rounded-full text-sm font-bold grid place-items-center transition-colors max-w-[200px] truncate',
+                    active ? 'text-onac' : 'bg-p text-mu hover:text-t')}>
+                  {active && <ActivePill layoutId="wod-box" className="rounded-full bg-ac" />}
+                  {t.boxName}
+                </Link>
+              )
+            })}
+          </nav>
+        )}
         {!wod ? (
           <Card className="text-center py-14 flex flex-col items-center gap-3">
             <div className="size-14 rounded-2xl bg-p2 grid place-items-center text-mu">

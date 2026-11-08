@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { todayISO } from '@/lib/utils/dates'
+import { daysBetween, todayISO } from '@/lib/utils/dates'
+import { eventReadiness, type EventCategory, type PrLite } from '@/lib/utils/readiness'
+import type { NextEvent } from '@/components/calendar/NextEventCard'
 import { redirect } from 'next/navigation'
 import { DashboardDispatcher } from '@/components/layout/DashboardDispatcher'
 import type { Profile, Box, Movement } from '@/lib/types/database'
@@ -109,6 +111,33 @@ export default async function DashboardPage() {
     .gte('recorded_at', new Date(Date.now() - 60 * 86_400_000).toISOString())
   const resultDates = ((rawResultDays ?? []) as any[]).map(r => r.recorded_at as string)
 
+  // Next competition the athlete is going to (or their box's), with readiness from their records.
+  const today = todayISO()
+  let nextEvent: NextEvent | null = null
+  const { data: rawEvents, error: evErr } = await supabase
+    .from('events')
+    .select('id, name, kind, starts_on, ends_on, box_id, created_by, event_workouts(position, title, type, time_cap_mins, description, movements), event_participants(user_id, category)')
+    .gte('starts_on', today)
+    .order('starts_on')
+    .limit(10)
+  if (!evErr) {
+    const evs = (rawEvents ?? []) as any[]
+    const mineOf = (e: any) => (e.event_participants ?? []).find((x: any) => x.user_id === user.id)
+    const pick = evs.find(e => mineOf(e)) ?? evs.find(e => e.box_id) ?? evs[0]
+    if (pick) {
+      const me = mineOf(pick)
+      const prLite: PrLite[] = ((rawPrs ?? []) as any[])
+        .filter(r => r.is_pr && r.movements?.name)
+        .map(r => ({ movement: r.movements.name, metric: r.metric, valueLb: Number(r.value_lb) }))
+      const workouts = ((pick.event_workouts ?? []) as any[]).map(w => ({ ...w, movements: Array.isArray(w.movements) ? w.movements : [] }))
+      const rd = workouts.length ? eventReadiness(workouts, (me?.category ?? 'm') as EventCategory, prLite) : null
+      nextEvent = {
+        id: pick.id, name: pick.name, kind: pick.kind, startsOn: pick.starts_on,
+        days: daysBetween(today, pick.starts_on), readiness: rd?.score ?? null, going: !!me,
+      }
+    }
+  }
+
   // All movements — used by AthleteDashboard for KPI customization picker
   // so the user can choose any movement, not just ones they've already PR'd.
   const { data: rawMovs } = await supabase
@@ -131,6 +160,7 @@ export default async function DashboardPage() {
       athleteToday={athleteToday}
       hasBox={myBoxIds.length > 0}
       resultDates={resultDates}
+      nextEvent={nextEvent}
     />
   )
 }

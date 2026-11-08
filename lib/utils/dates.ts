@@ -31,3 +31,26 @@ export function formatDateOnly(ymd: string, opts: Intl.DateTimeFormatOptions): s
   const [y, m, d] = ymd.slice(0, 10).split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString('es-CL', opts)
 }
+
+/** Adds whole days to a YYYY-MM-DD string (calendar math, no time zone involved). */
+export function addDaysISO(ymd: string, days: number): string {
+  const [y, m, d] = ymd.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d + days))
+  return dt.toISOString().slice(0, 10)
+}
+
+/** Whole days from `from` to `to` (both YYYY-MM-DD). */
+export function daysBetween(from: string, to: string): number {
+  const a = Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10))
+  const b = Date.UTC(+to.slice(0, 4), +to.slice(5, 7) - 1, +to.slice(8, 10))
+  return Math.round((b - a) / 86_400_000)
+}
+
+/** "Hoy", "Mañana", "En 5 días", "Hace 2 días"… for a YYYY-MM-DD relative to today. */
+export function relativeDayLabel(ymd: string, today: string = todayISO()): string {
+  const n = daysBetween(today, ymd)
+  if (n === 0) return 'Hoy'
+  if (n === 1) return 'Mañana'
+  if (n === -1) return 'Ayer'
+  return n > 0 ? `En ${n} días` : `Hace ${-n} días`
+}

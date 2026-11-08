@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutGrid, Flame, Timer, TrendingUp, Activity, Users, ArrowLeftRight, MoreHorizontal,
-  Trophy, Calculator, BarChart3, User, History, ChevronRight,
+  Trophy, Calculator, BarChart3, User, History, ChevronRight, CalendarDays,
 } from 'lucide-react'
+import { motion } from 'motion/react'
 import { cn } from '@/lib/utils/cn'
+import { SPRING } from '@/components/ui/motion'
 import { useShell } from '@/lib/hooks/useShell'
 import { Modal } from '@/components/ui/Modal'
 import { AppearancePicker } from '@/components/ui/AppearancePicker'
@@ -17,19 +19,20 @@ type Item = { href: string; label: string; icon: typeof Flame; desc?: string }
 const ATHLETE_TABS: Item[] = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutGrid },
   { href: '/wod',       label: 'WOD',    icon: Flame },
-  { href: '/timer',     label: 'Timer',  icon: Timer },
+  { href: '/calendar',  label: 'Agenda', icon: CalendarDays },
   { href: '/prs',       label: 'RMs',    icon: TrendingUp },
 ]
 
 const COACH_TABS: Item[] = [
   { href: '/dashboard',         label: 'Inicio',  icon: LayoutGrid },
   { href: '/coach/publish-wod', label: 'WOD',     icon: Flame },
-  { href: '/coach/wod-live',    label: 'En vivo', icon: Activity },
+  { href: '/calendar',          label: 'Agenda',  icon: CalendarDays },
   { href: '/coach/athletes',    label: 'Atletas', icon: Users },
 ]
 
 // Everything that doesn't fit in the tab bar lives in the "Más" sheet.
 const ATHLETE_MORE: Item[] = [
+  { href: '/timer',       label: 'Timer',             icon: Timer,      desc: 'For Time, AMRAP, EMOM, Tabata' },
   { href: '/wod/history', label: 'Historial de WODs', icon: History,    desc: 'Tus resultados día a día' },
   { href: '/benchmarks',  label: 'Benchmarks',        icon: Trophy,     desc: 'Fran, Grace, Murph…' },
   { href: '/calc',        label: 'Calculadora RM',    icon: Calculator, desc: 'Porcentajes y discos' },
@@ -37,6 +40,7 @@ const ATHLETE_MORE: Item[] = [
 ]
 
 const COACH_MORE: Item[] = [
+  { href: '/coach/wod-live', label: 'Seguimiento en vivo', icon: Activity, desc: 'Quién ya registró el WOD' },
   { href: '/analytics', label: 'Analytics',      icon: BarChart3,  desc: 'Progreso del box' },
   { href: '/timer',     label: 'Timer',          icon: Timer,      desc: 'For Time, AMRAP, EMOM, Tabata' },
   { href: '/calc',      label: 'Calculadora RM', icon: Calculator, desc: 'Porcentajes y discos' },
@@ -130,10 +134,13 @@ function TabIcon({ Icon, active, label }: { Icon: typeof Flame; active: boolean;
   return (
     <>
       <span className={cn(
-        'h-8 w-14 rounded-full grid place-items-center transition-[background-color,color,transform] duration-300 ease-[var(--ease-out)]',
-        active ? 'bg-ac/15 text-ac scale-100' : 'text-mu scale-95',
+        'relative isolate h-8 w-14 rounded-full grid place-items-center transition-colors duration-300',
+        active ? 'text-ac' : 'text-mu',
       )}>
-        <Icon size={20} strokeWidth={active ? 2.4 : 1.9} aria-hidden />
+        {active && <motion.span layoutId="tab-pill" transition={SPRING} className="absolute inset-0 -z-10 rounded-full bg-ac/15" aria-hidden />}
+        <motion.span animate={{ scale: active ? 1 : 0.92, y: active ? -1 : 0 }} transition={SPRING} className="grid place-items-center">
+          <Icon size={20} strokeWidth={active ? 2.4 : 1.9} aria-hidden />
+        </motion.span>
       </span>
       <span className={cn('text-[10px] font-bold leading-none transition-colors', active ? 'text-t' : 'text-mu')}>{label}</span>
     </>

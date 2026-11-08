@@ -32,6 +32,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     // Keep at most 3 on screen so they never pile up.
     setToasts(t => [...t.slice(-2), { id, message, type }])
     setTimeout(() => dismiss(id), type === 'error' ? 5000 : 3000)
+    try { navigator.vibrate?.(type === 'pr' ? [18, 40, 28] : type === 'error' ? [40, 30, 40] : 12) } catch {}
   }, [dismiss])
 
   return (

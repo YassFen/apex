@@ -66,9 +66,13 @@ app/
     ├── wod/history/page.tsx        # Athlete: last 60 days of WODs with result, place and attendance
     ├── prs/page.tsx                # Athlete: personal records
     ├── timer/page.tsx              # Timer (all users)
-    ├── calc/page.tsx               # 1RM Calculator (all users)
+    ├── calc/page.tsx               # 1RM Calculator (all users): estimate, % table, plates (lb/kg, 3 bars), warm-up ramp
+    ├── calendar/page.tsx           # Calendar (all users): month grid of WODs + events, box filter (?m=YYYY-MM)
+    ├── calendar/event/new/page.tsx # Create a personal or box event (?date=)
+    ├── calendar/event/[id]/page.tsx        # Event: countdown, sign-up (category/division), readiness per movement
+    ├── calendar/event/[id]/edit/page.tsx   # Edit event + its workouts
     ├── benchmarks/page.tsx         # Athlete: benchmark results
-    ├── coach/publish-wod/page.tsx  # Coach: publish/edit today's WOD
+    ├── coach/publish-wod/page.tsx  # Coach: publish today's WOD or program one up to 13 days ahead (?date=)
     └── coach/athletes/page.tsx     # Coach: view box roster + invite code
 ```
 
@@ -155,6 +159,9 @@ The `(dashboard)/layout.tsx` already does this — individual pages only need it
 | `daily_wods` | Today's workout published by a coach. `is_live` controls Realtime broadcast. |
 | `wod_results` | Athlete result for a daily WOD. Unique per `(daily_wod_id, user_id)`. |
 | `benchmarks` | Athlete named benchmark results (Fran time, Grace time, etc.). |
+| `events` | Competitions/events (006). `box_id` null = personal (creator only); set = box event published by a coach, visible to members. |
+| `event_workouts` | Workouts of an event (006). `movements` jsonb: `[{ name, reps, load_lb, load_lb_f }]` (men's/women's load). |
+| `event_participants` | Who goes to an event (006), with `category` (m/f, picks the load) and `division` (rx/scaled/masters/teens). |
 
 ### Key RLS Helpers (PostgreSQL functions)
 
@@ -171,7 +178,7 @@ These are used throughout all RLS policies. An athlete sees WODs/results only fo
 
 ### Migrations
 
-Migrations are run by hand in **Supabase Dashboard → SQL Editor**. `005_reactions_and_deletes.sql` adds `wod_result_bumps` ("fuego" reactions on leaderboard results, hidden in the UI until it exists) plus the missing delete policies on `daily_wods` (coach) and `wod_results` (own). Without it, "Quitar WOD" falls back to `is_live = false`. `004_production_sync.sql` is idempotent and also contains everything from 002 and 003, which were never applied in production. Code that writes columns added in 004 (`wod_results.edit_count`, box profile fields) falls back gracefully if 004 is missing — see `isMissingColumn()` in `lib/utils/errors.ts`.
+Migrations are run by hand in **Supabase Dashboard → SQL Editor**. `005_reactions_and_deletes.sql` adds `wod_result_bumps` ("fuego" reactions on leaderboard results, hidden in the UI until it exists) plus the missing delete policies on `daily_wods` (coach) and `wod_results` (own). Without it, "Quitar WOD" falls back to `is_live = false`. `006_calendar_events.sql` adds `daily_wods.show_early` (the coach decides whether a future WOD is visible before its day), rewrites the `daily_wods` select policy so athletes only see live WODs whose day has come (`app_today()`, Santiago) or that are `show_early`, adds the `box_wod_days()` RPC (days with a WOD, without content, for "WOD programado") and the three event tables with RLS (`can_see_event()` / `can_edit_event()`). Until 006 runs, the calendar shows WODs only, events are hidden with a note, and programming ahead saves without `show_early` (athletes see future WODs right away). `004_production_sync.sql` is idempotent and also contains everything from 002 and 003, which were never applied in production. Code that writes columns added in 004 (`wod_results.edit_count`, box profile fields) falls back gracefully if 004 is missing — see `isMissingColumn()` in `lib/utils/errors.ts`.
 
 ### Dates and time zones
 
@@ -192,6 +199,12 @@ Every Tailwind color is a CSS variable holding RGB channels (`--c-bg`, `--c-ac`,
 - Toasts: `const { fire } = useToast(); fire('Guardado', 'ok' | 'pr' | 'error' | 'info')` — provider is in `DashboardShell`.
 - Never use `window.confirm`/`alert`; use `components/ui/ConfirmDialog.tsx`.
 - New records open `RmCelebrationModal` (confetti on a new PR).
+
+### Calendar and event readiness
+
+- `lib/utils/readiness.ts` compares each event movement's load (for the athlete's category) with their records: 1RM, or an Epley estimate from a 2RM/3RM, or max reps for bodyweight. It returns a zone (Cómodo/Exigente/Al límite/Muy pesado/Sobre tu 1RM), reps possible and how to split the sets, plus an overall 0-100 score.
+- An athlete in several boxes filters the calendar with `BoxFilter` (`apex.boxFilter` in localStorage); `/wod?box=` picks between several WODs of the same day.
+- Animations use the `motion` package (`motion/react`): shared helpers in `components/ui/motion.tsx` (`Reveal`, `AnimatedNumber`, `Segmented`, `ActivePill`, `SPRING`, `EASE_OUT`). `MotionConfig reducedMotion="user"` is set in `DashboardShell`. `Modal` portals to `<body>` so transformed ancestors can't trap it. Cards reveal on scroll with CSS `animation-timeline: view()` (`.reveal-scroll`).
 
 ### Joining a box
 

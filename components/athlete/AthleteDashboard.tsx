@@ -15,6 +15,7 @@ import { toDateInput, todayISO, formatDateOnly } from '@/lib/utils/dates'
 import { CountUp } from '@/components/ui/CountUp'
 import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 import { cn } from '@/lib/utils/cn'
+import { NextEventCard, type NextEvent } from '@/components/calendar/NextEventCard'
 
 interface PR {
   id: string
@@ -59,8 +60,8 @@ function computeStreakDays(days: Set<string>): number {
 
 type TodayWod = { title: string; type: string; durationMins: number | null; myResult: string | null }
 
-export function AthleteDashboard({ profile, prs, movements = [], today = null, hasBox = false, resultDates = [] }: {
-  profile: Profile; prs: PR[]; movements?: Movement[]; today?: TodayWod | null; hasBox?: boolean; resultDates?: string[]
+export function AthleteDashboard({ profile, prs, movements = [], today = null, hasBox = false, resultDates = [], nextEvent = null }: {
+  profile: Profile; prs: PR[]; movements?: Movement[]; today?: TodayWod | null; hasBox?: boolean; resultDates?: string[]; nextEvent?: NextEvent | null
 }) {
   const router = useRouter()
   const [prModalOpen, setPrModalOpen] = useState(false)
@@ -238,6 +239,9 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
             <ChevronRight size={18} className="text-fa" aria-hidden />
           </Link>
         )}
+
+        {/* Next competition / calendar */}
+        <NextEventCard event={nextEvent} />
 
         {/* This week */}
         <Card padding={false} className="p-4">

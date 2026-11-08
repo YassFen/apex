@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useId, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
@@ -35,9 +36,10 @@ export function Modal({ open, onClose, title, subtitle, children, className }: M
     }
   }, [open, onClose])
 
-  if (!open) return null
+  if (!open || typeof document === 'undefined') return null
 
-  return (
+  // Portaled to <body> so an animated (transformed) ancestor can't trap the fixed overlay.
+  return createPortal(
     <div
       className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in flex items-end sm:items-center justify-center sm:p-4"
       onClick={e => e.target === e.currentTarget && onClose()}
@@ -68,6 +70,7 @@ export function Modal({ open, onClose, title, subtitle, children, className }: M
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

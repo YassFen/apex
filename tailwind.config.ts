@@ -24,6 +24,18 @@ const config: Config = {
         t:    'rgb(var(--c-t) / <alpha-value>)',    // Primary text
         mu:   'rgb(var(--c-mu) / <alpha-value>)',   // Muted text
         fa:   'rgb(var(--c-fa) / <alpha-value>)',   // Faint text (labels, placeholders)
+
+        // Physical bumper-plate colors (IWF standard). Fixed on purpose: they must
+        // look like the real plates in every theme.
+        plate: {
+          red:    '#d62f2f',
+          blue:   '#2563eb',
+          yellow: '#e8b10c',
+          green:  '#16a34a',
+          white:  '#e8e8ea',
+          black:  '#26272b',
+          steel:  '#8b9099',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
