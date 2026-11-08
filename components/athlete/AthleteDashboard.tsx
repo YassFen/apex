@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button'
 import type { Profile, Movement } from '@/lib/types/database'
 import { toDateInput, todayISO, formatDateOnly } from '@/lib/utils/dates'
 import { CountUp } from '@/components/ui/CountUp'
-import { WOD_TYPE_META } from '@/components/wod/WodView'
+import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 import { cn } from '@/lib/utils/cn'
 
 interface PR {

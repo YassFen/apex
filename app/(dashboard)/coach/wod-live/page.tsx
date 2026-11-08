@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import Link from 'next/link'
 import { ClipboardList } from 'lucide-react'
 import { rankResults } from '@/lib/utils/wod-ranking'
-import { WOD_TYPE_META } from '@/components/wod/WodView'
+import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 
 export default function CoachWodLivePage() {
   const { profile } = useShell()

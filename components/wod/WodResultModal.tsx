@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
 import { Modal } from '@/components/ui/Modal'
@@ -48,6 +48,7 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
 
   const [prevMm, prevSs] = existingResult?.result_type === 'time' ? String(existingResult.result_value).split(':') : ['', '']
   const [mm, setMm] = useState(prevMm ?? '')
+  const ssRef = useRef<HTMLInputElement>(null)
   const [ss, setSs] = useState(prevSs ?? '')
 
   const [prevRounds, prevReps] = existingResult?.result_type === 'rounds' ? String(existingResult.result_value).split('+') : ['', '']
@@ -132,9 +133,13 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
             <legend className={labelCls}>Tu tiempo</legend>
             <div className="flex items-center gap-2">
               <input aria-label="Minutos" inputMode="numeric" pattern="[0-9]*" maxLength={2} value={mm} placeholder="0"
-                onChange={e => setMm(e.target.value.replace(/\D/g, ''))} className={numCls} autoFocus />
+                onChange={e => {
+                  const v = e.target.value.replace(/\D/g, '')
+                  setMm(v)
+                  if (v.length === 2) ssRef.current?.focus() // jump to seconds like a time picker
+                }} className={numCls} autoFocus />
               <span className="font-barlow text-4xl font-black text-mu" aria-hidden>:</span>
-              <input aria-label="Segundos" inputMode="numeric" pattern="[0-9]*" maxLength={2} value={ss} placeholder="00"
+              <input ref={ssRef} aria-label="Segundos" inputMode="numeric" pattern="[0-9]*" maxLength={2} value={ss} placeholder="00"
                 onChange={e => setSs(e.target.value.replace(/\D/g, ''))} className={numCls} />
             </div>
             <p className="mt-1.5 text-xs text-mu">Minutos : segundos. Si llegaste al time cap, anota el cap y explícalo en notas.</p>

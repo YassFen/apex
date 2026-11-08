@@ -62,7 +62,8 @@ app/
 └── (dashboard)/
     ├── layout.tsx                  # Server component: verifies auth, fetches profile, wraps DashboardShell
     ├── dashboard/page.tsx          # Branches: CoachDashboard or AthleteDashboard based on profile.role
-    ├── wod/page.tsx                # Athlete: live WOD view
+    ├── wod/page.tsx                # Athlete: live WOD view (+ "Tus números" from 1RMs, fuego reactions)
+    ├── wod/history/page.tsx        # Athlete: last 60 days of WODs with result, place and attendance
     ├── prs/page.tsx                # Athlete: personal records
     ├── timer/page.tsx              # Timer (all users)
     ├── calc/page.tsx               # 1RM Calculator (all users)
@@ -170,7 +171,7 @@ These are used throughout all RLS policies. An athlete sees WODs/results only fo
 
 ### Migrations
 
-Migrations are run by hand in **Supabase Dashboard → SQL Editor**. `004_production_sync.sql` is idempotent and also contains everything from 002 and 003, which were never applied in production. Code that writes columns added in 004 (`wod_results.edit_count`, box profile fields) falls back gracefully if 004 is missing — see `isMissingColumn()` in `lib/utils/errors.ts`.
+Migrations are run by hand in **Supabase Dashboard → SQL Editor**. `005_reactions_and_deletes.sql` adds `wod_result_bumps` ("fuego" reactions on leaderboard results, hidden in the UI until it exists) plus the missing delete policies on `daily_wods` (coach) and `wod_results` (own). Without it, "Quitar WOD" falls back to `is_live = false`. `004_production_sync.sql` is idempotent and also contains everything from 002 and 003, which were never applied in production. Code that writes columns added in 004 (`wod_results.edit_count`, box profile fields) falls back gracefully if 004 is missing — see `isMissingColumn()` in `lib/utils/errors.ts`.
 
 ### Dates and time zones
 
@@ -179,6 +180,18 @@ Never compute "today" with `new Date().toISOString()` — Vercel runs in UTC, so
 ### Leaderboards
 
 `wod_results.result_value` is text. Never sort it in SQL; use `rankResults()` from `lib/utils/wod-ranking.ts` (Rx+ > Rx > Scaled, then time ascending / rounds, reps and weight descending).
+
+### Themes (light/dark + accent)
+
+Every Tailwind color is a CSS variable holding RGB channels (`--c-bg`, `--c-ac`, …) defined in `app/globals.css`. Dark is the default, light comes from `data-theme="light"` on `<html>` (or the OS preference when the user picks "Sistema"), and the accent from `data-accent` (lima, violeta, cian, naranja, rosa, azul). Text on top of the accent uses `text-onac`, never `text-bg`. Theme helpers live in `lib/utils/theme.ts`; the picker is `components/ui/AppearancePicker.tsx` (Settings and the "Más" sheet). Chart.js reads colors with `themeColor()` and redraws via `useThemeVersion()`.
+
+### Motion, toasts and dialogs
+
+- Motion utilities live in `app/globals.css` (`animate-fade-up`, `animate-sheet`, `animate-pop`, `stagger`, `tap-card`, `skeleton`). Entrance animations use fill-mode `backwards`; never `both`/`forwards` with a transform, or `position: fixed` children (modals) break.
+- `app/(dashboard)/template.tsx` fades each page in; `app/(dashboard)/loading.tsx` is the skeleton.
+- Toasts: `const { fire } = useToast(); fire('Guardado', 'ok' | 'pr' | 'error' | 'info')` — provider is in `DashboardShell`.
+- Never use `window.confirm`/`alert`; use `components/ui/ConfirmDialog.tsx`.
+- New records open `RmCelebrationModal` (confetti on a new PR).
 
 ### Joining a box
 

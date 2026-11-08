@@ -5,7 +5,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import { useShell } from '@/lib/hooks/useShell'
 import { useToast } from '@/components/ui/Toast'
-import { WOD_TYPE_META } from '@/components/wod/WodView'
+import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 import { todayISO, formatDateOnly } from '@/lib/utils/dates'
 import { cn } from '@/lib/utils/cn'
 import {

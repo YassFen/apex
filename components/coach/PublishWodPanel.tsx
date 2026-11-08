@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { todayISO } from '@/lib/utils/dates'
 import { friendlyError } from '@/lib/utils/errors'
 import { useRouter } from 'next/navigation'
@@ -118,6 +118,29 @@ export function PublishWodPanel({
     }))
   )
 
+  // Draft autosave (new WODs only): a reload or a closed tab doesn't lose the work.
+  const draftKey = `apex.wodDraft.${box.id}`
+  const draftLoaded = useRef(false)
+  useEffect(() => {
+    if (todayWod) { draftLoaded.current = true; return }
+    try {
+      const d = JSON.parse(localStorage.getItem(draftKey) ?? 'null')
+      if (d && d.date === todayISO() && (d.title || d.movs?.length)) {
+        setTitle(d.title ?? ''); setType(d.type ?? 'fortime'); setDesc(d.desc ?? '')
+        setDuration(d.duration ?? ''); setWodMovs(d.movs ?? [])
+        fire('Recuperamos tu borrador', 'info')
+      }
+    } catch {}
+    draftLoaded.current = true
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useEffect(() => {
+    if (todayWod || !draftLoaded.current) return
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ date: todayISO(), title, type, desc, duration, movs: wodMovs }))
+    } catch {}
+  }, [todayWod, draftKey, title, type, desc, duration, wodMovs])
+
   const [openStep, setOpenStep] = useState<Record<StepKey, boolean>>({
     format: !title, movs: true, publish: true,
   })
@@ -235,6 +258,7 @@ export function PublishWodPanel({
       : await supabase.from('daily_wods').insert(payload)
     setPublishing(false)
     if (error) { fire(friendlyError(error.message), 'error'); return }
+    try { localStorage.removeItem(draftKey) } catch {}
     fire('WOD publicado. Tus atletas ya lo ven.', 'pr')
     setTimeout(() => router.push('/dashboard'), 1500)
   }

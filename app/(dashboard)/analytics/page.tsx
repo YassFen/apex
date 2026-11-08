@@ -1,3 +1,4 @@
+import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Topbar } from '@/components/layout/Topbar'
@@ -56,7 +57,7 @@ export default async function AnalyticsPage() {
 
     return (
       <>
-        <Topbar title="Analytics — Box" profile={profile} />
+        <Topbar title="Analytics" profile={profile} />
         <div className="p-4 lg:p-6 flex flex-col gap-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
             <Card>
@@ -85,7 +86,7 @@ export default async function AnalyticsPage() {
               <div className="flex flex-col gap-2">
                 {Object.entries(wodsByType).map(([type, count]) => (
                   <div key={type} className="flex items-center gap-3">
-                    <div className="w-20 text-mu text-xs uppercase font-bold">{type}</div>
+                    <div className="w-20 text-mu text-xs uppercase font-bold">{WOD_TYPE_META[type]?.label ?? type}</div>
                     <div className="flex-1 h-2 bg-t/[.08] rounded-full overflow-hidden">
                       <div className="h-full bg-ac rounded-full" style={{ width: `${(count / totalWods) * 100}%` }} />
                     </div>
@@ -108,7 +109,7 @@ export default async function AnalyticsPage() {
                       <div className="text-sm font-semibold">{w.title}</div>
                       <div className="text-[11px] text-mu">{formatDateOnly(w.scheduled_for, { day: '2-digit', month: 'short' })}</div>
                     </div>
-                    <span className="text-[10px] uppercase font-extrabold tracking-wide text-mu border border-[var(--ln2)] px-2 py-1 rounded-full">{w.type}</span>
+                    <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${WOD_TYPE_META[w.type]?.cls ?? 'bg-p3 text-mu'}`}>{WOD_TYPE_META[w.type]?.label ?? w.type}</span>
                   </div>
                 ))}
               </div>

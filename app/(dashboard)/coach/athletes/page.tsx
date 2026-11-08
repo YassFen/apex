@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Topbar } from '@/components/layout/Topbar'
-import { Card } from '@/components/ui/Card'
+import { AthletesView, type AthleteRow } from '@/components/coach/AthletesView'
 import type { Profile, Box } from '@/lib/types/database'
+
+const WINDOW_DAYS = 30
 
 export default async function AthletesPage() {
   const supabase = await createClient()
@@ -13,69 +14,52 @@ export default async function AthletesPage() {
   const profile = p as Profile | null
   if (!profile || profile.role !== 'coach') redirect('/dashboard')
 
-  const { data: b } = await supabase.from('boxes').select('*').eq('owner_id', user.id).single()
+  const { data: b } = await supabase.from('boxes').select('*').eq('owner_id', user.id).maybeSingle()
   const box = b as Box | null
   if (!box) redirect('/dashboard')
 
-  const { data: rawMembers } = await supabase
-    .from('box_members')
-    .select('*, profiles(id, full_name, email, city, tracking_since, preferred_unit)')
-    .eq('box_id', box.id)
-    .eq('is_active', true)
-    .order('joined_at', { ascending: false })
+  const since = new Date(Date.now() - WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
 
-  const members = (rawMembers ?? []) as any[]
+  const [{ data: rawMembers }, { data: rawWods }] = await Promise.all([
+    supabase
+      .from('box_members')
+      .select('user_id, role, joined_at, profiles(full_name, email, city, avatar_url)')
+      .eq('box_id', box.id)
+      .eq('is_active', true)
+      .order('joined_at', { ascending: false }),
+    supabase
+      .from('daily_wods')
+      .select('id')
+      .eq('box_id', box.id)
+      .eq('is_live', true)
+      .gte('scheduled_for', since),
+  ])
 
-  return (
-    <>
-      <Topbar title="Atletas" profile={profile} />
-      <div className="p-4 lg:p-6 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="text-mu text-sm">{members.length} atletas en {box.name}</div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-p3 border border-[var(--ln)]">
-            <span className="text-[10px] uppercase tracking-wide text-mu font-bold">Código:</span>
-            <span className="font-barlow font-black tracking-widest text-ac">{box.invite_code}</span>
-          </div>
-        </div>
-        <Card padding={false}>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[var(--ln)]">
-                <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold">Atleta</th>
-                <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold hidden sm:table-cell">Ciudad</th>
-                <th className="px-4 py-3 text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold">Rol</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m: any) => {
-                const pr = m.profiles as any
-                const initials = (pr?.full_name ?? 'AN').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-                return (
-                  <tr key={m.id} className="border-b border-[var(--ln)] hover:bg-t/[.03] transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-ac to-bl grid place-items-center font-black text-xs text-onac flex-shrink-0">
-                          {initials}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-sm">{pr?.full_name}</div>
-                          <div className="text-mu text-[11px]">{pr?.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-mu text-sm hidden sm:table-cell">{pr?.city ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${m.role === 'coach' ? 'bg-ac/10 text-ac' : 'bg-bl/10 text-bl'}`}>
-                        {m.role}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </Card>
-      </div>
-    </>
-  )
+  const wodIds = ((rawWods ?? []) as any[]).map(w => w.id as string)
+  const { data: rawResults } = wodIds.length > 0
+    ? await supabase.from('wod_results').select('user_id, recorded_at').in('daily_wod_id', wodIds)
+    : { data: [] as any[] }
+
+  const activity = new Map<string, { count: number; last: string }>()
+  for (const r of (rawResults ?? []) as any[]) {
+    const a = activity.get(r.user_id) ?? { count: 0, last: '' }
+    a.count++
+    if (r.recorded_at > a.last) a.last = r.recorded_at
+    activity.set(r.user_id, a)
+  }
+
+  const rows: AthleteRow[] = ((rawMembers ?? []) as any[]).map(m => ({
+    id: m.user_id,
+    name: m.profiles?.full_name ?? 'Atleta',
+    email: m.profiles?.email ?? '',
+    city: m.profiles?.city ?? null,
+    avatar: m.profiles?.avatar_url ?? null,
+    role: m.role,
+    joinedAt: m.joined_at,
+    wods30: activity.get(m.user_id)?.count ?? 0,
+    lastResultAt: activity.get(m.user_id)?.last || null,
+    isMe: m.user_id === user.id,
+  }))
+
+  return <AthletesView profile={profile} box={box} rows={rows} wodsPublished={wodIds.length} />
 }
