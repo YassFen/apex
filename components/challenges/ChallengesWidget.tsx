@@ -35,8 +35,8 @@ export function ChallengesWidget({ challenges }: { challenges: ChallengeSummary[
             return (
               <li key={c.id}>
                 <Link href={`/challenges?open=${c.id}`} className="block">
-                  <div className="flex items-baseline justify-between gap-2 text-sm mb-1.5">
-                    <span className="font-medium truncate">{c.title}</span>
+                  <div className="flex items-baseline justify-between gap-x-3 gap-y-0.5 flex-wrap text-sm mb-1.5">
+                    <span className="font-medium min-w-0 break-words">{c.title}</span>
                     <span className="text-mu text-xs flex-shrink-0">#{place} de {c.ranking.length} · {left === 0 ? 'último día' : `${left} d`}</span>
                   </div>
                   <div className="h-2.5 rounded-full bg-t/[.08] overflow-hidden">

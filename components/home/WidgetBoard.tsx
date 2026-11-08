@@ -131,7 +131,7 @@ function EditRow({ item, widget, onToggle }: { item: LayoutItem; widget: Widget;
       </span>
       <span className="flex-1 min-w-0">
         <span className="block font-semibold text-[15px]">{widget.label}</span>
-        <span className="block text-mu text-[13px] truncate">{widget.desc}</span>
+        <span className="block text-mu text-[13px] leading-snug">{widget.desc}</span>
       </span>
       {!item.on && <X size={14} className="text-fa" aria-hidden />}
       <Switch checked={item.on} onChange={onToggle} label={`Mostrar ${widget.label}`} />

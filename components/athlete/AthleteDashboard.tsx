@@ -272,7 +272,7 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
                 const prev = slot.previous ? formatPrValue(slot.previous, unit) : null
                 return (
                   <Card key={slot.name} padding={false} className="p-4">
-                    <div className="text-[13px] text-mu font-medium truncate mb-2">{slot.name}</div>
+                    <div className="text-[13px] text-mu font-medium leading-tight mb-2 min-h-[2lh] break-words">{slot.name}</div>
                     {f ? (
                       <>
                         <div className="font-display text-[42px] font-bold leading-none tracking-tight"><CountUp value={f.value} /><span className="text-base text-mu font-medium ml-1">{f.unit}</span></div>
@@ -312,7 +312,7 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
                   <li key={pr.id}>
                     <Link href="/prs" className="flex items-center justify-between p-3 bg-p2 rounded-2xl hover:bg-p3 transition-colors">
                       <span className="min-w-0">
-                        <span className="block font-medium text-sm truncate">{pr.movements?.name}</span>
+                        <span className="block font-medium text-sm leading-tight break-words">{pr.movements?.name}</span>
                         <span className="block text-mu text-xs">{pr.metric !== '1rm' ? `${pr.metric.replace('max_reps', 'Máx reps').toUpperCase()} · ` : ''}{new Date(pr.recorded_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}</span>
                       </span>
                       <span className="font-display text-2xl font-bold tracking-tight">{f.value}<span className="text-xs text-mu font-medium ml-1">{f.unit}</span></span>

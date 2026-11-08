@@ -168,8 +168,8 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="font-display text-xl font-extrabold truncate tracking-tight">{box.name}</div>
-                  <div className="text-mu text-sm truncate">{[box.city, box.country].filter(Boolean).join(' · ')}</div>
+                  <div className="font-display text-xl font-extrabold leading-tight tracking-tight break-words">{box.name}</div>
+                  <div className="text-mu text-sm">{[box.city, box.country].filter(Boolean).join(' · ')}</div>
                 </div>
                 <Link href="/settings/box" className="flex-shrink-0 h-9 px-3 rounded-full bg-p2 text-mu text-xs font-bold grid place-items-center hover:bg-p3 hover:text-t transition">
                   Editar
@@ -210,7 +210,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                 <ChevronRight size={18} className="text-fa" aria-hidden />
               </div>
               {recentMembers[0] && (
-                <p className="text-mu text-xs mt-3 truncate">
+                <p className="text-mu text-xs mt-3">
                   Último en unirse: <span className="text-t font-semibold">{recentMembers[0].name}</span>
                 </p>
               )}
@@ -264,7 +264,7 @@ function ClassesCard({ classes }: { classes: CoachActivity['classes'] }) {
           <li key={c.id}>
             <Link href={`/coach/wod-live`} className="flex items-center gap-3 p-3 rounded-2xl bg-p2 hover:bg-p3">
               <span className="w-14 text-center font-display font-bold tabular-nums">{c.time ?? '—'}</span>
-              <span className="flex-1 min-w-0 truncate font-medium">{c.title}</span>
+              <span className="flex-1 min-w-0 font-medium leading-tight break-words">{c.title}</span>
               <span className="text-sm text-mu tabular-nums">{c.count} result.</span>
               <ChevronRight size={16} className="text-fa" />
             </Link>
@@ -325,7 +325,7 @@ function InactiveCard({ list }: { list: CoachActivity['inactive'] }) {
               {a.avatar ? <img src={a.avatar} alt="" className="size-10 rounded-full object-cover" />
                 : <span className="size-10 rounded-full bg-p2 grid place-items-center text-xs font-bold text-mu">{a.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>}
               <span className="flex-1 min-w-0">
-                <span className="block font-medium text-sm truncate">{a.name}</span>
+                <span className="block font-medium text-sm leading-tight break-words">{a.name}</span>
                 <span className="block text-or text-xs">{a.days === null ? 'Sin WODs registrados' : `${a.days} días sin entrenar`}</span>
               </span>
             </li>

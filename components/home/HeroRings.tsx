@@ -183,20 +183,21 @@ export function HeroRings({ data, onLog, onGenerate }: { data: HeroData; onLog: 
                 className="h-11 grid place-items-center animate-floaty">
                 <TileIcon tile={page} className={page.kind === 'recovery' && page.group !== 'motor' ? 'h-12 w-8' : 'size-10'} />
               </motion.span>
-              <div className="text-base font-bold tracking-tight truncate max-w-full mt-1.5 leading-tight">{page.title}</div>
-              <div className="font-display text-[44px] leading-none font-bold tracking-tight tabular-nums mt-1 whitespace-nowrap">
+              <div className={cn('font-bold tracking-tight max-w-full mt-1.5 leading-tight line-clamp-2 text-balance break-words', page.title.length > 18 ? 'text-[13px]' : 'text-base')}>{page.title}</div>
+              <div className={cn('font-display leading-none font-bold tracking-tight tabular-nums mt-1 whitespace-nowrap',
+                `${page.number}${page.suffix}`.length > 7 ? 'text-[32px]' : `${page.number}${page.suffix}`.length > 5 ? 'text-[38px]' : 'text-[44px]')}>
                 <AnimatedNumber value={page.number} decimals={page.number % 1 ? 1 : 0} />
                 <span className="text-xl text-mu font-semibold">{page.suffix}</span>
               </div>
-              <div className={cn('text-[12px] font-semibold mt-1.5 leading-tight max-w-full line-clamp-2', page.subTone)}>{page.sub}</div>
+              <div className={cn('text-[12px] font-semibold mt-1.5 leading-tight max-w-full text-balance', page.subTone)}>{page.sub}</div>
             </div>
             {/* footnote in the opening at the bottom of the ring */}
-            <div className="absolute inset-x-14 bottom-2 text-center text-mu text-[11px] leading-tight truncate">{page.foot}</div>
+            <div className="absolute inset-x-12 -bottom-1 text-center text-mu text-[11px] leading-tight text-balance">{page.foot}</div>
           </motion.div>
         </AnimatePresence>
       </motion.div>
 
-      <div className="flex justify-center gap-1.5 mt-3 mb-5" role="tablist" aria-label="Indicadores">
+      <div className="flex justify-center gap-1.5 mt-6 mb-5" role="tablist" aria-label="Indicadores">
         {shown.map((p, k) => (
           <button key={p.id} type="button" role="tab" aria-selected={k === i} aria-label={p.title}
             onClick={() => { setDir(k > i ? 1 : -1); setI(k) }}

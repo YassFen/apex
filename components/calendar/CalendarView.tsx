@@ -302,8 +302,8 @@ function NextEventHero({ event, today }: { event: CalEvent; today: string }) {
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rd/15 text-rd text-[10px] font-bold uppercase tracking-[1.2px]">
               <Trophy size={12} aria-hidden /> {EVENT_KIND_LABEL[event.kind] ?? 'Evento'}
             </div>
-            <div className="font-display text-2xl font-extrabold leading-tight mt-1.5 truncate tracking-tight">{event.name}</div>
-            <div className="text-mu text-xs mt-0.5 first-letter:uppercase truncate">
+            <div className="font-display text-2xl font-extrabold leading-tight mt-1.5 tracking-tight text-balance break-words">{event.name}</div>
+            <div className="text-mu text-xs mt-0.5 first-letter:uppercase">
               {formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}{event.location ? ` · ${event.location}` : ''}
             </div>
           </div>
@@ -327,7 +327,7 @@ function EventRow({ event, today }: { event: CalEvent; today: string }) {
         <span className="block font-display text-2xl font-extrabold leading-none tracking-tight">{Number(event.startsOn.slice(8))}</span>
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-bold text-sm truncate">{event.name}</span>
+        <span className="block font-bold text-sm leading-tight break-words">{event.name}</span>
         <span className="flex items-center gap-2 text-mu text-xs mt-0.5">
           <span className="truncate">{EVENT_KIND_LABEL[event.kind] ?? 'Evento'}{multi ? ` · hasta el ${Number(event.endsOn.slice(8))}` : ''}</span>
           {event.location && <span className="hidden sm:flex items-center gap-0.5 truncate"><MapPin size={11} aria-hidden />{event.location}</span>}
@@ -370,7 +370,7 @@ function WodCard({ wod, today, boxName, tone, canEdit }: { wod: CalWod; today: s
           {wod.movements.slice(0, 8).map((mv: any, i: number) => (
             <li key={i} className="flex items-baseline gap-2 text-sm">
               <span className="font-display font-extrabold text-ac tabular-nums min-w-[2.5rem] tracking-tight">{mv.reps}</span>
-              <span className="truncate">{mv.name}</span>
+              <span className="min-w-0 break-words">{mv.name}</span>
               {mv.weight && <span className="text-mu text-xs ml-auto flex-shrink-0">{mv.weight}</span>}
             </li>
           ))}

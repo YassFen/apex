@@ -78,7 +78,7 @@ export function ChallengesView({ profile, boxes, challenges, today, openId, move
                     initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04, ease: EASE_OUT }}
                     className="tap-card w-full flex items-stretch rounded-[20px] bg-p overflow-hidden text-left">
                     <span className="flex-1 min-w-0 p-4">
-                      <span className="block font-display text-xl font-bold tracking-tight truncate">{c.title}</span>
+                      <span className="block font-display text-xl font-bold tracking-tight leading-tight text-balance break-words">{c.title}</span>
                       <span className="block text-mu text-sm mt-0.5">{c.ranking.length} participante{c.ranking.length === 1 ? '' : 's'}{boxes.length > 1 ? ` · ${c.boxName}` : ''}</span>
                       <span className="mt-3 block h-1.5 w-28 rounded-full bg-t/10 overflow-hidden">
                         <span className={cn('block h-full rounded-full', c.joined ? 'bg-or' : 'bg-t/40')} style={{ width: `${pct}%` }} />
@@ -182,7 +182,7 @@ function ChallengeSheet({ challenge: c, profile, today, onClose }: { challenge: 
                     <span className="w-6 text-center font-display font-bold text-mu">{i === 0 ? <Crown size={18} weight="fill" className="text-or mx-auto" /> : i + 1}</span>
                     {r.avatar ? <img src={r.avatar} alt="" className="size-9 rounded-full object-cover" />
                       : <span className="size-9 rounded-full bg-p3 grid place-items-center text-[11px] font-bold text-mu">{r.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>}
-                    <span className="flex-1 min-w-0 truncate font-medium text-sm">{r.userId === profile.id ? 'Tú' : r.name}</span>
+                    <span className="flex-1 min-w-0 font-medium text-sm leading-tight break-words">{r.userId === profile.id ? 'Tú' : r.name}</span>
                     <span className="font-display font-bold tabular-nums">{r.total}</span>
                     {r.total >= c.target && <Check size={14} weight="bold" className="text-gr" />}
                   </motion.li>
