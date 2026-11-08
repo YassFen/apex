@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { daysBetween, todayISO } from '@/lib/utils/dates'
+import { addDaysISO, daysBetween, todayISO } from '@/lib/utils/dates'
+import type { Hit } from '@/lib/utils/movement-guide'
+import type { TodayWod, GoalProgress } from '@/components/athlete/AthleteDashboard'
 import { eventReadiness, type EventCategory, type PrLite } from '@/lib/utils/readiness'
 import type { NextEvent } from '@/components/calendar/NextEventCard'
 import { redirect } from 'next/navigation'
@@ -85,23 +87,47 @@ export default async function DashboardPage() {
   const { data: myBoxes } = await supabase
     .from('box_members').select('box_id').eq('user_id', user.id).eq('is_active', true)
   const myBoxIds = ((myBoxes ?? []) as any[]).map(m => m.box_id as string)
-  let athleteToday: { title: string; type: string; durationMins: number | null; myResult: string | null } | null = null
+  let athleteToday: TodayWod | null = null
   if (myBoxIds.length > 0) {
-    const { data: w } = await supabase
-      .from('daily_wods')
-      .select('id, title, type, duration_mins')
-      .in('box_id', myBoxIds)
-      .eq('scheduled_for', todayISO())
-      .eq('is_live', true)
-      .order('published_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    const q = (cols: string) => supabase.from('daily_wods').select(cols)
+      .in('box_id', myBoxIds).eq('scheduled_for', todayISO()).eq('is_live', true)
+    let { data: ws, error: wErr } = await q('id, title, type, duration_mins, class_time')
+    if (wErr) ({ data: ws } = await q('id, title, type, duration_mins'))
+    // Several classes today: show the next one still to come.
+    const nowHm = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' }).format(new Date())
+    const list = ((ws ?? []) as any[]).sort((a, b) => String(a.class_time ?? '').localeCompare(String(b.class_time ?? '')))
+    const w = list.find(x => !x.class_time || String(x.class_time).slice(0, 5) >= nowHm) ?? list[list.length - 1]
     if (w) {
       const { data: r } = await supabase
-        .from('wod_results').select('result_value').eq('daily_wod_id', (w as any).id).eq('user_id', user.id).maybeSingle()
-      athleteToday = { title: (w as any).title, type: (w as any).type, durationMins: (w as any).duration_mins, myResult: (r as any)?.result_value ?? null }
+        .from('wod_results').select('result_value').eq('daily_wod_id', w.id).eq('user_id', user.id).maybeSingle()
+      athleteToday = {
+        title: w.title, type: w.type, durationMins: w.duration_mins, myResult: (r as any)?.result_value ?? null,
+        classTime: w.class_time ? String(w.class_time).slice(0, 5) : null, count: list.length,
+      }
     }
   }
+
+  // Muscle recovery inputs (last 10 days): WOD movements I did, my own logs and lifts.
+  const since10 = new Date(Date.now() - 10 * 86_400_000).toISOString()
+  const [{ data: recentRes }, logsRes, goalsRes] = await Promise.all([
+    supabase.from('wod_results').select('recorded_at, daily_wods(movements)').eq('user_id', user.id).gte('recorded_at', since10),
+    supabase.from('personal_logs').select('id, logged_on, movement, sets, reps, distance_m, load_lb, created_at')
+      .eq('user_id', user.id).gte('logged_on', addDaysISO(todayISO(), -120)).order('logged_on', { ascending: false }),
+    supabase.from('goals').select('id, movement, target, unit, period, starts_on').eq('user_id', user.id).eq('archived', false),
+  ])
+  const logs = (logsRes.error ? [] : logsRes.data ?? []) as any[]
+  const hits: Hit[] = [
+    ...((recentRes ?? []) as any[]).flatMap(r => ((r.daily_wods?.movements ?? []) as any[]).map(m => ({ at: r.recorded_at, movement: String(m.name ?? '') }))),
+    ...logs.map(l => ({ at: `${l.logged_on}T12:00:00`, movement: l.movement })),
+    ...((rawPrs ?? []) as any[]).filter(p => p.recorded_at >= since10).map(p => ({ at: p.recorded_at, movement: p.movements?.name ?? '' })),
+  ]
+  const goals: GoalProgress[] = ((goalsRes.error ? [] : goalsRes.data ?? []) as any[]).map(g => {
+    const from = g.period === 'today' || g.period === 'daily' ? todayISO()
+      : g.period === 'week' || g.period === 'weekly' ? addDaysISO(todayISO(), -((new Date().getDay() + 6) % 7)) : g.starts_on
+    const done = logs.filter(l => l.logged_on >= from && l.movement.toLowerCase() === String(g.movement).toLowerCase())
+      .reduce((s, l) => s + (l.sets ?? 1) * (l.reps ?? l.distance_m ?? 0), 0)
+    return { id: g.id, movement: g.movement, target: g.target, unit: g.unit, period: g.period, done }
+  })
 
   // Days with a logged WOD result (last 60), for the streak and the week strip.
   const { data: rawResultDays } = await supabase
@@ -130,7 +156,7 @@ export default async function DashboardPage() {
         .filter(r => r.is_pr && r.movements?.name)
         .map(r => ({ movement: r.movements.name, metric: r.metric, valueLb: Number(r.value_lb) }))
       const workouts = ((pick.event_workouts ?? []) as any[]).map(w => ({ ...w, movements: Array.isArray(w.movements) ? w.movements : [] }))
-      const rd = workouts.length ? eventReadiness(workouts, (me?.category ?? 'm') as EventCategory, prLite) : null
+      const rd = workouts.length ? eventReadiness(workouts, (me?.category ?? profile.sex ?? 'm') as EventCategory, prLite) : null
       nextEvent = {
         id: pick.id, name: pick.name, kind: pick.kind, startsOn: pick.starts_on,
         days: daysBetween(today, pick.starts_on), readiness: rd?.score ?? null, going: !!me,
@@ -161,6 +187,10 @@ export default async function DashboardPage() {
       hasBox={myBoxIds.length > 0}
       resultDates={resultDates}
       nextEvent={nextEvent}
+      hits={hits}
+      goals={goals}
+      logDates={logs.map(l => l.logged_on as string)}
+      goalsMissing={!!goalsRes.error}
     />
   )
 }

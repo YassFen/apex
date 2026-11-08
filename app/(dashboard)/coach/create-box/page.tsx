@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Dumbbell } from 'lucide-react'
+import { Dumbbell } from '@/components/ui/icons'
 import { friendlyError } from '@/lib/utils/errors'
 
 function slugify(name: string): string {
@@ -76,7 +76,7 @@ export default function CreateBoxPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="size-14 mx-auto mb-4 rounded-2xl bg-ac grid place-items-center"><Dumbbell size={26} className="text-onac" aria-hidden /></div>
-          <h1 className="font-barlow text-4xl font-black tracking-wide">CREA TU BOX</h1>
+          <h1 className="font-display text-4xl font-extrabold tracking-tight">CREA TU BOX</h1>
           <p className="text-mu text-sm mt-2">Configura tu box para gestionar atletas y publicar WODs</p>
         </div>
 

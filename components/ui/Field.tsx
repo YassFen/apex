@@ -1,6 +1,6 @@
 'use client'
 import { useId, useState } from 'react'
-import { Eye, EyeOff, AlertCircle, CheckCircle2, Dumbbell } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, CheckCircle2 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 
 // 16px on phones so iOS Safari doesn't zoom into the field on focus.
@@ -72,13 +72,7 @@ export function Alert({ tone, children }: { tone: 'error' | 'success'; children:
   )
 }
 
+/** The auth layout already shows the APEX wordmark over the photo, so forms don't repeat it. */
 export function BrandMark() {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="size-10 rounded-xl bg-ac grid place-items-center">
-        <Dumbbell size={20} className="text-onac" strokeWidth={2.5} aria-hidden />
-      </div>
-      <div className="font-barlow text-3xl font-black tracking-[3px]">AP<span className="text-ac">E</span>X</div>
-    </div>
-  )
+  return null
 }

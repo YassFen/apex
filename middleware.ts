@@ -2,6 +2,14 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  // DEMO MODE: the demo runs on fake data, so there's no Supabase session to check.
+  if (request.cookies.get('apex_demo')?.value) {
+    if (request.nextUrl.pathname.startsWith('/auth') || request.nextUrl.pathname === '/welcome') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -24,12 +32,14 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth')
+  const path = request.nextUrl.pathname
   const isPublic =
-    request.nextUrl.pathname === '/' ||
-    request.nextUrl.pathname.startsWith('/athlete/')
+    path === '/' || path === '/welcome' || path.startsWith('/demo') ||
+    path.startsWith('/athlete/')
 
   if (!user && !isAuthRoute && !isPublic) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    // Opening the app cold shows the welcome screen; deep links go straight to the login form.
+    return NextResponse.redirect(new URL(path === '/dashboard' ? '/welcome' : '/auth/login', request.url))
   }
 
   // The reset link signs the person in, and they still need the reset page to pick a new password.

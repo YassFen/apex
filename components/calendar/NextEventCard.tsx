@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { motion } from 'motion/react'
-import { Trophy, ChevronRight, CalendarDays } from 'lucide-react'
+import { Trophy, ChevronRight, CalendarDays } from '@/components/ui/icons'
 import { EASE_OUT } from '@/components/ui/motion'
 import { cn } from '@/lib/utils/cn'
 import { formatDateOnly } from '@/lib/utils/dates'
@@ -30,14 +30,14 @@ export function NextEventCard({ event }: { event: NextEvent | null }) {
       <motion.div whileTap={{ scale: 0.985 }} className="relative overflow-hidden rounded-[20px] bg-p p-4 flex items-center gap-4">
         <div className="absolute -left-10 -bottom-12 size-36 rounded-full bg-rd/15 blur-3xl" aria-hidden />
         <div className="relative w-16 text-center flex-shrink-0">
-          <div className="font-barlow text-5xl font-black leading-none tabular-nums">{event.days <= 0 ? '¡Ya!' : event.days}</div>
+          <div className="font-display text-5xl font-extrabold leading-none tabular-nums tracking-tight">{event.days <= 0 ? '¡Ya!' : event.days}</div>
           <div className="text-[10px] uppercase tracking-[1.4px] text-mu font-bold mt-0.5">{event.days <= 0 ? 'hoy' : event.days === 1 ? 'día' : 'días'}</div>
         </div>
         <div className="relative min-w-0 flex-1">
           <div className="flex items-center gap-1.5 text-rd text-[10px] font-bold uppercase tracking-[1.2px]">
             <Trophy size={12} aria-hidden />{EVENT_KIND_LABEL[event.kind] ?? 'Evento'}
           </div>
-          <div className="font-barlow text-xl font-black uppercase leading-tight truncate">{event.name}</div>
+          <div className="font-display text-xl font-extrabold leading-tight truncate tracking-tight">{event.name}</div>
           <div className="text-mu text-xs first-letter:uppercase">{formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           {r !== null && (
             <div className="flex items-center gap-2 mt-2">

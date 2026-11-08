@@ -101,7 +101,10 @@ export function assessMovement(m: EventMovement, category: EventCategory, prs: P
   const loadLb = loadFor(m, category)
   const prescribedReps = firstReps(m.reps)
   const names = [...new Set(prs.map(p => p.movement))]
-  const matched = matchRecordName(m.name, names)
+  // Close relatives when there's no record of the exact movement.
+  const RELATED: [RegExp, string][] = [[/chest.?to.?bar|c2b/i, 'Pull-up'], [/jumping pull/i, 'Pull-up'], [/bar muscle/i, 'Muscle-up'], [/knees? to elbow/i, 'Toes-to-Bar']]
+  const related = RELATED.find(([re]) => re.test(m.name))?.[1]
+  const matched = matchRecordName(m.name, names) ?? (related ? matchRecordName(related, names) : null)
   const one = matched ? bestOneRm(prs, matched) : null
   const maxRepsPr = matched ? prs.find(p => p.movement === matched && p.metric === 'max_reps') : undefined
   const maxReps = maxRepsPr ? Math.round(maxRepsPr.valueLb) : null
@@ -111,6 +114,10 @@ export function assessMovement(m: EventMovement, category: EventCategory, prs: P
     maxReps, pct: null, zone: 'unknown', repsPossible: null, prescribedReps, advice: '',
   }
 
+  // Light implements (wall ball, dumbbells for reps…) are about volume, not strength.
+  const light = loadLb !== null && loadLb < 45 && !one
+  const motor = /\b(row|remo|bike|ski|run|carrera|cal)\b/i.test(`${m.name} ${m.reps}`)
+  if (light) return { ...base, zone: 'skill', advice: 'Carga liviana: el desafío es el volumen. Parte en series cortas desde el inicio.' }
   if (loadLb) {
     if (!one) return { ...base, advice: `Registra tu 1RM de ${m.name} para saber cuánto pesa para ti.` }
     const ratio = (loadLb / one.valueLb) * 100
@@ -129,14 +136,15 @@ export function assessMovement(m: EventMovement, category: EventCategory, prs: P
     return { ...base, zone: 'skill', repsPossible: maxReps, advice }
   }
 
-  return { ...base, advice: loadLb === null && !matched ? 'Sin carga ni récord para comparar.' : '' }
+  if (motor) return { ...base, zone: 'skill', advice: 'Motor: sal a un ritmo que puedas sostener y acelera al final.' }
+  return { ...base, advice: loadLb === null && !matched ? 'Registra tu máximo de reps para saber cómo partirlo.' : '' }
 }
 
 function loadAdvice(zone: Zone, repsPossible: number, prescribed: number | null): string {
   if (zone === 'over') return 'Hoy está sobre tu 1RM: trabaja la fuerza o compite en Scaled.'
   // Sustainable set in a workout ≈ 40-50 % of your unbroken max at that load.
   const set = Math.max(1, Math.round(repsPossible * (zone === 'heavy' ? 0.6 : 0.45)))
-  if (zone === 'heavy') return `Singles o dobles con descanso. Máximo ~${repsPossible} seguidas.`
+  if (zone === 'heavy') return repsPossible <= 1 ? 'Es prácticamente tu 1RM: un intento limpio y bien calentado.' : `Singles o dobles con descanso. Máximo ~${repsPossible} seguidas.`
   if (prescribed && prescribed <= set) return `Puedes hacerlas seguidas (~${repsPossible} reps posibles).`
   return `Series de ${set}${prescribed ? ` → ${Math.ceil(prescribed / set)} bloques de ${prescribed}` : ''}. Máximo ~${repsPossible} seguidas.`
 }
@@ -153,8 +161,8 @@ export function eventReadiness(workouts: EventWorkout[], category: EventCategory
   const assessments = workouts.map(w => (w.movements ?? []).filter(m => m.name?.trim()).map(m => assessMovement(m, category, prs)))
   const flat = assessments.flat()
   const scored = flat.map(a => ZONE_META[a.zone].score).filter((s): s is number => s !== null)
-  const skill = flat.filter(a => a.zone === 'skill').length
-  const missing = [...new Set(flat.filter(a => a.zone === 'unknown' && (a.loadLb || !a.matched)).map(a => a.movement.name))]
+  const skill = flat.filter(a => a.zone === 'skill' && a.maxReps !== null).length
+  const missing = [...new Set(flat.filter(a => a.zone === 'unknown').map(a => a.movement.name))]
   const known = scored.length + skill
   const score = known === 0 ? null : Math.round((scored.reduce((s, v) => s + v, 0) + skill * 85) / known)
   return { score, known, total: flat.length, missing, assessments }

@@ -1,7 +1,7 @@
 'use client'
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronRight, Minus, Plus, Search, Sparkles, Dumbbell, Flame, X } from 'lucide-react'
+import { ChevronRight, Minus, Plus, Search, Sparkles, Dumbbell, Flame, X } from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
@@ -118,10 +118,10 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
                 <Stepper label={`Peso (${unit})`} onMinus={() => nudgeWeight(-1)} onPlus={() => nudgeWeight(1)}>
                   <input type="text" inputMode="decimal" value={weight} placeholder="0" aria-label={`Peso levantado en ${unit}`}
                     onChange={e => { setWeight(e.target.value.replace(/[^\d.,]/g, '')); setPrId(null) }}
-                    className="w-full min-w-0 bg-transparent text-center font-barlow text-3xl font-black outline-none placeholder:text-fa tabular-nums" />
+                    className="w-full min-w-0 bg-transparent text-center font-display text-3xl font-extrabold outline-none placeholder:text-fa tabular-nums tracking-tight" />
                 </Stepper>
                 <Stepper label="Reps" onMinus={() => setReps(r => Math.max(1, r - 1))} onPlus={() => setReps(r => Math.min(15, r + 1))}>
-                  <span className="w-9 text-center font-barlow text-3xl font-black tabular-nums" aria-live="polite">{reps}</span>
+                  <span className="w-9 text-center font-display text-3xl font-extrabold tabular-nums tracking-tight" aria-live="polite">{reps}</span>
                 </Stepper>
               </div>
 
@@ -129,7 +129,7 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
                 <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">
                   {reps === 1 ? 'Tu 1RM' : '1RM estimado'}
                 </div>
-                <div className="font-barlow font-black leading-none text-ac mt-1">
+                <div className="font-display font-extrabold leading-none text-ac mt-1 tracking-tight">
                   <span className="text-[72px]">{oneRM > 0 ? <AnimatedNumber value={shown(oneRM, unit)} decimals={unit === 'kg' && shown(oneRM, unit) % 1 ? 1 : 0} /> : '—'}</span>
                   <span className="text-2xl text-mu font-bold ml-1.5">{unit}</span>
                 </div>
@@ -154,10 +154,10 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
               <Card>
                 <div className="flex items-end justify-between mb-3">
                   <div>
-                    <h2 className="font-barlow text-lg font-extrabold tracking-wide uppercase">Carga de trabajo</h2>
+                    <h2 className="font-display text-lg font-extrabold tracking-tight">Carga de trabajo</h2>
                     <p className="text-mu text-xs">Desliza o elige un porcentaje</p>
                   </div>
-                  <div className="font-barlow text-4xl font-black text-ac leading-none"><AnimatedNumber value={pct} />%</div>
+                  <div className="font-display text-4xl font-extrabold text-ac leading-none tracking-tight"><AnimatedNumber value={pct} />%</div>
                 </div>
                 <div className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1 scrollbar-none">
                   {PCT_QUICK.map(p => (
@@ -176,13 +176,13 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
                 <div className="grid grid-cols-2 gap-2.5 mt-4">
                   <div className="p-4 rounded-2xl bg-p2">
                     <div className="text-[10px] uppercase tracking-[1.5px] text-fa font-bold mb-1.5">Carga la barra con</div>
-                    <div className="font-barlow text-4xl font-black leading-none">
+                    <div className="font-display text-4xl font-extrabold leading-none tracking-tight">
                       <AnimatedNumber value={target} decimals={target % 1 ? 1 : 0} /><span className="text-base text-mu font-bold ml-1">{unit}</span>
                     </div>
                   </div>
                   <div className="p-4 rounded-2xl bg-p2">
                     <div className="text-[10px] uppercase tracking-[1.5px] text-fa font-bold mb-1.5">Reps posibles</div>
-                    <div className="font-barlow text-4xl font-black leading-none">
+                    <div className="font-display text-4xl font-extrabold leading-none tracking-tight">
                       {repsPossible > 0 ? <>~<AnimatedNumber value={repsPossible} /></> : '—'}
                     </div>
                     <div className="text-[11px] text-mu mt-1">{repsPossible > 0 ? 'al fallo, aprox.' : 'sobre tu 1RM'}</div>
@@ -199,7 +199,7 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
             <Reveal delay={0.05}>
               <Card padding={false} className="p-5 overflow-hidden">
                 <div className="flex items-center justify-between gap-3 mb-1">
-                  <h2 className="font-barlow text-lg font-extrabold tracking-wide uppercase">La barra</h2>
+                  <h2 className="font-display text-lg font-extrabold tracking-tight">La barra</h2>
                   <Segmented id="calc-bar" size="sm" className="w-[210px]" value={String(barIdx)} onChange={v => setBarIdx(Number(v))}
                     options={BARS[unit].map((b, i) => [String(i), `${b.weight} ${unit}`] as const)} />
                 </div>
@@ -244,12 +244,12 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
                             <button type="button" onClick={() => setPct(p)}
                               className={cn('relative isolate w-full grid grid-cols-[64px_1fr_auto] items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors', active ? '' : 'hover:bg-p2')}>
                               {active && <ActivePill layoutId="calc-row" className="bg-ac/15 rounded-xl" />}
-                              <span className={cn('font-barlow text-lg font-black', active ? 'text-ac' : 'text-mu')}>{p}%</span>
+                              <span className={cn('font-display text-lg font-extrabold tracking-tight', active ? 'text-ac' : 'text-mu')}>{p}%</span>
                               <span className="flex items-center gap-2 min-w-0">
                                 <span className="h-1.5 flex-1 max-w-[120px] rounded-full bg-t/[.08] overflow-hidden">
                                   <motion.span className="block h-full rounded-full bg-ac" initial={{ width: 0 }} animate={{ width: `${p}%` }} transition={{ duration: 0.6, delay: (100 - p) / 200 }} />
                                 </span>
-                                <span className="font-barlow text-2xl font-black tabular-nums">{fmt(wt)}</span>
+                                <span className="font-display text-2xl font-extrabold tabular-nums tracking-tight">{fmt(wt)}</span>
                                 <span className="text-mu text-xs">{unit}</span>
                               </span>
                               <span className="text-mu text-xs tabular-nums">~{approxRepsAt(p)} reps</span>
@@ -266,14 +266,14 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
                         {warmupSets(target, bar, unit).map((s, i) => (
                           <li key={i} className="flex items-center gap-3 p-3 rounded-xl bg-p2">
                             <span className="size-7 rounded-full bg-p3 grid place-items-center text-xs font-bold text-mu">{i + 1}</span>
-                            <span className="font-barlow text-2xl font-black tabular-nums">{fmt(s.weight)}<span className="text-xs text-mu font-bold ml-1">{unit}</span></span>
+                            <span className="font-display text-2xl font-extrabold tabular-nums tracking-tight">{fmt(s.weight)}<span className="text-xs text-mu font-bold ml-1">{unit}</span></span>
                             <span className="text-mu text-sm">× {s.reps}</span>
                             <span className="ml-auto text-[11px] text-fa truncate">{i === 0 ? 'Barra vacía' : platesLabel(platesPerSide(s.weight, bar, unit).plates)}</span>
                           </li>
                         ))}
                         <li className="flex items-center gap-3 p-3 rounded-xl bg-ac/15 text-ac">
                           <span className="size-7 rounded-full bg-ac text-onac grid place-items-center text-xs font-bold">★</span>
-                          <span className="font-barlow text-2xl font-black tabular-nums">{fmt(target)}<span className="text-xs font-bold ml-1">{unit}</span></span>
+                          <span className="font-display text-2xl font-extrabold tabular-nums tracking-tight">{fmt(target)}<span className="text-xs font-bold ml-1">{unit}</span></span>
                           <span className="text-sm font-bold">Series de trabajo</span>
                         </li>
                       </ol>
@@ -287,7 +287,7 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
           {oneRM === 0 && (
             <Card className="text-center py-10 flex flex-col items-center gap-3">
               <div className="size-14 rounded-2xl bg-ac/15 text-ac grid place-items-center animate-pop"><Dumbbell size={26} aria-hidden /></div>
-              <h2 className="font-barlow text-2xl font-black uppercase">Ingresa un peso</h2>
+              <h2 className="font-display text-2xl font-extrabold tracking-tight">Ingresa un peso</h2>
               <p className="text-mu text-sm max-w-xs text-pretty">Escribe cuánto levantaste y cuántas reps, o elige uno de tus récords. Te mostramos tu 1RM, los porcentajes, los discos y el calentamiento.</p>
             </Card>
           )}
@@ -441,7 +441,7 @@ function PrPicker({ open, onClose, prs, unit, selectedId, onPick }: {
                     className={cn('tap-card w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left', p.id === selectedId ? 'bg-ac/15' : 'bg-p2 hover:bg-p3')}>
                     <span className="flex-1 min-w-0 font-semibold text-sm truncate">{p.movement}</span>
                     <span className="px-2 py-0.5 rounded-full bg-p3 text-[10px] font-bold uppercase text-mu">{p.reps}RM</span>
-                    <span className={cn('font-barlow text-xl font-black tabular-nums', p.id === selectedId && 'text-ac')}>
+                    <span className={cn('font-display text-xl font-extrabold tabular-nums tracking-tight', p.id === selectedId && 'text-ac')}>
                       {fmt(shown(toUnit(p.valueLb, unit), unit))}<span className="text-xs text-mu font-bold ml-0.5">{unit}</span>
                     </span>
                   </button>

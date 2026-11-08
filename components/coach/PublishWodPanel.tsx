@@ -11,7 +11,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { ChevronDown, ChevronUp, Plus, Trash2, Check, Send, Copy, FileText, Settings2, Dumbbell, Pencil, Eye, EyeOff, CalendarClock } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, Trash2, Check, Send, Copy, FileText, Settings2, Dumbbell, Pencil, Eye, EyeOff, CalendarClock } from '@/components/ui/icons'
 import type { Profile, Box, Movement, MovementCategory } from '@/lib/types/database'
 
 type WodType = 'fortime' | 'amrap' | 'emom' | 'tabata' | 'strength'
@@ -102,12 +102,13 @@ function buildWodText(args: {
 type StepKey = 'format' | 'movs' | 'publish'
 
 export interface ScheduledDay { date: string; title: string; isLive: boolean }
+export interface DaySession { id: string; title: string; classTime: string | null; isLive: boolean }
 
 export function PublishWodPanel({
-  profile, box, movements: allMovements, todayWod, date, today, scheduled, aheadDays,
+  profile, box, movements: allMovements, todayWod, date, today, scheduled, aheadDays, sessions = [],
 }: {
   profile: Profile; box: Box; movements: Movement[]; todayWod: any
-  date: string; today: string; scheduled: ScheduledDay[]; aheadDays: number
+  date: string; today: string; scheduled: ScheduledDay[]; aheadDays: number; sessions?: DaySession[]
 }) {
   const supabase = createClient()
   const router   = useRouter()
@@ -117,6 +118,8 @@ export function PublishWodPanel({
   const [type, setType]         = useState<WodType>(todayWod?.type ?? 'fortime')
   const [desc, setDesc]         = useState(todayWod?.description ?? '')
   const [duration, setDuration] = useState(todayWod?.duration_mins?.toString() ?? '')
+  // Class time (optional): a box can publish several WODs per day, one per class.
+  const [classTime, setClassTime] = useState<string>(todayWod?.class_time?.slice(0, 5) ?? '')
   const [publishing, setPublishing] = useState(false)
   const isToday = date === today
   const dayLabel = isToday ? 'hoy' : `el ${formatDateOnly(date, { weekday: 'long', day: 'numeric', month: 'long' })}`
@@ -131,7 +134,7 @@ export function PublishWodPanel({
   )
 
   // Draft autosave (new WODs only): a reload or a closed tab doesn't lose the work.
-  const draftKey = `apex.wodDraft.${box.id}.${date}`
+  const draftKey = `apex.wodDraft.${box.id}.${date}.${todayWod?.id ?? 'new'}`
   const draftLoaded = useRef(false)
   useEffect(() => {
     if (todayWod) { draftLoaded.current = true; return }
@@ -263,6 +266,7 @@ export function PublishWodPanel({
       movements: wodMovs.filter(m => m.name),
       scheduled_for: date, is_live: true,
       ...(isToday ? {} : { show_early: showEarly }),
+      ...(classTime ? { class_time: classTime } : todayWod?.class_time ? { class_time: null } : {}),
     }
     if (!title.trim()) { setPublishing(false); fire('Ponle un nombre al WOD antes de publicar', 'error'); return }
     const save = (body: Record<string, unknown>) => todayWod
@@ -270,8 +274,9 @@ export function PublishWodPanel({
       : supabase.from('daily_wods').insert(body)
     let { error } = await save(payload)
     // Without migration 006 there is no show_early column: save without it.
-    if (error && isMissingColumn(error) && 'show_early' in payload) {
-      const { show_early: _omit, ...rest } = payload
+    // Without migrations 006/007 there are no show_early/class_time columns: save without them.
+    if (error && isMissingColumn(error)) {
+      const { show_early: _a, class_time: _b, ...rest } = payload
       ;({ error } = await save(rest))
     }
     setPublishing(false)
@@ -331,10 +336,11 @@ export function PublishWodPanel({
 
       <div className="p-4 lg:p-6 max-w-3xl mx-auto flex flex-col gap-4 w-full">
         <DayStrip date={date} today={today} scheduled={scheduled} aheadDays={aheadDays} />
+        <SessionTabs date={date} today={today} sessions={sessions} currentId={todayWod?.id ?? null} />
 
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
-            <div className="font-barlow text-xl font-black tracking-wide uppercase">
+            <div className="font-display text-xl font-extrabold tracking-tight">
               {isToday ? 'WOD de hoy' : `WOD · ${relativeDayLabel(date, today)}`}
             </div>
             <div className="text-mu text-xs mt-0.5 first-letter:uppercase">
@@ -402,7 +408,7 @@ export function PublishWodPanel({
                     return (
                       <button key={t} type="button" onClick={() => setType(t)}
                         className={`p-3 rounded-xl border text-left transition ${active ? info.cls : 'border-[var(--ln2)] text-mu hover:border-mu hover:text-t'}`}>
-                        <div className="font-barlow font-extrabold text-[15px] tracking-wide">{info.label}</div>
+                        <div className="font-display font-extrabold text-[15px] tracking-tight">{info.label}</div>
                         <div className={`text-[10px] mt-0.5 leading-snug ${active ? 'opacity-80' : 'text-fa'}`}>{info.desc}</div>
                       </button>
                     )
@@ -414,14 +420,19 @@ export function PublishWodPanel({
                 <div>
                   <Label>Título *</Label>
                   <input required value={title} onChange={e => setTitle(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
+                    className="w-full px-3 py-2.5 rounded-xl bg-p2 text-t text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60"
                     placeholder="Ej: Fran, Thursday Chipper…" />
+                </div>
+                <div>
+                  <Label>Hora de la clase (opcional)</Label>
+                  <input type="time" value={classTime} onChange={e => setClassTime(e.target.value)} step={900}
+                    className="w-full px-3 py-2.5 rounded-xl bg-p2 text-t text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60" />
                 </div>
                 {(type === 'amrap' || type === 'emom' || type === 'tabata' || type === 'fortime') && (
                   <div>
                     <Label>{type === 'emom' ? 'Duración (min · 1 movimiento por minuto)' : 'Duración (min)'}</Label>
                     <input type="number" value={duration} onChange={e => setDuration(e.target.value)} min="1"
-                      className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
+                      className="w-full px-3 py-2.5 rounded-xl bg-p2 text-t text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60"
                       placeholder="20" />
                   </div>
                 )}
@@ -429,7 +440,7 @@ export function PublishWodPanel({
               <div>
                 <Label>Instrucciones / descripción</Label>
                 <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl bg-p2 text-t text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 resize-none"
                   placeholder={`Ej: 3 rounds for time\n21 Thrusters (95/65 lb)\n21 Pull-ups`} />
               </div>
 
@@ -596,12 +607,10 @@ function Step({ n, title, sub, icon, done, open, onToggle, children }: {
   done: boolean; open: boolean; onToggle: () => void; children: React.ReactNode
 }) {
   return (
-    <div className={`rounded-2xl border transition ${
-      done ? 'border-ac/22 bg-ac/5' : 'border-[var(--ln)] bg-p'
-    }`}>
+    <div className={`rounded-[24px] transition-colors ${done ? 'bg-p ring-1 ring-inset ring-ac/30' : 'bg-p'}`}>
       <button type="button" onClick={onToggle}
               className="w-full flex items-center gap-3 p-4 text-left">
-        <div className={`w-8 h-8 rounded-full grid place-items-center font-barlow font-black text-sm flex-shrink-0 ${
+        <div className={`w-8 h-8 rounded-full grid place-items-center font-display font-extrabold text-sm flex-shrink-0 ${
           done ? 'bg-ac text-onac' : 'bg-p3 text-mu border border-[var(--ln2)]'
         }`}>
           {done ? <Check size={14} strokeWidth={3} /> : n}
@@ -609,7 +618,7 @@ function Step({ n, title, sub, icon, done, open, onToggle, children }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-mu">{icon}</span>
-            <div className="font-barlow font-extrabold text-base tracking-wide uppercase truncate">{title}</div>
+            <div className="font-display font-extrabold text-base truncate tracking-tight">{title}</div>
           </div>
           <div className="text-mu text-[12px] mt-0.5 truncate">{sub}</div>
         </div>
@@ -639,13 +648,13 @@ function MovDisplayRow({ index, mov, onEdit, onDelete }: {
   const showWeight = shouldShowWeight(mov.category)
   return (
     <div className="rounded-xl border border-[var(--ln)] bg-p3 flex items-center gap-3 px-3 py-3">
-      <div className="w-7 h-7 rounded-full bg-ac text-onac grid place-items-center font-barlow font-black text-xs flex-shrink-0">
+      <div className="w-7 h-7 rounded-full bg-ac text-onac grid place-items-center font-display font-extrabold text-xs flex-shrink-0 tracking-tight">
         {index + 1}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           {mov.reps && (
-            <span className="font-barlow font-black text-[17px] text-t leading-none">{mov.reps}</span>
+            <span className="font-display font-extrabold text-[17px] text-t leading-none tracking-tight">{mov.reps}</span>
           )}
           <span className="font-semibold text-sm text-t leading-tight">{mov.name}</span>
           {showWeight && mov.weight && (
@@ -684,11 +693,33 @@ function DayStrip({ date, today, scheduled, aheadDays }: { date: string; today: 
               active ? 'text-onac' : 'bg-p text-mu hover:text-t')}>
             {active && <ActivePill layoutId="publish-day" className="rounded-2xl bg-ac" />}
             <span className="text-[10px] font-bold uppercase">{d === today ? 'Hoy' : formatDateOnly(d, { weekday: 'short' }).replace('.', '')}</span>
-            <span className="font-barlow text-2xl font-black leading-none">{Number(d.slice(8, 10))}</span>
+            <span className="font-display text-2xl font-extrabold leading-none tracking-tight">{Number(d.slice(8, 10))}</span>
             <span className={cn('size-1.5 rounded-full', wod ? (active ? 'bg-onac' : wod.isLive ? 'bg-ac' : 'bg-fa') : 'bg-transparent')} aria-hidden />
           </Link>
         )
       })}
+    </nav>
+  )
+}
+
+// ── Sessions of the selected day: one WOD per class time, plus "new class" ─────
+function SessionTabs({ date, today, sessions, currentId }: { date: string; today: string; sessions: DaySession[]; currentId: string | null }) {
+  if (sessions.length === 0) return null
+  const base = date === today ? '/coach/publish-wod?' : `/coach/publish-wod?date=${date}&`
+  const items = [
+    ...sessions.map(s => ({ key: s.id, href: `${base}wod=${s.id}`, label: `${s.classTime ? s.classTime.slice(0, 5) : 'Sin hora'} · ${s.title}`, active: s.id === currentId, hidden: !s.isLive })),
+    { key: 'new', href: `${base}wod=new`, label: '+ Otra clase', active: currentId === null, hidden: false },
+  ]
+  return (
+    <nav aria-label="Clases del día" className="-mx-4 lg:mx-0 px-4 lg:px-0 flex gap-1.5 overflow-x-auto scrollbar-none">
+      {items.map(it => (
+        <Link key={it.key} href={it.href} scroll={false} aria-current={it.active ? 'page' : undefined}
+          className={cn('relative isolate flex-shrink-0 h-9 px-3.5 rounded-full text-[13px] font-semibold grid place-items-center max-w-[220px] truncate transition-colors',
+            it.active ? 'text-onac' : 'bg-p text-mu hover:text-t', it.hidden && !it.active && 'opacity-60')}>
+          {it.active && <ActivePill layoutId="publish-session" className="rounded-full bg-ac" />}
+          {it.label}
+        </Link>
+      ))}
     </nav>
   )
 }

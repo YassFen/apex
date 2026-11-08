@@ -1,12 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { addDaysISO, todayISO } from '@/lib/utils/dates'
 import { redirect } from 'next/navigation'
-import { PublishWodPanel, type ScheduledDay } from '@/components/coach/PublishWodPanel'
+import { PublishWodPanel, type ScheduledDay, type DaySession } from '@/components/coach/PublishWodPanel'
 import type { Profile, Box, Movement } from '@/lib/types/database'
 
 const AHEAD_DAYS = 13
 
-export default async function PublishWodPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
+export default async function PublishWodPage({ searchParams }: { searchParams: Promise<{ date?: string; wod?: string }> }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -20,18 +20,23 @@ export default async function PublishWodPage({ searchParams }: { searchParams: P
   if (!box) redirect('/dashboard')
 
   const today = todayISO()
-  const { date: rawDate } = await searchParams
+  const { date: rawDate, wod: wodParam } = await searchParams
   // Programming is for today and the next two weeks; anything else falls back to today.
   const date = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) && rawDate >= today && rawDate <= addDaysISO(today, AHEAD_DAYS)
     ? rawDate : today
 
-  const [{ data: movs }, { data: dayWod }, { data: upcoming }] = await Promise.all([
+  const [{ data: movs }, { data: dayWods }, { data: upcoming }] = await Promise.all([
     supabase.from('movements').select('*').order('category').order('name'),
     supabase.from('daily_wods').select('*').eq('box_id', box.id).eq('scheduled_for', date)
-      .order('published_at', { ascending: false }).limit(1).maybeSingle(),
+      .order('published_at', { ascending: true }),
     supabase.from('daily_wods').select('scheduled_for, title, is_live').eq('box_id', box.id)
       .gte('scheduled_for', today).lte('scheduled_for', addDaysISO(today, AHEAD_DAYS)),
   ])
+
+  // One WOD per class: ?wod=<id> edits that one, ?wod=new starts another class that day.
+  const day = ((dayWods ?? []) as any[]).sort((a, b) => String(a.class_time ?? '').localeCompare(String(b.class_time ?? '')))
+  const sessions: DaySession[] = day.map(w => ({ id: w.id, title: w.title, classTime: w.class_time ?? null, isLive: !!w.is_live }))
+  const dayWod = wodParam === 'new' ? null : (day.find(w => w.id === wodParam) ?? day[0] ?? null)
 
   const scheduled: ScheduledDay[] = ((upcoming ?? []) as any[]).map(w => ({
     date: w.scheduled_for as string, title: w.title as string, isLive: !!w.is_live,
@@ -39,7 +44,8 @@ export default async function PublishWodPage({ searchParams }: { searchParams: P
 
   return (
     <PublishWodPanel
-      key={date}
+      key={`${date}-${dayWod?.id ?? 'new'}`}
+      sessions={sessions}
       profile={profile}
       box={box}
       movements={(movs ?? []) as Movement[]}

@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CalendarClock, Users, Timer, Pencil, History, Dumbbell } from 'lucide-react'
+import { CalendarClock, Users, Timer, Pencil, History, Dumbbell, Clock, Info } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
 import { rankResults } from '@/lib/utils/wod-ranking'
 import { todayISO } from '@/lib/utils/dates'
@@ -17,7 +17,8 @@ import { Button } from '@/components/ui/Button'
 import { WodResultModal } from './WodResultModal'
 import { WodLeaderboard } from './WodLeaderboard'
 import { useToast } from '@/components/ui/Toast'
-import type { Profile, DailyWod } from '@/lib/types/database'
+import type { Profile, DailyWod, Movement } from '@/lib/types/database'
+import { MovementDetail } from '@/components/movements/MovementsView'
 
 interface Props {
   profile: Profile
@@ -27,7 +28,8 @@ interface Props {
   memberships: any[]
   maxes?: { name: string; valueLb: number }[]
   bumps?: Bump[] | null
-  todayWods?: { boxId: string; boxName: string }[]
+  todayWods?: { id: string; label: string }[]
+  library?: Movement[]
 }
 
 type Bump = { result_id: string; user_id: string }
@@ -35,7 +37,8 @@ type Bump = { result_id: string; user_id: string }
 
 const MAX_EDITS = 2
 
-export function WodView({ profile, wod: initialWod, results: initialResults, memberships, maxes = [], bumps: initialBumps = [], todayWods = [] }: Props) {
+export function WodView({ profile, wod: initialWod, results: initialResults, memberships, maxes = [], bumps: initialBumps = [], todayWods = [], library = [] }: Props) {
+  const [info, setInfo] = useState<Movement | null>(null)
   const router = useRouter()
   const [supabase] = useState(() => createClient())
   const [wod, setWod]           = useState(initialWod)
@@ -88,7 +91,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
       const next = payload.new as DailyWod
       // Ignore WODs programmed for other days and other boxes' WODs when one is already shown.
       if (!next.is_live || next.scheduled_for !== todayISO()) return
-      if (wod?.box_id && next.box_id !== wod.box_id) return
+      if (wod?.id && next.id !== wod.id) return
       setWod((prev: any) => ({ ...prev, ...next }))
       setJustPublished(true)
       setTimeout(() => setJustPublished(false), 4000)
@@ -136,15 +139,15 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
 
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full">
         {todayWods.length > 1 && (
-          <nav aria-label="WOD de cada box" className="-mx-4 px-4 lg:mx-0 lg:px-0 flex gap-1.5 overflow-x-auto scrollbar-none">
+          <nav aria-label="WODs de hoy" className="-mx-4 px-4 lg:mx-0 lg:px-0 flex gap-1.5 overflow-x-auto scrollbar-none">
             {todayWods.map(t => {
-              const active = t.boxId === wod?.box_id
+              const active = t.id === wod?.id
               return (
-                <Link key={t.boxId} href={`/wod?box=${t.boxId}`} scroll={false} aria-current={active ? 'page' : undefined}
+                <Link key={t.id} href={`/wod?wod=${t.id}`} ref={el => { if (active) el?.scrollIntoView({ inline: 'center', block: 'nearest' }) }} scroll={false} aria-current={active ? 'page' : undefined}
                   className={cn('relative isolate flex-shrink-0 h-9 px-4 rounded-full text-sm font-bold grid place-items-center transition-colors max-w-[200px] truncate',
                     active ? 'text-onac' : 'bg-p text-mu hover:text-t')}>
                   {active && <ActivePill layoutId="wod-box" className="rounded-full bg-ac" />}
-                  {t.boxName}
+                  {t.label}
                 </Link>
               )
             })}
@@ -155,7 +158,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
             <div className="size-14 rounded-2xl bg-p2 grid place-items-center text-mu">
               {memberships.length === 0 ? <Users size={26} aria-hidden /> : <CalendarClock size={26} aria-hidden />}
             </div>
-            <h2 className="font-barlow text-2xl font-black text-t">
+            <h2 className="font-display text-2xl font-extrabold text-t tracking-tight">
               {memberships.length === 0 ? 'Aún no estás en un box' : 'Sin WOD por ahora'}
             </h2>
             <p className="text-mu text-sm max-w-xs text-pretty">
@@ -183,10 +186,11 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
                       {meta.label}
                     </span>
                   )}
+                  {wod.class_time && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-p2 text-[11px] font-bold tabular-nums"><Clock size={12} weight="bold" aria-hidden />{String(wod.class_time).slice(0, 5)}</span>}
                   {wod.duration_mins && <span className="text-mu text-xs tabular-nums">{wod.duration_mins} min</span>}
                   {wod.boxes?.name && <span className="text-mu text-xs truncate">· {wod.boxes.name}</span>}
                 </div>
-                <h2 className="font-barlow text-[32px] leading-tight font-black tracking-wide text-balance">{wod.title}</h2>
+                <h2 className="font-display text-[32px] leading-tight font-extrabold text-balance tracking-tight">{wod.title}</h2>
                 {wod.description && (
                   <p className="text-mu text-sm leading-relaxed whitespace-pre-line mt-2 text-pretty">{wod.description}</p>
                 )}
@@ -195,17 +199,21 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
               {movements.length > 0 && (
                 <ol className="px-5 pb-5 flex flex-col gap-2" aria-label="Movimientos">
                   {movements.map((m: any, i: number) => (
-                    <li key={i} className="flex items-center gap-3 py-3 px-3.5 bg-p2 rounded-xl">
-                      <span className="size-7 rounded-full bg-p3 grid place-items-center text-mu font-barlow font-black text-sm tabular-nums flex-shrink-0">
+                    <li key={i}>
+                    <button type="button" onClick={() => setInfo(library.find(x => x.name.toLowerCase() === String(m.name ?? '').toLowerCase()) ?? { id: `wod-${i}`, name: m.name, category: 'weightlifting', description: null, video_url: null })}
+                      className="w-full text-left flex items-center gap-3 py-3 px-3.5 bg-p2 rounded-xl hover:bg-p3 active:scale-[0.99] transition">
+                      <span className="size-7 rounded-full bg-p3 grid place-items-center text-mu font-display font-extrabold text-sm tabular-nums flex-shrink-0 tracking-tight">
                         {i + 1}
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold text-sm truncate">{m.name}</div>
                         {m.weight && <div className="text-mu text-xs">{m.weight}</div>}
                       </div>
-                      <div className="font-barlow text-xl font-bold text-t tabular-nums whitespace-nowrap">
+                      <div className="font-display text-xl font-bold text-t tabular-nums whitespace-nowrap tracking-tight">
                         {m.sets > 1 ? `${m.sets}×` : ''}{m.reps}
                       </div>
+                      <Info size={16} className="text-fa flex-shrink-0" aria-label="Cómo se hace" />
+                    </button>
                     </li>
                   ))}
                 </ol>
@@ -217,7 +225,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
                     <div className="flex items-center justify-between p-4 bg-ac/10 rounded-xl">
                       <div>
                         <div className="text-[11px] uppercase tracking-[1.4px] text-ac font-bold">Tu resultado</div>
-                        <div className="font-barlow text-3xl font-black tabular-nums">{myResult.result_value}</div>
+                        <div className="font-display text-3xl font-extrabold tabular-nums tracking-tight">{myResult.result_value}</div>
                       </div>
                       <Badge color={myResult.rx_level === 'rx+' ? 'orange' : myResult.rx_level === 'scaled' ? 'blue' : 'lime'}>
                         {myResult.rx_level.toUpperCase()}
@@ -265,6 +273,8 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
           }}
         />
       )}
+      <MovementDetail movement={info} onClose={() => setInfo(null)} unit={profile.preferred_unit ?? 'kg'}
+        records={info ? maxes.filter(x => x.name === info.name).map(x => ({ metric: '1rm', valueLb: x.valueLb })) : []} />
     </>
   )
 }
@@ -294,7 +304,7 @@ function YourNumbers({ movements, maxes, unit }: { movements: any[]; maxes: { na
     <Card>
       <div className="flex items-center gap-2 mb-3">
         <Dumbbell size={16} className="text-ac" aria-hidden />
-        <h3 className="font-barlow text-lg font-extrabold tracking-wide uppercase">Tus números</h3>
+        <h3 className="font-display text-lg font-extrabold tracking-tight">Tus números</h3>
       </div>
       <ul className="flex flex-col gap-3">
         {matches.map(m => (
@@ -307,7 +317,7 @@ function YourNumbers({ movements, maxes, unit }: { movements: any[]; maxes: { na
               {PERCENTS.map(p => (
                 <div key={p} className="rounded-xl bg-p2 py-2 text-center">
                   <div className="text-[10px] text-mu font-bold">{p}%</div>
-                  <div className="font-barlow text-lg font-black tabular-nums leading-tight">{toUnit(m.valueLb * p / 100)}</div>
+                  <div className="font-display text-lg font-extrabold tabular-nums leading-tight tracking-tight">{toUnit(m.valueLb * p / 100)}</div>
                 </div>
               ))}
             </div>

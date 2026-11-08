@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils/cn'
 import {
   Flame, BarChart3, Calculator, Timer, ArrowLeftRight, Dumbbell, Plus,
   ChevronRight, Radio, Copy, Check, Share2, Pencil,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 import type { Profile, Box } from '@/lib/types/database'
 import { NextEventCard, type NextEvent } from '@/components/calendar/NextEventCard'
 
@@ -78,7 +78,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-3xl w-full stagger">
         <div className="px-1">
           <p className="text-mu text-sm first-letter:uppercase">{dateLabel}</p>
-          <h2 className="font-barlow text-4xl font-black tracking-wide uppercase leading-tight">Hola, {firstName}</h2>
+          <h2 className="font-display text-4xl font-extrabold leading-tight tracking-tight">Hola, {firstName}</h2>
         </div>
 
         {!box ? (
@@ -86,7 +86,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
             <div className="size-16 rounded-2xl bg-ac/15 text-ac grid place-items-center mx-auto mb-4 animate-pop">
               <Dumbbell size={30} strokeWidth={2} aria-hidden />
             </div>
-            <div className="font-barlow text-3xl font-black uppercase mb-2">Crea tu box</div>
+            <div className="font-display text-3xl font-extrabold mb-2 tracking-tight">Crea tu box</div>
             <p className="text-mu text-sm mb-6 max-w-xs mx-auto text-pretty">Configura tu box para publicar WODs, invitar atletas y ver el leaderboard en vivo.</p>
             <Link href="/coach/create-box"
               className="inline-flex items-center gap-2 h-12 px-6 rounded-full bg-ac text-onac font-bold hover:bg-ac/90 transition active:scale-95">
@@ -107,11 +107,11 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                     <span className="text-[11px] uppercase tracking-[1.4px] text-rd font-bold">En vivo hoy</span>
                     {meta && <span className={cn('ml-auto px-2.5 py-1 rounded-full text-[11px] font-bold uppercase', meta.cls)}>{meta.label}</span>}
                   </div>
-                  <h3 className="font-barlow text-3xl font-black leading-tight text-balance">{todayWod.title}</h3>
+                  <h3 className="font-display text-3xl font-extrabold leading-tight text-balance tracking-tight">{todayWod.title}</h3>
                   <div className="mt-4">
                     <div className="flex items-baseline justify-between text-sm mb-1.5">
                       <span className="text-mu"><span className="text-t font-bold tabular-nums">{todayResults}</span> de {athleteCount} registraron</span>
-                      <span className="font-barlow text-xl font-black tabular-nums">{participation}%</span>
+                      <span className="font-display text-xl font-extrabold tabular-nums tracking-tight">{participation}%</span>
                     </div>
                     <div className="h-2 rounded-full bg-p3 overflow-hidden">
                       <div className="h-full rounded-full bg-ac transition-[width] duration-700 ease-out" style={{ width: `${participation}%` }} />
@@ -131,7 +131,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
               <Link href="/coach/publish-wod" className="tap-card block rounded-[20px] bg-ac text-onac p-5 relative overflow-hidden">
                 <Flame size={120} className="absolute -right-6 -bottom-8 opacity-15" aria-hidden />
                 <div className="text-[11px] uppercase tracking-[1.4px] font-bold opacity-80">WOD de hoy</div>
-                <div className="font-barlow text-3xl font-black uppercase leading-tight mt-1 max-w-[16ch]">Aún no lo publicas</div>
+                <div className="font-display text-3xl font-extrabold leading-tight mt-1 max-w-[16ch] tracking-tight">Aún no lo publicas</div>
                 <p className="text-sm opacity-80 mt-1 max-w-[30ch]">Tus atletas lo verán al instante, sin recargar.</p>
                 <span className="mt-4 inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-onac text-ac text-sm font-bold">
                   Publicar WOD <ChevronRight size={16} aria-hidden />
@@ -153,7 +153,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="font-barlow text-xl font-black tracking-wide truncate">{box.name}</div>
+                  <div className="font-display text-xl font-extrabold truncate tracking-tight">{box.name}</div>
                   <div className="text-mu text-sm truncate">{[box.city, box.country].filter(Boolean).join(' · ')}</div>
                 </div>
                 <Link href="/settings" className="flex-shrink-0 h-9 px-3 rounded-full bg-p2 text-mu text-xs font-bold grid place-items-center hover:bg-p3 hover:text-t transition">
@@ -163,7 +163,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
               <div className="mt-4 flex items-center gap-2 p-2 pl-4 rounded-2xl bg-p2">
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] uppercase tracking-[1.4px] text-mu font-bold">Código de invitación</div>
-                  <div className="font-barlow text-2xl font-black tracking-[0.2em] text-ac select-all">{box.invite_code}</div>
+                  <div className="font-display text-2xl font-extrabold tracking-[0.2em] text-ac select-all">{box.invite_code}</div>
                 </div>
                 <button type="button" onClick={copyCode} aria-label="Copiar código"
                   className="size-11 rounded-xl bg-p3 grid place-items-center text-t hover:bg-p transition active:scale-90">
@@ -181,7 +181,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-[11px] uppercase tracking-[1.4px] text-mu font-bold">Atletas</div>
-                  <div className="font-barlow text-4xl font-black tabular-nums leading-none mt-1">{athleteCount}</div>
+                  <div className="font-display text-4xl font-extrabold tabular-nums leading-none mt-1 tracking-tight">{athleteCount}</div>
                 </div>
                 <div className="flex -space-x-2.5">
                   {recentMembers.slice(0, 4).map(m => m.avatar ? (

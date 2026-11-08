@@ -1,6 +1,6 @@
 'use client'
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Minus as MinusIcon, LayoutGrid, List } from 'lucide-react'
+import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Minus as MinusIcon, LayoutGrid, List } from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -245,13 +245,13 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                           </span>
                         </td>
                         <td className="py-3 px-4 text-right hidden sm:table-cell">
-                          <div className="font-barlow text-base font-bold text-mu">
+                          <div className="font-display text-base font-bold text-mu tracking-tight">
                             {latestF.value}
                             <span className="text-[10px] text-fa font-normal ml-1">{latestF.unit}</span>
                           </div>
                         </td>
                         <td className="py-3 px-3 sm:px-4 text-right whitespace-nowrap">
-                          <div className="font-barlow text-lg sm:text-xl font-black text-ac">
+                          <div className="font-display text-lg sm:text-xl font-extrabold text-ac tracking-tight">
                             {bestF.value}
                             <span className="text-[11px] text-mu font-normal ml-1">{bestF.unit}</span>
                           </div>
@@ -304,7 +304,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="font-barlow text-[32px] font-black leading-none text-ac">
+                    <div className="font-display text-[32px] font-extrabold leading-none text-ac tracking-tight">
                       {bestFmt.value}
                       <span className="text-[13px] text-mu font-normal ml-1">{bestFmt.unit}</span>
                     </div>
@@ -332,7 +332,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                           <div className="text-mu text-sm flex-1 min-w-0">
                             {new Date(r.recorded_at).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}
                           </div>
-                          <div className="font-barlow text-xl font-bold">
+                          <div className="font-display text-xl font-bold tracking-tight">
                             {fmt.value}
                             <span className="text-[11px] text-mu font-normal ml-1">{fmt.unit}</span>
                           </div>

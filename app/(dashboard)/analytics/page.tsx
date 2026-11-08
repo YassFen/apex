@@ -62,19 +62,19 @@ export default async function AnalyticsPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
             <Card>
               <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Atletas activos</div>
-              <div className="font-barlow text-[50px] font-black leading-none text-ac">{athletes}</div>
+              <div className="font-display text-[50px] font-extrabold leading-none text-ac tracking-tight">{athletes}</div>
             </Card>
             <Card>
               <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">WODs publicados</div>
-              <div className="font-barlow text-[50px] font-black leading-none">{totalWods}</div>
+              <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">{totalWods}</div>
             </Card>
             <Card>
               <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Resultados registrados</div>
-              <div className="font-barlow text-[50px] font-black leading-none">{totalResults}</div>
+              <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">{totalResults}</div>
             </Card>
             <Card>
               <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">% RX</div>
-              <div className="font-barlow text-[50px] font-black leading-none text-gr">{rxPct}%</div>
+              <div className="font-display text-[50px] font-extrabold leading-none text-gr tracking-tight">{rxPct}%</div>
             </Card>
           </div>
 
@@ -90,7 +90,7 @@ export default async function AnalyticsPage() {
                     <div className="flex-1 h-2 bg-t/[.08] rounded-full overflow-hidden">
                       <div className="h-full bg-ac rounded-full" style={{ width: `${(count / totalWods) * 100}%` }} />
                     </div>
-                    <div className="font-barlow font-bold text-sm w-5 text-right">{count}</div>
+                    <div className="font-display font-bold text-sm w-5 text-right tracking-tight">{count}</div>
                   </div>
                 ))}
               </div>
@@ -150,19 +150,19 @@ export default async function AnalyticsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
           <Card>
             <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">RMs actuales</div>
-            <div className="font-barlow text-[50px] font-black leading-none text-ac">{prBests.length}</div>
+            <div className="font-display text-[50px] font-extrabold leading-none text-ac tracking-tight">{prBests.length}</div>
           </Card>
           <Card>
             <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Total registros</div>
-            <div className="font-barlow text-[50px] font-black leading-none">{prs.length}</div>
+            <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">{prs.length}</div>
           </Card>
           <Card>
             <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Categorías</div>
-            <div className="font-barlow text-[50px] font-black leading-none">{Object.keys(byCategory).length}</div>
+            <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">{Object.keys(byCategory).length}</div>
           </Card>
           <Card>
             <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Este mes</div>
-            <div className="font-barlow text-[50px] font-black leading-none">
+            <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">
               {prs.filter((p: any) => new Date(p.recorded_at).getMonth() === new Date().getMonth()).length}
             </div>
           </Card>
@@ -181,7 +181,7 @@ export default async function AnalyticsPage() {
                     <div className="flex-1 h-2 bg-t/[.08] rounded-full overflow-hidden">
                       <div className="h-full bg-ac rounded-full" style={{ width: `${(count / (prBests.length || 1)) * 100}%` }} />
                     </div>
-                    <div className="font-barlow font-bold text-sm w-4 text-right">{count}</div>
+                    <div className="font-display font-bold text-sm w-4 text-right tracking-tight">{count}</div>
                   </div>
                 ))}
               </div>

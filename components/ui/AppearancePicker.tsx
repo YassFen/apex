@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Check, Monitor, Moon, Sun } from 'lucide-react'
+import { Check, Monitor, Moon, Sun } from '@/components/ui/icons'
 import { ACCENTS, DEFAULT_THEME, THEME_EVENT, applyTheme, readTheme, type Accent, type ThemeMode } from '@/lib/utils/theme'
 import { labelCls } from '@/components/ui/Field'
 import { cn } from '@/lib/utils/cn'

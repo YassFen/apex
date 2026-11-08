@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Dumbbell, ClipboardList, MailCheck } from 'lucide-react'
+import { Dumbbell, ClipboardList, MailCheck } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
 import { friendlyError } from '@/lib/utils/errors'
 import { joinBoxByCode } from '@/lib/utils/join-box'
@@ -76,7 +76,7 @@ export function RegisterForm() {
           <MailCheck size={28} aria-hidden />
         </div>
         <div>
-          <h1 className="font-barlow text-4xl font-black tracking-wide uppercase text-balance">Revisa tu correo</h1>
+          <h1 className="font-display text-4xl font-extrabold text-balance tracking-tight">Revisa tu correo</h1>
           <p className="text-mu text-sm mt-2 text-pretty">
             Enviamos un enlace de confirmación a <span className="text-t font-semibold">{sentTo}</span>.
             Ábrelo para activar tu cuenta y luego inicia sesión. Si no lo ves, revisa spam o promociones.
@@ -97,7 +97,7 @@ export function RegisterForm() {
       <BrandMark />
 
       <div>
-        <h1 className="font-barlow text-4xl font-black tracking-wide uppercase text-balance">Crear cuenta</h1>
+        <h1 className="font-display text-4xl font-extrabold text-balance tracking-tight">Crear cuenta</h1>
         <p className="text-mu text-sm mt-1">Tus marcas y el WOD de tu box en un solo lugar.</p>
       </div>
 
@@ -141,7 +141,7 @@ export function RegisterForm() {
             label={<>Código de box <span className="text-fa normal-case tracking-normal font-normal">(opcional)</span></>}
             name="invite-code" autoComplete="off" spellCheck={false} maxLength={8}
             value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
-            placeholder="Ej. A1B2C3D4" className="uppercase tracking-[3px] font-barlow font-bold"
+            placeholder="Ej. A1B2C3D4" className="tracking-[3px] font-display font-bold tracking-tight"
             hint="Te lo da tu coach. También puedes ingresarlo después en tu perfil."
           />
         )}

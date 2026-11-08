@@ -38,8 +38,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        barlow: ['"Barlow Condensed"', 'sans-serif'],
+        // One modern sans for everything (SF-like). Display = headings and big numbers.
+        sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
       },
       borderRadius: {
         card: '20px',

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { Plus, Award, Medal, Trophy, PenLine } from 'lucide-react'
+import { Plus, Award, Medal, Trophy, PenLine } from '@/components/ui/icons'
 import type { Profile, Benchmark } from '@/lib/types/database'
 import { useRouter } from 'next/navigation'
 import { friendlyError } from '@/lib/utils/errors'
@@ -165,21 +165,21 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
           <div className="rounded-2xl bg-p border border-[var(--ln)] p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-ac/10 grid place-items-center text-ac"><Trophy size={18} strokeWidth={2.2} /></div>
             <div>
-              <div className="font-barlow text-2xl font-black text-ac leading-none">{filledCount}</div>
+              <div className="font-display text-2xl font-extrabold text-ac leading-none tracking-tight">{filledCount}</div>
               <div className="text-[10px] uppercase tracking-[1.4px] text-fa font-bold mt-1">Logrados</div>
             </div>
           </div>
           <div className="rounded-2xl bg-p border border-[var(--ln)] p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-bl/10 grid place-items-center text-bl"><Award size={18} strokeWidth={2.2} /></div>
             <div>
-              <div className="font-barlow text-2xl font-black leading-none">{BENCHMARK_LIST.length - filledCount}</div>
+              <div className="font-display text-2xl font-extrabold leading-none tracking-tight">{BENCHMARK_LIST.length - filledCount}</div>
               <div className="text-[10px] uppercase tracking-[1.4px] text-fa font-bold mt-1">Pendientes</div>
             </div>
           </div>
           <div className="rounded-2xl bg-p border border-[var(--ln)] p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-or/10 grid place-items-center text-or"><Medal size={18} strokeWidth={2.2} /></div>
             <div>
-              <div className="font-barlow text-2xl font-black text-or leading-none">{BENCHMARK_LIST.length + extraNames.length}</div>
+              <div className="font-display text-2xl font-extrabold text-or leading-none tracking-tight">{BENCHMARK_LIST.length + extraNames.length}</div>
               <div className="text-[10px] uppercase tracking-[1.4px] text-fa font-bold mt-1">Total</div>
             </div>
           </div>
@@ -192,7 +192,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
             onClick={openCustom}
             className="relative overflow-hidden text-left p-5 rounded-2xl border border-dashed border-ac/30 bg-ac/5 hover:bg-ac/10 transition group"
           >
-            <div className="font-barlow text-lg font-black tracking-wide uppercase text-ac">Benchmark personalizado</div>
+            <div className="font-display text-lg font-extrabold text-ac tracking-tight">Benchmark personalizado</div>
             <div className="text-mu text-[11px] mt-1 leading-snug">Registra cualquier WOD, Hero WOD o benchmark de tu box</div>
             <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac text-onac text-[11px] font-bold">
               <PenLine size={12} strokeWidth={2.5} />
@@ -212,7 +212,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                   onClick={() => { setModalBm(bm); setCustomMode(false); setResult(''); setNotes('') }}
                   className="relative overflow-hidden text-left p-5 rounded-2xl border border-dashed border-[var(--ln2)] bg-transparent hover:bg-ac/5 hover:border-ac/30 transition group"
                 >
-                  <div className="font-barlow text-lg font-black tracking-wide uppercase">{bm.name}</div>
+                  <div className="font-display text-lg font-extrabold tracking-tight">{bm.name}</div>
                   <div className="text-mu text-[11px] mt-1 leading-snug">{bm.desc}</div>
                   <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac/10 text-ac text-[11px] font-bold border border-ac/20 group-hover:bg-ac group-hover:text-onac transition">
                     <Plus size={12} strokeWidth={2.5} />
@@ -226,10 +226,10 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
               <div key={bm.name}
                    className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[var(--ln2)] transition">
                 <div className="flex items-start justify-between mb-2">
-                  <div className="font-barlow text-lg font-black tracking-wide uppercase">{bm.name}</div>
+                  <div className="font-display text-lg font-extrabold tracking-tight">{bm.name}</div>
                 </div>
 
-                <div className="font-barlow font-black leading-none text-ac my-2 tabular-nums"
+                <div className="font-display font-extrabold leading-none text-ac my-2 tabular-nums tracking-tight"
                      style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
                   {normalizeResult(best.result, bm.unit)}
                 </div>
@@ -268,12 +268,12 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                 <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none"
                      style={{ background: 'radial-gradient(circle, rgb(var(--c-ac) / .05) 0%, transparent 70%)' }} />
                 <div className="flex items-start justify-between mb-2">
-                  <div className="font-barlow text-lg font-black tracking-wide uppercase">{name}</div>
+                  <div className="font-display text-lg font-extrabold tracking-tight">{name}</div>
                 </div>
 
                 {best && (
                   <>
-                    <div className="font-barlow font-black leading-none text-ac my-2 tabular-nums"
+                    <div className="font-display font-extrabold leading-none text-ac my-2 tabular-nums tracking-tight"
                          style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
                       {normalizeResult(best.result, extraUnit)}
                     </div>
@@ -365,7 +365,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                 required
                 value={result}
                 onChange={e => setResult(activeUnit === 'time' ? fmtTimeInput(e.target.value) : e.target.value)}
-                className="w-full px-3 py-3 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-barlow text-3xl font-bold text-center"
+                className="w-full px-3 py-3 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-display text-3xl font-bold text-center tracking-tight"
                 placeholder={activeUnit === 'time' ? '06:29' : '21+3'}
                 inputMode={activeUnit === 'time' ? 'numeric' : 'text'}
               />

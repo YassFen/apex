@@ -1,6 +1,7 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import type { Profile, Box } from '@/lib/types/database'
+import type { Notice } from '@/lib/utils/notifications'
 
 export type ViewMode = 'coach' | 'athlete'
 
@@ -14,6 +15,7 @@ interface ShellCtx {
   boxes: Box[]
   activeBoxId: string | null
   setActiveBoxId: (id: string) => void
+  notices: Notice[]
 }
 
 const Ctx = createContext<ShellCtx | null>(null)
@@ -21,9 +23,9 @@ const VIEW_MODE_KEY  = 'apex.viewMode'
 const ACTIVE_BOX_KEY = 'apex.activeBoxId'
 
 export function ShellProvider({
-  profile, openSidebar, boxes = [], children,
+  profile, openSidebar, boxes = [], notices = [], children,
 }: {
-  profile: Profile; openSidebar: () => void; boxes?: Box[]; children: React.ReactNode
+  profile: Profile; openSidebar: () => void; boxes?: Box[]; notices?: Notice[]; children: React.ReactNode
 }) {
   const accountRole  = profile.role as 'coach' | 'athlete' | 'admin'
   const canSwitchMode = accountRole === 'coach' || accountRole === 'admin'
@@ -74,9 +76,9 @@ export function ShellProvider({
 
   const value = useMemo<ShellCtx>(() => ({
     profile, openSidebar, accountRole, viewMode, setViewMode,
-    canSwitchMode, boxes, activeBoxId, setActiveBoxId,
+    canSwitchMode, boxes, activeBoxId, setActiveBoxId, notices,
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [profile, openSidebar, accountRole, viewMode, canSwitchMode, boxes, activeBoxId])
+  }), [profile, openSidebar, accountRole, viewMode, canSwitchMode, boxes, activeBoxId, notices])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

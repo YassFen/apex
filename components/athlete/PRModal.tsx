@@ -327,7 +327,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
               </label>
               <input type="number" required step="any" min="0.5" value={weight}
                 onChange={e => setWeight(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-barlow text-3xl font-bold"
+                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-display text-3xl font-bold tracking-tight"
                 placeholder="0" />
             </div>
             <div>
@@ -352,7 +352,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
             </label>
             <input type="number" required step="1" min="1" value={reps}
               onChange={e => setReps(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-barlow text-5xl font-bold text-center"
+              className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-display text-5xl font-bold text-center tracking-tight"
               placeholder="0" />
           </div>
         )}
@@ -365,7 +365,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
             </label>
             <input type="number" required step="1" min="1" value={calories}
               onChange={e => setCalories(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-barlow text-5xl font-bold text-center"
+              className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-display text-5xl font-bold text-center tracking-tight"
               placeholder="0" />
           </div>
         )}
@@ -379,7 +379,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
             <input
               type="text" required inputMode="numeric" value={time}
               onChange={e => setTime(formatTimeInput(e.target.value))}
-              className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-barlow text-5xl font-bold text-center tracking-widest"
+              className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-display text-5xl font-bold text-center tracking-widest"
               placeholder="0:00" />
             <p className="mt-1.5 text-[11px] text-fa">Sólo escribe los dígitos: por ejemplo <span className="text-t">345</span> → 3:45</p>
           </div>

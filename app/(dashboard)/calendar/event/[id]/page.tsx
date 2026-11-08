@@ -41,6 +41,17 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     seen.add(k); return true
   }).map(b => ({ name: b.name, result: b.result }))
 
+  // Migration 007: per-workout results and final standings (null when the table is missing).
+  const [resRes, finalRes] = await Promise.all([
+    supabase.from('event_results').select('workout_id, user_id, result_value, place, profiles(full_name)').eq('event_id', id),
+    supabase.from('event_participants').select('user_id, final_place, field_size').eq('event_id', id),
+  ])
+  const results = resRes.error ? null : ((resRes.data ?? []) as any[]).map(r => ({
+    workoutId: r.workout_id as string, userId: r.user_id as string, name: (r.profiles?.full_name as string) ?? 'Atleta',
+    value: r.result_value as string, place: (r.place as number) ?? null,
+  }))
+  const finals = new Map(((finalRes.error ? [] : finalRes.data ?? []) as any[]).map(f => [f.user_id, f]))
+
   const role = (membership as any)?.role
   const canEdit = ev.created_by === user.id || ev.boxes?.owner_id === user.id || role === 'coach' || role === 'admin'
 
@@ -54,12 +65,13 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   const participants = ((ev.event_participants ?? []) as any[]).map(x => ({
     userId: x.user_id as string, category: x.category as 'm' | 'f', division: x.division as string,
     name: (x.profiles?.full_name as string) ?? 'Atleta', avatar: (x.profiles?.avatar_url as string) ?? null,
+    finalPlace: finals.get(x.user_id)?.final_place ?? null, fieldSize: finals.get(x.user_id)?.field_size ?? null,
   }))
 
   const event: EventDetail = {
     id: ev.id, boxId: ev.box_id, boxName: ev.boxes?.name ?? null, name: ev.name, kind: ev.kind,
     startsOn: ev.starts_on, endsOn: ev.ends_on ?? ev.starts_on, location: ev.location, url: ev.url, notes: ev.notes,
-    workouts, participants,
+    workouts, participants, results,
   }
 
   return <EventView profile={profile} event={event} today={todayISO()} prs={prs} benchmarks={benchmarks} canEdit={canEdit} />

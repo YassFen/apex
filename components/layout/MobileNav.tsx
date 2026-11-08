@@ -4,14 +4,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutGrid, Flame, Timer, TrendingUp, Activity, Users, ArrowLeftRight, MoreHorizontal,
-  Trophy, Calculator, BarChart3, User, History, ChevronRight, CalendarDays,
-} from 'lucide-react'
+  Trophy, Calculator, BarChart3, Gear, History, ChevronRight, CalendarDays, Medal, BookOpenText,
+} from '@/components/ui/icons'
 import { motion } from 'motion/react'
 import { cn } from '@/lib/utils/cn'
 import { SPRING } from '@/components/ui/motion'
 import { useShell } from '@/lib/hooks/useShell'
 import { Modal } from '@/components/ui/Modal'
-import { AppearancePicker } from '@/components/ui/AppearancePicker'
 import type { Profile } from '@/lib/types/database'
 
 type Item = { href: string; label: string; icon: typeof Flame; desc?: string }
@@ -33,18 +32,21 @@ const COACH_TABS: Item[] = [
 // Everything that doesn't fit in the tab bar lives in the "Más" sheet.
 const ATHLETE_MORE: Item[] = [
   { href: '/timer',       label: 'Timer',             icon: Timer,      desc: 'For Time, AMRAP, EMOM, Tabata' },
+  { href: '/competitions', label: 'Competencias',     icon: Medal,      desc: 'Resultados y tu progreso' },
+  { href: '/movements',   label: 'Ejercicios',        icon: BookOpenText, desc: 'Cómo se hace cada uno' },
   { href: '/wod/history', label: 'Historial de WODs', icon: History,    desc: 'Tus resultados día a día' },
   { href: '/benchmarks',  label: 'Benchmarks',        icon: Trophy,     desc: 'Fran, Grace, Murph…' },
   { href: '/calc',        label: 'Calculadora RM',    icon: Calculator, desc: 'Porcentajes y discos' },
-  { href: '/settings',    label: 'Mi perfil',         icon: User,       desc: 'Datos, box y cuenta' },
+  { href: '/settings',    label: 'Configuración',     icon: Gear,       desc: 'Perfil, box, avisos y apariencia' },
 ]
 
 const COACH_MORE: Item[] = [
   { href: '/coach/wod-live', label: 'Seguimiento en vivo', icon: Activity, desc: 'Quién ya registró el WOD' },
   { href: '/analytics', label: 'Analytics',      icon: BarChart3,  desc: 'Progreso del box' },
   { href: '/timer',     label: 'Timer',          icon: Timer,      desc: 'For Time, AMRAP, EMOM, Tabata' },
+  { href: '/movements', label: 'Ejercicios',     icon: BookOpenText, desc: 'Crea los de tu box' },
   { href: '/calc',      label: 'Calculadora RM', icon: Calculator, desc: 'Porcentajes y discos' },
-  { href: '/settings',  label: 'Mi perfil',      icon: User,       desc: 'Datos, box y cuenta' },
+  { href: '/settings',  label: 'Configuración',  icon: Gear,       desc: 'Perfil, box, avisos y apariencia' },
 ]
 
 function isActive(pathname: string, href: string) {
@@ -113,9 +115,6 @@ export function MobileNav({ profile }: { profile: Profile }) {
           )}
         </nav>
 
-        <div className="mt-6">
-          <AppearancePicker />
-        </div>
       </Modal>
     </>
   )
@@ -139,7 +138,7 @@ function TabIcon({ Icon, active, label }: { Icon: typeof Flame; active: boolean;
       )}>
         {active && <motion.span layoutId="tab-pill" transition={SPRING} className="absolute inset-0 -z-10 rounded-full bg-ac/15" aria-hidden />}
         <motion.span animate={{ scale: active ? 1 : 0.92, y: active ? -1 : 0 }} transition={SPRING} className="grid place-items-center">
-          <Icon size={20} strokeWidth={active ? 2.4 : 1.9} aria-hidden />
+          <Icon size={24} weight={active ? 'fill' : 'regular'} aria-hidden />
         </motion.span>
       </span>
       <span className={cn('text-[10px] font-bold leading-none transition-colors', active ? 'text-t' : 'text-mu')}>{label}</span>

@@ -4,8 +4,8 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutGrid, TrendingUp, Timer, Flame, Activity,
   BarChart3, Calculator, Users, User, Trophy, Dumbbell,
-  ArrowLeftRight, ChevronDown, History, CalendarDays,
-} from 'lucide-react'
+  ArrowLeftRight, ChevronDown, History, CalendarDays, Medal, BookOpenText, Gear,
+} from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 import { useShell } from '@/lib/hooks/useShell'
 import { APP_VERSION } from '@/lib/constants/version'
@@ -23,12 +23,14 @@ const ATHLETE_NAV = [
   { label: 'Progreso', items: [
     { href: '/prs',          icon: TrendingUp, label: 'RMs' },
     { href: '/benchmarks',   icon: Trophy,     label: 'Benchmarks' },
+    { href: '/competitions', icon: Medal,      label: 'Competencias' },
   ]},
   { label: 'Herramientas', items: [
     { href: '/calc',         icon: Calculator, label: 'Calculadora RM' },
+    { href: '/movements',    icon: BookOpenText, label: 'Ejercicios' },
   ]},
   { label: 'Cuenta', items: [
-    { href: '/settings',     icon: User,       label: 'Mi perfil' },
+    { href: '/settings',     icon: Gear,       label: 'Configuración' },
   ]},
 ]
 
@@ -43,10 +45,11 @@ const COACH_NAV = [
   ]},
   { label: 'Herramientas', items: [
     { href: '/calc',                icon: Calculator, label: 'Calculadora RM' },
+    { href: '/movements',           icon: BookOpenText, label: 'Ejercicios' },
     { href: '/timer',               icon: Timer,      label: 'Timer' },
   ]},
   { label: 'Cuenta', items: [
-    { href: '/settings',            icon: User,       label: 'Mi perfil' },
+    { href: '/settings',            icon: Gear,       label: 'Configuración' },
   ]},
 ]
 
@@ -60,19 +63,13 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
 
   return (
     <>
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[29] lg:hidden animate-fade-in" onClick={onClose} />
-      )}
-
-      <aside className={cn(
-        'fixed top-0 left-0 bottom-0 w-[240px] bg-p flex flex-col z-30 transition-transform duration-[280ms]',
-        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      )}>
+      {/* Desktop only: phones and tablets use the bottom tab bar. */}
+      <aside className="hidden lg:flex fixed top-0 left-0 bottom-0 w-[240px] bg-p flex-col z-30">
         <div className="px-5 py-[22px] flex items-center gap-3">
           <div className="w-[38px] h-[38px] rounded-xl bg-ac grid place-items-center flex-shrink-0">
             <Dumbbell size={20} className="text-onac" strokeWidth={2.5} />
           </div>
-          <div className="font-barlow text-[26px] font-black tracking-[3px]">AP<span className="text-ac">E</span>X</div>
+          <div className="font-display text-[26px] font-extrabold tracking-tight">AP<span className="text-ac">E</span>X</div>
         </div>
 
         {/* Box selector + mode toggle */}

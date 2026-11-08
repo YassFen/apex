@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
-import { LineChart } from 'lucide-react'
+import { LineChart } from '@/components/ui/icons'
 import { themeColor } from '@/lib/utils/theme'
 import { useThemeVersion } from '@/components/ui/AppearancePicker'
 
@@ -71,7 +71,7 @@ export function StrengthChart({ prs, movement, unit }: Props) {
             borderWidth: 1,
             titleColor: themeColor('mu'),
             bodyColor: themeColor('t'),
-            bodyFont: { family: '"Barlow Condensed"', size: 18, weight: 'bold' as const },
+            bodyFont: { family: 'Geist', size: 15, weight: 'bold' as const },
             callbacks: { label: (ctx: any) => ` ${ctx.raw} ${suffix}` },
           }},
           scales: {

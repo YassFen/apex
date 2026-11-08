@@ -2,7 +2,7 @@
 import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
-import { Plus, Trash2, GripVertical, Save, X } from 'lucide-react'
+import { Plus, Trash2, GripVertical, Save, X } from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
@@ -110,8 +110,8 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
     }
     // Creating your own competition means you're going.
     if (!editing && scope === 'personal') {
-      let category = 'm'
-      try { category = localStorage.getItem('apex.eventCategory') === 'f' ? 'f' : 'm' } catch {}
+      let category: string = profile.sex ?? 'm'
+      if (!profile.sex) try { category = localStorage.getItem('apex.eventCategory') === 'f' ? 'f' : 'm' } catch {}
       await supabase.from('event_participants').insert({ event_id: eventId, user_id: profile.id, category })
     }
     setSaving(false)
@@ -188,7 +188,7 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
 
         <div className="flex items-end justify-between px-1">
           <div>
-            <h2 className="font-barlow text-xl font-black uppercase tracking-wide">Workouts</h2>
+            <h2 className="font-display text-xl font-extrabold tracking-tight">Workouts</h2>
             <p className="text-mu text-xs">Con las cargas te decimos qué tan preparado vas. Pesos en {unit}.</p>
           </div>
         </div>
@@ -206,7 +206,7 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
                     className="ml-auto size-9 rounded-full grid place-items-center text-mu hover:text-rd hover:bg-rd/10"><Trash2 size={16} aria-hidden /></button>
                 </div>
                 <input value={w.title} onChange={e => patchW(w.key, { title: e.target.value })} placeholder="Nombre (ej: 26.1 o Fran)"
-                  aria-label="Nombre del workout" className={cn(inputCls, 'font-barlow text-xl sm:text-xl font-black uppercase')} />
+                  aria-label="Nombre del workout" className={cn(inputCls, 'font-display text-xl sm:text-xl font-extrabold tracking-tight')} />
                 <div className="grid grid-cols-[1fr_96px] gap-2">
                   <div className="flex gap-1 overflow-x-auto scrollbar-none">
                     {(Object.keys(WOD_TYPE_META) as EventWorkout['type'][]).map(t => (

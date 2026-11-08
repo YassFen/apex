@@ -4,11 +4,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
 import {
-  ChevronLeft, ChevronRight, Plus, Trophy, Lock, MapPin, CheckCircle2, ArrowRight, CalendarPlus, Eye, EyeOff, Flame, Users,
-} from 'lucide-react'
+  ChevronLeft, ChevronRight, Plus, Trophy, Lock, MapPin, CheckCircle2, ArrowRight, CalendarPlus, Eye, EyeOff, Flame, Users, Clock,
+} from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
-import { Reveal, SPRING, EASE_OUT } from '@/components/ui/motion'
+import { Reveal, SPRING, EASE_OUT, Segmented } from '@/components/ui/motion'
 import { BoxFilter, boxTone, useBoxFilter } from '@/components/calendar/BoxFilter'
 import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 import { EVENT_KIND_LABEL, type EventKind } from '@/lib/utils/readiness'
@@ -20,6 +20,7 @@ export interface CalBox { id: string; name: string; logo: string | null; isCoach
 export interface CalWod {
   id: string; boxId: string; date: string; title: string; type: string; description: string
   duration: number | null; movements: any[]; isLive: boolean; showEarly: boolean; myResult: string | null
+  classTime: string | null
 }
 export interface CalEvent {
   id: string; boxId: string | null; name: string; kind: EventKind; startsOn: string; endsOn: string
@@ -56,6 +57,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
   const [dir, setDir] = useState(0)
   const [selected, setSelected] = useState(initialMonth === today.slice(0, 7) ? today : `${initialMonth}-01`)
   const [boxFilter, setBoxFilter] = useBoxFilter(boxes.map(b => b.id))
+  const [view, setView] = useState<'month' | 'week'>('month')
   const multiBox = boxes.length > 1
   const coachBoxes = boxes.filter(b => b.isCoach)
 
@@ -70,7 +72,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
       if (!map.has(d)) map.set(d, { wods: [], hidden: [], events: [] })
       return map.get(d)!
     }
-    for (const w of fWods) get(w.date).wods.push(w)
+    for (const w of [...fWods].sort((a, b) => (a.classTime ?? '').localeCompare(b.classTime ?? ''))) get(w.date).wods.push(w)
     for (const h of fHidden) get(h.date).hidden.push(h.boxId)
     for (const e of fEvents) {
       for (let d = e.startsOn, i = 0; d <= e.endsOn && i < 14; d = addDaysISO(d, 1), i++) get(d).events.push(e)
@@ -116,14 +118,23 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
 
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-5xl w-full mx-auto">
         <BoxFilter boxes={boxes} value={boxFilter} onChange={setBoxFilter} />
+        <Segmented id="cal-view" className="lg:max-w-xs" value={view} onChange={setView} options={[['month', 'Mes'], ['week', 'Semana por hora']] as const} />
 
         {nextEvent && <NextEventHero event={nextEvent} today={today} />}
 
         <div className="grid lg:grid-cols-[1.35fr_1fr] gap-4 items-start">
-          {/* ── Month ─────────────────────────────── */}
+          {view === 'week' ? (
+            <WeekGrid selected={selected} today={today} byDay={byDay} onSelect={d => { setSelected(d); if (d.slice(0, 7) !== month) setMonth(d.slice(0, 7)) }}
+              onShift={n => {
+                const d = addDaysISO(selected, n * 7)
+                if (d < range.from || d > range.to) { router.push(`/calendar?m=${d.slice(0, 7)}`, { scroll: false }); return }
+                setSelected(d); setMonth(d.slice(0, 7))
+              }} />
+          ) : (
+          /* ── Month ─────────────────────────────── */
           <Card padding={false} className="p-3 sm:p-4 overflow-hidden">
             <div className="flex items-center justify-between gap-2 mb-3 px-1">
-              <h2 className="font-barlow text-2xl font-black uppercase tracking-wide" aria-live="polite">
+              <h2 className="font-display text-2xl font-extrabold tracking-tight" aria-live="polite">
                 {MONTHS[m - 1]} <span className="text-mu">{y}</span>
               </h2>
               <div className="flex items-center gap-1">
@@ -198,6 +209,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
               <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-fa/60" />Por revelar</span>
             </div>
           </Card>
+          )}
 
           {/* ── Selected day ──────────────────────── */}
           <div className="flex flex-col gap-3 lg:sticky lg:top-[76px]">
@@ -208,7 +220,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
                 className="flex flex-col gap-3">
                 <div className="px-1">
                   <div className="text-[10px] uppercase tracking-[1.6px] text-fa font-bold">{relativeDayLabel(selected, today)}</div>
-                  <h2 className="font-barlow text-2xl font-black uppercase first-letter:uppercase">
+                  <h2 className="font-display text-2xl font-extrabold first-letter:uppercase tracking-tight">
                     {formatDateOnly(selected, { weekday: 'long', day: 'numeric', month: 'long' })}
                   </h2>
                 </div>
@@ -246,7 +258,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
         ) : (
           <Reveal>
             <div className="flex items-center justify-between mb-2 px-1">
-              <h2 className="font-barlow text-xl font-black uppercase tracking-wide">Próximos eventos</h2>
+              <h2 className="font-display text-xl font-extrabold tracking-tight">Próximos eventos</h2>
               <Link href="/calendar/event/new" className="text-ac text-sm font-bold flex items-center gap-1">Agregar <Plus size={14} aria-hidden /></Link>
             </div>
             {upcomingEvents.length === 0 ? (
@@ -283,14 +295,14 @@ function NextEventHero({ event, today }: { event: CalEvent; today: string }) {
         <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-rd/20 via-p2 to-p2 p-5 flex items-center gap-4">
           <div className="absolute -right-10 -top-10 size-40 rounded-full bg-rd/20 blur-3xl" aria-hidden />
           <div className="relative text-center flex-shrink-0 w-20">
-            <div className="font-barlow text-6xl font-black leading-none tabular-nums">{live ? '¡Ya!' : days}</div>
+            <div className="font-display text-6xl font-extrabold leading-none tabular-nums tracking-tight">{live ? '¡Ya!' : days}</div>
             <div className="text-[10px] uppercase tracking-[1.6px] text-mu font-bold mt-1">{live ? 'En curso' : days === 1 ? 'día' : 'días'}</div>
           </div>
           <div className="relative min-w-0 flex-1">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rd/15 text-rd text-[10px] font-bold uppercase tracking-[1.2px]">
               <Trophy size={12} aria-hidden /> {EVENT_KIND_LABEL[event.kind] ?? 'Evento'}
             </div>
-            <div className="font-barlow text-2xl font-black uppercase leading-tight mt-1.5 truncate">{event.name}</div>
+            <div className="font-display text-2xl font-extrabold leading-tight mt-1.5 truncate tracking-tight">{event.name}</div>
             <div className="text-mu text-xs mt-0.5 first-letter:uppercase truncate">
               {formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}{event.location ? ` · ${event.location}` : ''}
             </div>
@@ -312,7 +324,7 @@ function EventRow({ event, today }: { event: CalEvent; today: string }) {
       className="tap-card flex items-center gap-3 p-3.5 rounded-2xl bg-p hover:bg-p2">
       <span className="w-12 flex-shrink-0 text-center rounded-xl bg-rd/15 text-rd py-1.5">
         <span className="block text-[10px] font-bold uppercase">{formatDateOnly(event.startsOn, { month: 'short' }).replace('.', '')}</span>
-        <span className="block font-barlow text-2xl font-black leading-none">{Number(event.startsOn.slice(8))}</span>
+        <span className="block font-display text-2xl font-extrabold leading-none tracking-tight">{Number(event.startsOn.slice(8))}</span>
       </span>
       <span className="min-w-0 flex-1">
         <span className="block font-bold text-sm truncate">{event.name}</span>
@@ -327,7 +339,7 @@ function EventRow({ event, today }: { event: CalEvent; today: string }) {
         </span>
       </span>
       <span className="text-right flex-shrink-0">
-        <span className="block font-barlow text-xl font-black leading-none tabular-nums">{days > 0 ? days : days === 0 ? 'Hoy' : '—'}</span>
+        <span className="block font-display text-xl font-extrabold leading-none tabular-nums tracking-tight">{days > 0 ? days : days === 0 ? 'Hoy' : '—'}</span>
         {days > 0 && <span className="block text-[10px] text-mu">días</span>}
       </span>
     </Link>
@@ -341,6 +353,7 @@ function WodCard({ wod, today, boxName, tone, canEdit }: { wod: CalWod; today: s
   return (
     <Card padding={false} className="p-4">
       <div className="flex items-center gap-2 mb-2 flex-wrap">
+        {wod.classTime && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-t text-bg text-[11px] font-bold tabular-nums"><Clock size={12} weight="bold" aria-hidden />{wod.classTime}</span>}
         <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-bold uppercase', meta.cls)}>{meta.label}</span>
         {wod.duration ? <span className="text-mu text-xs">{wod.duration} min</span> : null}
         {boxName && <span className="flex items-center gap-1 text-xs text-mu"><span className={cn('size-2 rounded-full', tone)} />{boxName}</span>}
@@ -351,12 +364,12 @@ function WodCard({ wod, today, boxName, tone, canEdit }: { wod: CalWod; today: s
           </span>
         )}
       </div>
-      <h3 className="font-barlow text-2xl font-black uppercase leading-tight">{wod.title}</h3>
+      <h3 className="font-display text-2xl font-extrabold leading-tight tracking-tight">{wod.title}</h3>
       {wod.movements.length > 0 && (
         <ul className="mt-2 flex flex-col gap-1">
           {wod.movements.slice(0, 8).map((mv: any, i: number) => (
             <li key={i} className="flex items-baseline gap-2 text-sm">
-              <span className="font-barlow font-black text-ac tabular-nums min-w-[2.5rem]">{mv.reps}</span>
+              <span className="font-display font-extrabold text-ac tabular-nums min-w-[2.5rem] tracking-tight">{mv.reps}</span>
               <span className="truncate">{mv.name}</span>
               {mv.weight && <span className="text-mu text-xs ml-auto flex-shrink-0">{mv.weight}</span>}
             </li>
@@ -407,6 +420,102 @@ function EmptyDay({ date, today, coachBoxes, eventsMissing }: { date: string; to
             <Trophy size={15} aria-hidden /> Agregar evento
           </Link>
         )}
+      </div>
+    </Card>
+  )
+}
+
+/* ── Week view: one column per day, WODs placed at their class time ───────── */
+
+const HOUR_FROM = 6
+const HOUR_TO = 23
+const HOUR_PX = 44
+
+function WeekGrid({ selected, today, byDay, onSelect, onShift }: {
+  selected: string; today: string
+  byDay: Map<string, { wods: CalWod[]; hidden: string[]; events: CalEvent[] }>
+  onSelect: (d: string) => void
+  onShift: (weeks: number) => void
+}) {
+  const [y, m, d] = selected.split('-').map(Number)
+  const offset = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7
+  const monday = addDaysISO(selected, -offset)
+  const days = Array.from({ length: 7 }, (_, i) => addDaysISO(monday, i))
+  const hours = Array.from({ length: HOUR_TO - HOUR_FROM + 1 }, (_, i) => HOUR_FROM + i)
+  const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
+  const allDay = days.map(dd => {
+    const it = byDay.get(dd)
+    return [...(it?.events ?? []).map(e => ({ key: e.id, cls: 'bg-rd text-white', label: e.name })),
+      ...(it?.wods ?? []).filter(w => !w.classTime).map(w => ({ key: w.id, cls: `${TYPE_BAR[w.type] ?? 'bg-mu'} text-white`, label: w.title })),
+      ...(it?.hidden ?? []).map(b => ({ key: b, cls: 'bg-fa/40 text-t', label: 'WOD' }))]
+  })
+  const hasAllDay = allDay.some(a => a.length)
+
+  return (
+    <Card padding={false} className="p-3 sm:p-4 overflow-hidden">
+      <div className="flex items-center justify-between gap-2 mb-3 px-1">
+        <h2 className="font-display text-xl font-bold tracking-tight">
+          {formatDateOnly(days[0], { day: 'numeric', month: 'short' })} – {formatDateOnly(days[6], { day: 'numeric', month: 'short' })}
+        </h2>
+        <div className="flex items-center gap-1">
+          <motion.button type="button" whileTap={{ scale: 0.88 }} onClick={() => onShift(-1)} aria-label="Semana anterior"
+            className="size-9 rounded-full grid place-items-center hover:bg-p2"><ChevronLeft size={18} aria-hidden /></motion.button>
+          <motion.button type="button" whileTap={{ scale: 0.88 }} onClick={() => onShift(1)} aria-label="Semana siguiente"
+            className="size-9 rounded-full grid place-items-center hover:bg-p2"><ChevronRight size={18} aria-hidden /></motion.button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-[34px_repeat(7,minmax(0,1fr))] gap-x-1">
+        <span />
+        {days.map(dd => (
+          <button key={dd} type="button" onClick={() => onSelect(dd)} aria-pressed={dd === selected}
+            className={cn('flex flex-col items-center py-1 rounded-xl transition-colors', dd === selected ? 'bg-p2 ring-1 ring-ac/50' : 'hover:bg-p2')}>
+            <span className="text-[10px] font-bold text-fa uppercase">{formatDateOnly(dd, { weekday: 'narrow' })}</span>
+            <span className={cn('size-7 grid place-items-center rounded-full text-sm font-semibold tabular-nums', dd === today && 'bg-ac text-onac')}>{Number(dd.slice(8))}</span>
+          </button>
+        ))}
+        {hasAllDay && (
+          <>
+            <span className="text-[9px] text-fa self-center leading-tight">Todo el día</span>
+            {allDay.map((items, i) => (
+              <div key={i} className="flex flex-col gap-0.5 py-1 min-w-0">
+                {items.slice(0, 2).map(it => <span key={it.key} className={cn('rounded-md px-1 text-[9px] font-semibold truncate leading-4', it.cls)}>{it.label}</span>)}
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      <div className="relative mt-1 max-h-[440px] overflow-y-auto scrollbar-none">
+        <div className="grid grid-cols-[34px_repeat(7,minmax(0,1fr))] gap-x-1 relative" style={{ height: hours.length * HOUR_PX }}>
+          <div className="relative">
+            {hours.map((h, i) => (
+              <span key={h} className="absolute right-1 -translate-y-1/2 text-[10px] text-fa tabular-nums" style={{ top: i * HOUR_PX }}>{String(h).padStart(2, '0')}</span>
+            ))}
+          </div>
+          {days.map(dd => (
+            <div key={dd} onClick={() => onSelect(dd)}
+              className={cn('relative rounded-lg cursor-pointer', dd === today ? 'bg-ac/[.06]' : 'bg-p2/40')}>
+              {hours.map((h, i) => <span key={h} className="absolute inset-x-0 border-t border-[var(--ln)]" style={{ top: i * HOUR_PX }} />)}
+              {(byDay.get(dd)?.wods ?? []).filter(w => w.classTime).map(w => {
+                const start = toMin(w.classTime as string)
+                const top = ((start - HOUR_FROM * 60) / 60) * HOUR_PX
+                const height = Math.max(26, ((w.duration ?? 60) / 60) * HOUR_PX)
+                if (top < 0 || top > hours.length * HOUR_PX) return null
+                return (
+                  <motion.button key={w.id} type="button" onClick={e => { e.stopPropagation(); onSelect(dd) }}
+                    initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING}
+                    className={cn('absolute inset-x-0.5 rounded-lg px-1 py-0.5 text-left overflow-hidden text-white shadow-sm',
+                      w.isLive ? (TYPE_BAR[w.type] ?? 'bg-mu') : 'bg-fa', w.myResult && 'ring-2 ring-gr ring-offset-1 ring-offset-p')}
+                    style={{ top, height }}>
+                    <span className="block text-[9px] font-bold tabular-nums leading-tight">{w.classTime}</span>
+                    <span className="block text-[9px] font-semibold leading-tight truncate">{w.title}</span>
+                  </motion.button>
+                )
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </Card>
   )

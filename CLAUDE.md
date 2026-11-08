@@ -29,7 +29,9 @@ No test suite is configured yet.
 | Framework | Next.js 15 App Router (TypeScript) |
 | Database + Auth | Supabase (PostgreSQL + RLS + Realtime) |
 | Styling | Tailwind CSS with custom design tokens |
-| Fonts | Inter (body) + Barlow Condensed (headings/numbers) |
+| Fonts | Geist for everything (`font-sans`, `font-display` for headings and big numbers) |
+| Icons | Phosphor via `components/ui/icons.ts` (old Lucide names are aliased there); `weight="fill"` for active states |
+| Motion | `motion` (`motion/react`) |
 | Deployment | Vercel |
 | PWA | `public/sw.js` + `public/manifest.json` |
 
@@ -72,7 +74,11 @@ app/
     ├── calendar/event/[id]/page.tsx        # Event: countdown, sign-up (category/division), readiness per movement
     ├── calendar/event/[id]/edit/page.tsx   # Edit event + its workouts
     ├── benchmarks/page.tsx         # Athlete: benchmark results
-    ├── coach/publish-wod/page.tsx  # Coach: publish today's WOD or program one up to 13 days ahead (?date=)
+    ├── coach/publish-wod/page.tsx  # Coach: publish or program WODs up to 13 days ahead (?date=), one per class time (?wod=<id>|new)
+    ├── competitions/page.tsx       # Athlete: past/upcoming competitions, final places and progress chart
+    ├── movements/page.tsx          # Exercise library (how-to, muscles, video, your records); coaches add box movements
+    ├── settings/page.tsx           # Settings hub (iOS-style grouped list)
+    ├── settings/[section]/page.tsx # profile | training | privacy | box | boxes | athletic | appearance | notifications | security
     └── coach/athletes/page.tsx     # Coach: view box roster + invite code
 ```
 
@@ -161,7 +167,10 @@ The `(dashboard)/layout.tsx` already does this — individual pages only need it
 | `benchmarks` | Athlete named benchmark results (Fran time, Grace time, etc.). |
 | `events` | Competitions/events (006). `box_id` null = personal (creator only); set = box event published by a coach, visible to members. |
 | `event_workouts` | Workouts of an event (006). `movements` jsonb: `[{ name, reps, load_lb, load_lb_f }]` (men's/women's load). |
-| `event_participants` | Who goes to an event (006), with `category` (m/f, picks the load) and `division` (rx/scaled/masters/teens). |
+| `event_participants` | Who goes to an event (006), with `category` (m/f, picks the load) and `division` (rx/scaled/masters/teens); `final_place`/`field_size` (007). |
+| `event_results` | Athlete's mark and place in each event workout (007). |
+| `personal_logs` | Training done on your own: movement, sets × reps / distance, load (007). |
+| `goals` | Athlete goals: movement, target, unit, period today/week/daily/weekly (007). |
 
 ### Key RLS Helpers (PostgreSQL functions)
 
@@ -178,7 +187,7 @@ These are used throughout all RLS policies. An athlete sees WODs/results only fo
 
 ### Migrations
 
-Migrations are run by hand in **Supabase Dashboard → SQL Editor**. `005_reactions_and_deletes.sql` adds `wod_result_bumps` ("fuego" reactions on leaderboard results, hidden in the UI until it exists) plus the missing delete policies on `daily_wods` (coach) and `wod_results` (own). Without it, "Quitar WOD" falls back to `is_live = false`. `006_calendar_events.sql` adds `daily_wods.show_early` (the coach decides whether a future WOD is visible before its day), rewrites the `daily_wods` select policy so athletes only see live WODs whose day has come (`app_today()`, Santiago) or that are `show_early`, adds the `box_wod_days()` RPC (days with a WOD, without content, for "WOD programado") and the three event tables with RLS (`can_see_event()` / `can_edit_event()`). Until 006 runs, the calendar shows WODs only, events are hidden with a note, and programming ahead saves without `show_early` (athletes see future WODs right away). `004_production_sync.sql` is idempotent and also contains everything from 002 and 003, which were never applied in production. Code that writes columns added in 004 (`wod_results.edit_count`, box profile fields) falls back gracefully if 004 is missing — see `isMissingColumn()` in `lib/utils/errors.ts`.
+Migrations are run by hand in **Supabase Dashboard → SQL Editor**. `005_reactions_and_deletes.sql` adds `wod_result_bumps` ("fuego" reactions on leaderboard results, hidden in the UI until it exists) plus the missing delete policies on `daily_wods` (coach) and `wod_results` (own). Without it, "Quitar WOD" falls back to `is_live = false`. `006_calendar_events.sql` adds `daily_wods.show_early` (the coach decides whether a future WOD is visible before its day), rewrites the `daily_wods` select policy so athletes only see live WODs whose day has come (`app_today()`, Santiago) or that are `show_early`, adds the `box_wod_days()` RPC (days with a WOD, without content, for "WOD programado") and the three event tables with RLS (`can_see_event()` / `can_edit_event()`). Until 006 runs, the calendar shows WODs only, events are hidden with a note, and programming ahead saves without `show_early` (athletes see future WODs right away). `007_sessions_results_library.sql` (after 006) adds `daily_wods.class_time` (several WODs per day, one per class), `profiles.sex` + `profiles.dashboard_layout`, `event_results`, final places, box movements (`movements.box_id/created_by/image_url/cues/muscles` + coach policies), `personal_logs` and `goals`. Every screen that uses 007 falls back when it's missing. `004_production_sync.sql` is idempotent and also contains everything from 002 and 003, which were never applied in production. Code that writes columns added in 004 (`wod_results.edit_count`, box profile fields) falls back gracefully if 004 is missing — see `isMissingColumn()` in `lib/utils/errors.ts`.
 
 ### Dates and time zones
 
@@ -205,6 +214,22 @@ Every Tailwind color is a CSS variable holding RGB channels (`--c-bg`, `--c-ac`,
 - `lib/utils/readiness.ts` compares each event movement's load (for the athlete's category) with their records: 1RM, or an Epley estimate from a 2RM/3RM, or max reps for bodyweight. It returns a zone (Cómodo/Exigente/Al límite/Muy pesado/Sobre tu 1RM), reps possible and how to split the sets, plus an overall 0-100 score.
 - An athlete in several boxes filters the calendar with `BoxFilter` (`apex.boxFilter` in localStorage); `/wod?box=` picks between several WODs of the same day.
 - Animations use the `motion` package (`motion/react`): shared helpers in `components/ui/motion.tsx` (`Reveal`, `AnimatedNumber`, `Segmented`, `ActivePill`, `SPRING`, `EASE_OUT`). `MotionConfig reducedMotion="user"` is set in `DashboardShell`. `Modal` portals to `<body>` so transformed ancestors can't trap it. Cards reveal on scroll with CSS `animation-timeline: view()` (`.reveal-scroll`).
+
+### Notifications
+
+In-app only (no push server). `app/(dashboard)/layout.tsx` builds notices with `buildNotices()` (`lib/utils/notifications.ts`): event countdown at 7/3/1/0 days, tomorrow's WOD with its class time, today's WOD still to log, new box events. `NotificationBell` (Topbar) shows them; read state and preferences live in localStorage. With permission, new notices also show as system notifications via the service worker while the app is open.
+
+### Home (athlete) widgets
+
+`AthleteDashboard` renders a list of widgets (`hero`, `today`, `nextEvent`, `goals`, `week`, `highlights`, `strength`, `heatmap`, `records`, `stats`, `links`). The order/visibility is edited in place (`?edit=1` or "Personalizar", drag with `Reorder`) and saved to `profiles.dashboard_layout` (007) and localStorage. The hero ring shows muscle recovery from `lib/utils/movement-guide.ts` (movement → muscle groups, recovery hours) and opens "Generar WOD" (`lib/utils/wod-generator.ts`).
+
+### Demo mode (temporary, remove before launch)
+
+`/demo` sets the `apex_demo` cookie; `lib/supabase/server.ts` and `client.ts` then return a fake client (`lib/demo/*`) backed by an in-memory PostgREST-like engine with realistic seed data (`lib/demo/seed.ts`), shared between server and browser through `/demo/api`. Middleware skips auth for demo visitors. `/demo/exit` leaves. To remove: delete `lib/demo`, `app/demo`, the demo lines in `lib/supabase/*.ts`, `middleware.ts`, `DashboardShell.tsx` and the "Ver la demo" link in `components/auth/WelcomeView.tsx`.
+
+### Auth screens
+
+Signed-out visitors land on `/welcome` (full-bleed photo carousel, "Crear cuenta", "Inicia sesión", "Ver la demo"). Login/register use a photo header layout (`app/auth/layout.tsx`). Photos are free Unsplash images listed in `lib/constants/photos.ts`.
 
 ### Joining a box
 
@@ -260,8 +285,9 @@ const WOD_TYPE_COLORS = {
 
 ### Typography Rules
 
-- **All headers, big numbers, WOD titles**: `font-barlow font-black` (Barlow Condensed Black)
-- **Body, labels, inputs**: `font-sans` (Inter, the default)
+- **All headers, big numbers, WOD titles**: `font-display font-bold tracking-tight` (Geist), sentence case
+- **Body, labels, inputs**: `font-sans` (Geist, the default)
+- **Sheets/popups**: `Modal` (big title, round close button, drag down to close) + `ModalActions` (outlined secondary + filled primary pill)
 - **Invite codes, monospace data**: add `tracking-widest` with `font-barlow`
 - **Section labels**: `text-[10px] uppercase tracking-[1.6px] text-fa font-bold`
 

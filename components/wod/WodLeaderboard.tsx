@@ -1,4 +1,4 @@
-import { Flame, Trophy } from 'lucide-react'
+import { Flame, Trophy } from '@/components/ui/icons'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils/cn'
@@ -29,7 +29,7 @@ export function WodLeaderboard({ results, currentUserId, bumps = null, onBump }:
   return (
     <Card padding={false}>
       <div className="px-5 pt-5 pb-3 flex items-baseline justify-between gap-3">
-        <h3 className="font-barlow text-lg font-extrabold tracking-wide uppercase">Leaderboard</h3>
+        <h3 className="font-display text-lg font-extrabold tracking-tight">Leaderboard</h3>
         <span className="text-mu text-xs tabular-nums">
           {results.length} {results.length === 1 ? 'atleta' : 'atletas'}
           {myIndex >= 0 && <> · vas <span className="text-t font-semibold">#{myIndex + 1}</span></>}
@@ -48,7 +48,7 @@ export function WodLeaderboard({ results, currentUserId, bumps = null, onBump }:
               aria-current={isMe ? 'true' : undefined}
             >
               <span className={cn(
-                'size-7 flex-shrink-0 rounded-full grid place-items-center font-barlow text-base font-black tabular-nums',
+                'size-7 flex-shrink-0 rounded-full grid place-items-center font-display text-base font-extrabold tabular-nums tracking-tight',
                 i < 3 ? PODIUM[i] : 'text-fa',
               )}>
                 {i + 1}
@@ -66,7 +66,7 @@ export function WodLeaderboard({ results, currentUserId, bumps = null, onBump }:
                   {name}{isMe && <span className="text-mu font-normal"> (tú)</span>}
                 </span>
                 <span className="flex items-center gap-1.5 mt-0.5">
-                  <span className="font-barlow text-lg font-bold tabular-nums leading-none">{r.result_value}</span>
+                  <span className="font-display text-lg font-bold tabular-nums leading-none tracking-tight">{r.result_value}</span>
                   <Badge color={r.rx_level === 'rx+' ? 'orange' : r.rx_level === 'scaled' ? 'blue' : 'lime'} className="!px-1.5 !py-0 text-[10px]">
                     {r.rx_level.toUpperCase()}
                   </Badge>

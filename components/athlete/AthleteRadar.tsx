@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Settings2 } from 'lucide-react'
+import { Settings2 } from '@/components/ui/icons'
 
 /**
  * Minimal SVG radar showing athlete strengths across training categories.

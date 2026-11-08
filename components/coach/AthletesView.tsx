@@ -1,6 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { Search, Share2, UserPlus, AlertCircle } from 'lucide-react'
+import { Search, Share2, UserPlus, AlertCircle } from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import { useToast } from '@/components/ui/Toast'
@@ -82,9 +82,9 @@ export function AthletesView({ profile, box, rows, wodsPublished }: { profile: P
             <div className="size-14 rounded-2xl bg-ac/15 text-ac grid place-items-center animate-pop">
               <UserPlus size={26} aria-hidden />
             </div>
-            <h2 className="font-barlow text-2xl font-black uppercase">Suma a tus atletas</h2>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight">Suma a tus atletas</h2>
             <p className="text-mu text-sm max-w-xs text-pretty">Comparte este código. Lo ingresan al registrarse o en su perfil, y aparecen aquí.</p>
-            <div className="font-barlow text-4xl font-black tracking-[0.2em] text-ac select-all my-1">{box.invite_code}</div>
+            <div className="font-display text-4xl font-extrabold tracking-[0.2em] text-ac select-all my-1">{box.invite_code}</div>
             <button type="button" onClick={invite}
               className="h-12 px-6 rounded-full bg-ac text-onac font-bold flex items-center gap-2 active:scale-95 transition-transform">
               <Share2 size={18} aria-hidden /> Compartir invitación
@@ -146,7 +146,7 @@ export function AthletesView({ profile, box, rows, wodsPublished }: { profile: P
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="font-barlow text-2xl font-black tabular-nums leading-none">{r.wods30}</div>
+                      <div className="font-display text-2xl font-extrabold tabular-nums leading-none tracking-tight">{r.wods30}</div>
                       <div className="text-[10px] text-fa mt-0.5">WODs / 30d</div>
                     </div>
                   </li>
@@ -164,7 +164,7 @@ export function AthletesView({ profile, box, rows, wodsPublished }: { profile: P
 function Stat({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
     <Card padding={false} className="p-4">
-      <div className={cn('font-barlow text-3xl font-black tabular-nums leading-none', tone)}>{value}</div>
+      <div className={cn('font-display text-3xl font-extrabold tabular-nums leading-none tracking-tight', tone)}>{value}</div>
       <div className="text-[11px] text-mu mt-1.5 leading-tight">{label}</div>
     </Card>
   )

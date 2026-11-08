@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300..900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -111,7 +111,8 @@
 html, body {
   background: var(--bg);
   color: var(--t);
-  font-family: Inter, sans-serif;
+  font-family: Geist, system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

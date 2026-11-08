@@ -2,7 +2,11 @@
 import { useState, useRef } from 'react'
 import { roleLabel } from '@/lib/utils/cn'
 import { useRouter } from 'next/navigation'
-import { Upload, Globe, Lock, Building2, LogOut, Copy, Check, Instagram, Phone, Link, Clock, Dumbbell } from 'lucide-react'
+import NextLink from 'next/link'
+import { Upload, Globe, Lock, Building2, LogOut, Copy, Check, Trophy } from '@/components/ui/icons'
+import { Segmented } from '@/components/ui/motion'
+import { Switch } from '@/components/ui/Switch'
+import { NotificationSettings } from '@/components/settings/NotificationSettings'
 import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
@@ -10,11 +14,19 @@ import { Button } from '@/components/ui/Button'
 import { AthleteRadar } from '@/components/athlete/AthleteRadar'
 import { AppearancePicker } from '@/components/ui/AppearancePicker'
 import { PasswordField, Alert } from '@/components/ui/Field'
-import { friendlyError } from '@/lib/utils/errors'
+import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
 import { joinBoxByCode } from '@/lib/utils/join-box'
 import type { Profile, Movement, Box } from '@/lib/types/database'
 
+export type SettingsSection = 'profile' | 'training' | 'privacy' | 'box' | 'boxes' | 'athletic' | 'appearance' | 'notifications' | 'security'
+
+export const SECTION_TITLE: Record<SettingsSection, string> = {
+  profile: 'Perfil', training: 'Entrenamiento', privacy: 'Privacidad', box: 'Mi box', boxes: 'Mis boxes',
+  athletic: 'Perfil atlético', appearance: 'Apariencia', notifications: 'Avisos', security: 'Cuenta y seguridad',
+}
+
 interface Props {
+  section: SettingsSection
   profile: Profile
   memberships: any[]
   movements: Movement[]
@@ -22,7 +34,7 @@ interface Props {
   prs?: any[]
 }
 
-export function SettingsView({ profile, memberships, movements, ownedBox, prs = [] }: Props) {
+export function SettingsView({ section, profile, memberships, movements, ownedBox, prs = [] }: Props) {
   const router = useRouter()
   const supabase = createClient()
   const avatarInputRef = useRef<HTMLInputElement>(null)
@@ -32,6 +44,7 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
   const [city, setCity]   = useState(profile.city ?? '')
   const [bio, setBio]     = useState(profile.bio ?? '')
   const [unit, setUnit]   = useState<'kg' | 'lb'>(profile.preferred_unit)
+  const [sex, setSex]     = useState<'' | 'm' | 'f'>(profile.sex ?? '')
   const [favMov, setFavMov] = useState(profile.favorite_movement ?? '')
   const [profilePublic, setProfilePublic]   = useState(profile.profile_public ?? false)
   const [showPrsPublic, setShowPrsPublic]   = useState(profile.show_prs_public ?? false)
@@ -132,18 +145,18 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true); setProfileErr(''); setSavedOk(false)
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        full_name: name.trim(),
-        city: city.trim() || null,
-        bio: bio.trim() || null,
-        preferred_unit: unit,
-        favorite_movement: favMov.trim() || null,
-        profile_public: profilePublic,
-        show_prs_public: showPrsPublic,
-      })
-      .eq('id', profile.id)
+    const base = {
+      full_name: name.trim(),
+      city: city.trim() || null,
+      bio: bio.trim() || null,
+      preferred_unit: unit,
+      favorite_movement: favMov.trim() || null,
+      profile_public: profilePublic,
+      show_prs_public: showPrsPublic,
+    }
+    let { error } = await supabase.from('profiles').update({ ...base, sex: sex || null }).eq('id', profile.id)
+    // Before migration 007 there's no sex column.
+    if (error && isMissingColumn(error)) ({ error } = await supabase.from('profiles').update(base).eq('id', profile.id))
     setSaving(false)
     if (error) { setProfileErr(friendlyError(error.message)); return }
     setSavedOk(true)
@@ -222,396 +235,269 @@ export function SettingsView({ profile, memberships, movements, ownedBox, prs = 
 
   const initials = profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
 
+  const show = (s: SettingsSection) => section === s
+  const saveBtn = (
+    <Button type="submit" disabled={saving} className="self-start px-6">
+      {saving ? 'Guardando…' : savedOk ? 'Guardado' : 'Guardar cambios'}
+    </Button>
+  )
+  const inputCls = 'w-full px-4 h-12 rounded-2xl bg-p2 text-t text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 transition'
+  const labelCls = 'block text-[13px] text-mu font-medium mb-1.5 px-1'
+
   return (
     <>
-      <Topbar title="Mi Perfil" profile={profile} />
+      <Topbar title={SECTION_TITLE[section]} profile={profile} actions={
+        <NextLink href="/settings" aria-label="Volver a Configuración" className="h-10 px-3 rounded-full bg-p2 text-sm font-semibold grid place-items-center hover:bg-p3">Listo</NextLink>
+      } />
 
-      <div className="p-4 lg:p-6 flex flex-col gap-5 max-w-2xl">
+      <div className="p-4 lg:p-6 flex flex-col gap-5 max-w-2xl w-full mx-auto">
+        {profileErr && <Alert tone="error">{profileErr}</Alert>}
 
-        <Card>
-          <div className="flex items-center gap-4 mb-5">
-            <div className="relative">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-20 h-20 rounded-2xl object-cover" />
-              ) : (
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-ac to-bl grid place-items-center font-black text-2xl text-onac">
-                  {initials}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                disabled={uploadingAvatar}
-                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-ac text-onac grid place-items-center border-2 border-bg hover:scale-105 transition-transform disabled:opacity-50"
-                aria-label="Cambiar foto"
-              >
-                <Upload size={13} strokeWidth={2.5} />
-              </button>
-              <input
-                ref={avatarInputRef} type="file" accept="image/*"
-                onChange={handleAvatarUpload} className="hidden"
-              />
-            </div>
-            <div className="min-w-0">
-              <div className="font-barlow text-xl font-black tracking-wide uppercase truncate">{profile.full_name}</div>
-              <div className="text-mu text-sm">{roleLabel(profile.role)}</div>
-              {uploadingAvatar && <div className="text-ac text-xs mt-1">Subiendo imagen…</div>}
-            </div>
-          </div>
-
-          <h2 className="font-barlow text-lg font-black tracking-wide mb-4">INFORMACIÓN PERSONAL</h2>
-
-          {savedOk && (
-            <div className="mb-4 p-3 rounded-xl bg-ac/10 border border-ac/20 text-ac text-sm font-semibold">
-              Perfil actualizado
-            </div>
-          )}
-          {profileErr && (
-            <div className="mb-4 p-3 rounded-xl bg-rd/10 border border-rd/20 text-rd text-sm font-semibold">
-              {profileErr}
-            </div>
-          )}
-
-          <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
-            <div>
-              <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Nombre completo</label>
-              <input value={name} onChange={e => setName(e.target.value)} required
-                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors"
-                placeholder="Tu nombre" />
-            </div>
-
-            <div>
-              <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Ciudad</label>
-              <input value={city} onChange={e => setCity(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors"
-                placeholder="Santiago, Lima, CDMX…" />
-            </div>
-
-            <div>
-              <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Bio <span className="text-fa normal-case">(opcional)</span></label>
-              <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} maxLength={280}
-                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors resize-none"
-                placeholder="Cuéntanos un poco de ti, tu historial en CrossFit…" />
-              <div className="text-right text-[10px] text-fa mt-1">{bio.length}/280</div>
-            </div>
-
-            {profile.role === 'athlete' && (
-              <div>
-                <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Ejercicio favorito</label>
-                <select value={favMov} onChange={e => setFavMov(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac transition-colors">
-                  <option value="">— Selecciona uno —</option>
-                  {movements.map(m => (
-                    <option key={m.id} value={m.name}>{m.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Unidad preferida</label>
-              <div className="flex rounded-xl border border-[var(--ln)] overflow-hidden w-fit">
-                {(['kg', 'lb'] as const).map(u => (
-                  <button key={u} type="button" onClick={() => setUnit(u)}
-                    className={`px-6 py-2.5 text-sm font-bold transition-colors ${unit === u ? 'bg-ac text-onac' : 'bg-p3 text-mu hover:text-t'}`}>
-                    {u}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {profile.role === 'athlete' && (
-              <div className="pt-2 border-t border-[var(--ln)] flex flex-col gap-3">
-                <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Privacidad</div>
-
-                <label className="flex items-start gap-3 p-3 rounded-xl bg-p3 border border-[var(--ln)] cursor-pointer hover:border-ac/30 transition-colors">
-                  <input type="checkbox" checked={profilePublic}
-                    onChange={e => setProfilePublic(e.target.checked)}
-                    className="mt-0.5 accent-ac w-4 h-4" />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 font-semibold text-sm">
-                      {profilePublic ? <Globe size={14} /> : <Lock size={14} />}
-                      Perfil público
-                    </div>
-                    <div className="text-mu text-xs mt-0.5">
-                      Otros atletas y coaches podrán ver tu perfil, bio y ejercicio favorito.
-                    </div>
-                  </div>
-                </label>
-
-                <label className={`flex items-start gap-3 p-3 rounded-xl bg-p3 border border-[var(--ln)] cursor-pointer hover:border-ac/30 transition-colors ${!profilePublic ? 'opacity-50' : ''}`}>
-                  <input type="checkbox" checked={showPrsPublic} disabled={!profilePublic}
-                    onChange={e => setShowPrsPublic(e.target.checked)}
-                    className="mt-0.5 accent-ac w-4 h-4" />
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm">Mostrar mis RMs en el perfil público</div>
-                    <div className="text-mu text-xs mt-0.5">
-                      Requiere que tu perfil sea público. Podrán ver tus máximos levantados.
-                    </div>
-                  </div>
-                </label>
-
-                {profilePublic && (
-                  <div className="p-3 rounded-xl bg-ac/8 border border-ac/20 text-xs text-ac">
-                    <div className="font-bold mb-1">Tu enlace público:</div>
-                    <div className="font-mono text-[11px] break-all text-t">{publicProfileUrl}</div>
+        {show('profile') && (
+          <Card>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="relative">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-20 h-20 rounded-[22px] object-cover" />
+                ) : (
+                  <div className="w-20 h-20 rounded-[22px] bg-gradient-to-br from-ac to-bl grid place-items-center font-bold text-2xl text-onac">
+                    {initials}
                   </div>
                 )}
+                <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}
+                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-ac text-onac grid place-items-center ring-4 ring-p hover:scale-105 transition-transform disabled:opacity-50"
+                  aria-label="Cambiar foto">
+                  <Upload size={14} weight="bold" />
+                </button>
+                <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-display text-xl font-bold truncate tracking-tight">{profile.full_name}</div>
+                <div className="text-mu text-sm">{roleLabel(profile.role)} · {profile.email}</div>
+                {uploadingAvatar && <div className="text-ac text-xs mt-1">Subiendo imagen…</div>}
+              </div>
+            </div>
+            <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+              <div>
+                <label className={labelCls}>Nombre completo</label>
+                <input value={name} onChange={e => setName(e.target.value)} required className={inputCls} placeholder="Tu nombre" />
+              </div>
+              <div>
+                <label className={labelCls}>Ciudad</label>
+                <input value={city} onChange={e => setCity(e.target.value)} className={inputCls} placeholder="Santiago, Lima, CDMX…" />
+              </div>
+              <div>
+                <label className={labelCls}>Bio <span className="text-fa">(opcional)</span></label>
+                <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} maxLength={280}
+                  className="w-full px-4 py-3 rounded-2xl bg-p2 text-t text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 resize-none"
+                  placeholder="Cuéntanos un poco de ti, tu historial en CrossFit…" />
+                <div className="text-right text-[11px] text-fa mt-1">{bio.length}/280</div>
+              </div>
+              <div>
+                <label className={labelCls}>Ejercicio favorito</label>
+                <select value={favMov} onChange={e => setFavMov(e.target.value)} className={inputCls}>
+                  <option value="">Selecciona uno</option>
+                  {movements.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                </select>
+              </div>
+              {saveBtn}
+            </form>
+          </Card>
+        )}
+
+        {show('training') && (
+          <form onSubmit={handleSaveProfile} className="flex flex-col gap-5">
+            <Card>
+              <h2 className="font-semibold mb-1">Unidad de peso</h2>
+              <p className="text-mu text-sm mb-3">Récords, calculadora y cargas de competencias se muestran en esta unidad.</p>
+              <Segmented id="set-unit" value={unit} onChange={setUnit} options={[['kg', 'Kilos (kg)'], ['lb', 'Libras (lb)']] as const} />
+            </Card>
+            <Card>
+              <h2 className="font-semibold mb-1">Categoría</h2>
+              <p className="text-mu text-sm mb-3">Define qué carga (masculina o femenina) usamos al medir tu preparación para una competencia.</p>
+              <Segmented id="set-sex" value={sex || 'none'} onChange={v => setSex(v === 'none' ? '' : v as 'm' | 'f')}
+                options={[['m', 'Masculino'], ['f', 'Femenino'], ['none', 'Sin definir']] as const} />
+            </Card>
+            {saveBtn}
+          </form>
+        )}
+
+        {show('privacy') && (
+          <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+            <Card padding={false} className="divide-y divide-[var(--ln)]">
+              <ToggleRow icon={profilePublic ? <Globe size={20} /> : <Lock size={20} />} title="Perfil público"
+                body="Otros atletas y coaches pueden ver tu perfil, bio y ejercicio favorito."
+                checked={profilePublic} onChange={setProfilePublic} />
+              <ToggleRow icon={<Trophy size={20} />} title="Mostrar mis RMs" body="Requiere perfil público. Verán tus máximos levantados."
+                checked={showPrsPublic} disabled={!profilePublic} onChange={setShowPrsPublic} />
+            </Card>
+            {profilePublic && (
+              <div className="p-4 rounded-2xl bg-ac/10 text-sm">
+                <div className="font-semibold text-ac mb-1">Tu enlace público</div>
+                <div className="font-mono text-[12px] break-all">{publicProfileUrl}</div>
               </div>
             )}
-
-            <Button type="submit" disabled={saving} className="self-start px-6">
-              {saving ? 'Guardando…' : 'Guardar cambios'}
-            </Button>
+            {saveBtn}
           </form>
-        </Card>
+        )}
 
-        {profile.role === 'coach' && ownedBox && (
+        {show('box') && ownedBox && (
           <Card>
             <div className="flex items-center gap-4 mb-5">
               <div className="relative">
                 {boxLogoUrl ? (
-                  <img src={boxLogoUrl} alt="" className="w-20 h-20 rounded-2xl object-cover border border-[var(--ln)]" />
+                  <img src={boxLogoUrl} alt="" className="w-20 h-20 rounded-[22px] object-cover" />
                 ) : (
-                  <div className="w-20 h-20 rounded-2xl bg-p3 border border-[var(--ln)] grid place-items-center">
-                    <Building2 size={32} className="text-fa" />
-                  </div>
+                  <div className="w-20 h-20 rounded-[22px] bg-p2 grid place-items-center"><Building2 size={32} className="text-fa" /></div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => logoInputRef.current?.click()}
-                  disabled={uploadingLogo}
-                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-ac text-onac grid place-items-center border-2 border-bg hover:scale-105 transition-transform disabled:opacity-50"
-                  aria-label="Cambiar logo"
-                >
-                  <Upload size={13} strokeWidth={2.5} />
+                <button type="button" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}
+                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-ac text-onac grid place-items-center ring-4 ring-p hover:scale-105 transition-transform disabled:opacity-50"
+                  aria-label="Cambiar logo">
+                  <Upload size={14} weight="bold" />
                 </button>
-                <input
-                  ref={logoInputRef} type="file" accept="image/*"
-                  onChange={handleLogoUpload} className="hidden"
-                />
+                <input ref={logoInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-barlow text-xl font-black tracking-wide uppercase truncate">{ownedBox.name}</div>
+                <div className="font-display text-xl font-bold truncate tracking-tight">{ownedBox.name}</div>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] text-fa uppercase tracking-wide font-bold">Código</span>
-                  <span className="font-barlow text-sm font-black tracking-widest text-ac">{ownedBox.invite_code}</span>
-                  <button type="button" onClick={() => copyCode(ownedBox.invite_code)}
-                    className="text-fa hover:text-ac transition-colors" aria-label="Copiar código">
-                    {codeCopied ? <Check size={13} /> : <Copy size={13} />}
+                  <span className="text-xs text-mu">Código</span>
+                  <span className="font-display text-sm font-extrabold tracking-widest text-ac">{ownedBox.invite_code}</span>
+                  <button type="button" onClick={() => copyCode(ownedBox.invite_code)} className="text-fa hover:text-ac transition-colors" aria-label="Copiar código">
+                    {codeCopied ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                 </div>
                 {uploadingLogo && <div className="text-ac text-xs mt-1">Subiendo logo…</div>}
               </div>
             </div>
-
-            <h2 className="font-barlow text-lg font-black tracking-wide mb-4">DETALLES DEL BOX</h2>
-
-            {boxSaved && (
-              <div className="mb-4 p-3 rounded-xl bg-ac/10 border border-ac/20 text-ac text-sm font-semibold">
-                Box actualizado
-              </div>
-            )}
-            {boxErr && (
-              <div className="mb-4 p-3 rounded-xl bg-rd/10 border border-rd/20 text-rd text-sm font-semibold">
-                {boxErr}
-              </div>
-            )}
-
+            {boxSaved && <div className="mb-4"><Alert tone="success">Box actualizado</Alert></div>}
+            {boxErr && <div className="mb-4"><Alert tone="error">{boxErr}</Alert></div>}
             <form onSubmit={handleSaveBox} className="flex flex-col gap-4">
-              {/* Basic info */}
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Nombre del box</label>
-                <input value={boxName} onChange={e => setBoxName(e.target.value)} required
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac" />
+                <label className={labelCls}>Nombre del box</label>
+                <input value={boxName} onChange={e => setBoxName(e.target.value)} required className={inputCls} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Ciudad</label>
-                  <input value={boxCity} onChange={e => setBoxCity(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac" />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">País</label>
-                  <input value={boxCountry} onChange={e => setBoxCountry(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac" />
-                </div>
+                <div><label className={labelCls}>Ciudad</label><input value={boxCity} onChange={e => setBoxCity(e.target.value)} className={inputCls} /></div>
+                <div><label className={labelCls}>País</label><input value={boxCountry} onChange={e => setBoxCountry(e.target.value)} className={inputCls} /></div>
               </div>
-
-              {/* Description */}
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Descripción <span className="normal-case text-fa">(opcional)</span></label>
+                <label className={labelCls}>Descripción <span className="text-fa">(opcional)</span></label>
                 <textarea value={boxDesc} onChange={e => setBoxDesc(e.target.value)} rows={3} maxLength={320}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac resize-none"
-                  placeholder="Cuéntanos sobre tu box, tu filosofía, tu comunidad…" />
-                <div className="text-right text-[10px] text-fa mt-1">{boxDesc.length}/320</div>
+                  className="w-full px-4 py-3 rounded-2xl bg-p2 text-t text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 resize-none"
+                  placeholder="Tu filosofía, tu comunidad…" />
               </div>
-
-              {/* Disciplines */}
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Dumbbell size={13} className="text-mu" strokeWidth={2.5} />
-                  <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Disciplinas</label>
-                </div>
+                <label className={labelCls}>Disciplinas</label>
                 <div className="flex flex-wrap gap-2">
                   {DISCIPLINES.map(d => (
                     <button key={d} type="button" onClick={() => toggleDiscipline(d)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${
-                        boxDisciplines.includes(d)
-                          ? 'bg-ac/10 text-ac border-ac/30'
-                          : 'border-[var(--ln2)] text-mu hover:text-t'
-                      }`}>
+                      className={`h-9 px-3.5 rounded-full text-xs font-semibold transition-colors ${boxDisciplines.includes(d) ? 'bg-ac text-onac' : 'bg-p2 text-mu hover:text-t'}`}>
                       {d}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Horario */}
               <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <Clock size={13} className="text-mu" strokeWidth={2.5} />
-                  <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Horario</label>
-                </div>
+                <label className={labelCls}>Horario de clases</label>
                 <textarea value={boxSchedule} onChange={e => setBoxSchedule(e.target.value)} rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac resize-none"
-                  placeholder="Lun-Vie: 6am, 9am, 12pm, 6pm, 8pm · Sáb: 9am" />
+                  className="w-full px-4 py-3 rounded-2xl bg-p2 text-t text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 resize-none"
+                  placeholder="Lun-Vie: 7:00, 9:00, 18:00, 20:00 · Sáb: 10:00" />
               </div>
+              <div><label className={labelCls}>Sitio web</label><input value={boxWebsite} onChange={e => setBoxWebsite(e.target.value)} className={inputCls} placeholder="https://mibox.com" type="url" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className={labelCls}>Instagram</label><input value={boxInstagram} onChange={e => setBoxInstagram(e.target.value.replace('@', ''))} className={inputCls} placeholder="mibox_cf" /></div>
+                <div><label className={labelCls}>WhatsApp</label><input value={boxWhatsapp} onChange={e => setBoxWhatsapp(e.target.value)} className={inputCls} placeholder="+56 9 1234 5678" type="tel" /></div>
+              </div>
+              <Button type="submit" disabled={boxSaving} className="self-start px-6">{boxSaving ? 'Guardando…' : 'Guardar box'}</Button>
+            </form>
+          </Card>
+        )}
 
-              {/* Contact / Social */}
-              <div className="pt-2 border-t border-[var(--ln)]">
-                <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-3">Contacto y redes</div>
-                <div className="flex flex-col gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Globe size={13} className="text-mu" strokeWidth={2.5} />
-                      <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Sitio web</label>
-                    </div>
-                    <input value={boxWebsite} onChange={e => setBoxWebsite(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
-                      placeholder="https://mibox.com" type="url" />
+        {show('boxes') && (
+          <>
+            <Card padding={false} className="divide-y divide-[var(--ln)]">
+              {boxes.length === 0 && <p className="text-mu text-sm p-5">No perteneces a ningún box todavía.</p>}
+              {boxes.map((box: any) => (
+                <div key={box.id} className="flex items-center gap-3 p-4">
+                  {box.logo_url
+                    ? <img src={box.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
+                    : <div className="w-11 h-11 rounded-xl bg-p2 grid place-items-center flex-shrink-0"><Building2 size={20} className="text-fa" /></div>}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-[15px] truncate">{box.name}</div>
+                    <div className="text-mu text-xs truncate">{box.city}{box.city && box.country ? ', ' : ''}{box.country}</div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <Instagram size={13} className="text-mu" strokeWidth={2.5} />
-                        <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">Instagram</label>
-                      </div>
-                      <div className="flex items-center bg-p3 border border-[var(--ln)] rounded-xl overflow-hidden focus-within:border-ac transition-colors">
-                        <span className="pl-3 text-mu text-sm font-bold">@</span>
-                        <input value={boxInstagram} onChange={e => setBoxInstagram(e.target.value.replace('@', ''))}
-                          className="flex-1 px-2 py-2.5 bg-transparent text-t text-base sm:text-sm outline-none"
-                          placeholder="mibox_cf" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <Phone size={13} className="text-mu" strokeWidth={2.5} />
-                        <label className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold">WhatsApp</label>
-                      </div>
-                      <input value={boxWhatsapp} onChange={e => setBoxWhatsapp(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac"
-                        placeholder="+56 9 1234 5678" type="tel" />
-                    </div>
-                  </div>
+                  {box.invite_code && <div className="font-display text-sm font-extrabold tracking-widest text-ac">{box.invite_code}</div>}
                 </div>
-              </div>
-
-              <Button type="submit" disabled={boxSaving} className="self-start px-6">
-                {boxSaving ? 'Guardando…' : 'Guardar box'}
-              </Button>
-            </form>
-          </Card>
+              ))}
+            </Card>
+            <Card>
+              <h2 className="font-semibold mb-1">Unirse a otro box</h2>
+              <p className="text-mu text-sm mb-4">Puedes estar en varios boxes. Pídele el código a tu coach.</p>
+              {joinMsg && <div className="mb-4"><Alert tone="success">{joinMsg}</Alert></div>}
+              {joinErr && <div className="mb-4"><Alert tone="error">{joinErr}</Alert></div>}
+              <form onSubmit={handleJoinBox} className="flex gap-3">
+                <input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())} maxLength={8} placeholder="XXXXXXXX" aria-label="Código de invitación"
+                  className="flex-1 min-w-0 px-4 h-12 rounded-2xl bg-p2 text-t outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 uppercase tracking-widest font-display font-bold text-lg" />
+                <Button type="submit" size="lg" disabled={joining || !inviteCode.trim()}>{joining ? 'Uniendo…' : 'Unirme'}</Button>
+              </form>
+            </Card>
+          </>
         )}
 
-        {profile.role !== 'coach' && (
+        {show('athletic') && (
           <Card>
-            <h2 className="font-barlow text-lg font-black tracking-wide mb-4">MI BOX</h2>
-
-            {boxes.length === 0 ? (
-              <p className="text-mu text-sm">No perteneces a ningún box todavía.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {boxes.map((box: any) => (
-                  <div key={box.id} className="flex items-center justify-between p-3.5 rounded-xl bg-p3 border border-[var(--ln)]">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {box.logo_url ? (
-                        <img src={box.logo_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-p2 border border-[var(--ln)] grid place-items-center flex-shrink-0">
-                          <Building2 size={18} className="text-fa" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <div className="font-semibold text-sm truncate">{box.name}</div>
-                        <div className="text-mu text-[11px] mt-0.5 truncate">{box.city}{box.city && box.country ? ', ' : ''}{box.country}</div>
-                      </div>
-                    </div>
-                    {box.invite_code && (
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-[10px] text-fa uppercase tracking-wide font-bold mb-0.5">Código</div>
-                        <div className="font-barlow text-base font-black tracking-widest text-ac">{box.invite_code}</div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        )}
-
-        {profile.role === 'athlete' && (
-          <Card>
-            <h2 className="font-barlow text-lg font-black tracking-wide mb-1">UNIRSE A UN BOX</h2>
-            <p className="text-mu text-sm mb-4">Pídele el código de invitación a tu coach e ingrésalo aquí.</p>
-
-            {joinMsg && <div className="mb-4 p-3 rounded-xl bg-ac/10 border border-ac/20 text-ac text-sm font-semibold">{joinMsg}</div>}
-            {joinErr && <div className="mb-4 p-3 rounded-xl bg-rd/10 border border-rd/20 text-rd text-sm font-semibold">{joinErr}</div>}
-
-            <form onSubmit={handleJoinBox} className="flex gap-3">
-              <input value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
-                className="flex-1 px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac uppercase tracking-widest font-barlow font-bold text-lg"
-                placeholder="XXXXXXXX" maxLength={8} />
-              <Button type="submit" disabled={joining || !inviteCode.trim()}>
-                {joining ? 'Uniendo…' : 'Unirme'}
-              </Button>
-            </form>
-          </Card>
-        )}
-
-        {prs.length > 0 && (
-          <Card>
-            <h2 className="font-barlow text-lg font-black tracking-wide mb-1">PERFIL ATLÉTICO</h2>
+            <h2 className="font-semibold mb-1">Perfil atlético</h2>
             <p className="text-mu text-sm mb-4">Tu fuerza relativa en cada categoría según tus RMs registrados.</p>
-            <AthleteRadar prs={prs} />
+            {prs.length > 0 ? <AthleteRadar prs={prs} /> : <p className="text-mu text-sm">Registra algunos RMs para ver tu perfil.</p>}
           </Card>
         )}
 
-        <Card>
-          <h2 className="font-barlow text-lg font-black tracking-wide mb-1">APARIENCIA</h2>
-          <p className="text-mu text-sm mb-4">Se guarda en este dispositivo.</p>
-          <AppearancePicker />
-        </Card>
+        {show('appearance') && (
+          <Card>
+            <p className="text-mu text-sm mb-4">Modo claro u oscuro y el color de acento. Se guarda en este dispositivo.</p>
+            <AppearancePicker />
+          </Card>
+        )}
 
-        <Card>
-          <h2 className="font-barlow text-lg font-black tracking-wide mb-1">CUENTA</h2>
-          <p className="text-mu text-sm mb-4">{profile.email}</p>
-          <form onSubmit={handleChangePassword} className="flex flex-col gap-3 mb-5">
-            <PasswordField label="Nueva contraseña" name="new-password" autoComplete="new-password" minLength={8}
-              value={newPassword} onChange={e => setNewPassword(e.target.value)} hint="Mínimo 8 caracteres." />
-            {pwErr && <Alert tone="error">{pwErr}</Alert>}
-            {pwMsg && <Alert tone="success">{pwMsg}</Alert>}
-            <Button type="submit" variant="secondary" disabled={pwSaving || !newPassword} className="self-start">
-              {pwSaving ? 'Guardando…' : 'Cambiar contraseña'}
-            </Button>
-          </form>
-          <Button variant="danger" disabled={signingOut} onClick={handleSignOut}>
-            <LogOut size={14} strokeWidth={2} />
-            {signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
-          </Button>
-        </Card>
+        {show('notifications') && <NotificationSettings />}
 
+        {show('security') && (
+          <Card>
+            <h2 className="font-semibold mb-1">Contraseña</h2>
+            <p className="text-mu text-sm mb-4">{profile.email}</p>
+            <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
+              <PasswordField label="Nueva contraseña" name="new-password" autoComplete="new-password" minLength={8}
+                value={newPassword} onChange={e => setNewPassword(e.target.value)} hint="Mínimo 8 caracteres." />
+              {pwErr && <Alert tone="error">{pwErr}</Alert>}
+              {pwMsg && <Alert tone="success">{pwMsg}</Alert>}
+              <Button type="submit" variant="secondary" disabled={pwSaving || !newPassword} className="self-start">
+                {pwSaving ? 'Guardando…' : 'Cambiar contraseña'}
+              </Button>
+            </form>
+            <div className="mt-6 pt-5 border-t border-[var(--ln)]">
+              <Button variant="danger" disabled={signingOut} onClick={handleSignOut}>
+                <LogOut size={16} />
+                {signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
+              </Button>
+            </div>
+          </Card>
+        )}
       </div>
     </>
+  )
+}
+
+function ToggleRow({ icon, title, body, checked, onChange, disabled }: {
+  icon: React.ReactNode; title: string; body: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean
+}) {
+  return (
+    <label className={`flex items-center gap-3.5 p-4 cursor-pointer ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      <span className="size-10 rounded-xl bg-p2 grid place-items-center text-t flex-shrink-0">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-[15px]">{title}</span>
+        <span className="block text-mu text-[13px]">{body}</span>
+      </span>
+      <Switch checked={checked} onChange={onChange} label={title} />
+    </label>
   )
 }

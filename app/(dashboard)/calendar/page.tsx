@@ -45,7 +45,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const [wodsRes, daysRes, eventsRes] = await Promise.all([
     boxIds.length
       ? supabase.from('daily_wods')
-          .select('id, box_id, scheduled_for, title, type, description, duration_mins, movements, is_live, show_early')
+          .select('id, box_id, scheduled_for, title, type, description, duration_mins, movements, is_live, show_early, class_time')
           .in('box_id', boxIds).gte('scheduled_for', from).lte('scheduled_for', to)
       : Promise.resolve({ data: [] as any[], error: null }),
     boxIds.length
@@ -57,7 +57,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       .order('starts_on'),
   ])
 
-  // Before migration 006 show_early doesn't exist: retry without it.
+  // Before migrations 006/007 show_early/class_time don't exist: retry without them.
   let rawWods = (wodsRes.data ?? []) as any[]
   if (wodsRes.error && boxIds.length) {
     const { data } = await supabase.from('daily_wods')
@@ -76,7 +76,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     id: w.id, boxId: w.box_id, date: w.scheduled_for, title: w.title, type: w.type,
     description: w.description ?? '', duration: w.duration_mins ?? null,
     movements: Array.isArray(w.movements) ? w.movements : [],
-    isLive: !!w.is_live, showEarly: !!w.show_early,
+    isLive: !!w.is_live, showEarly: !!w.show_early, classTime: w.class_time ? String(w.class_time).slice(0, 5) : null,
     myResult: done.get(w.id) ?? null,
   }))
 

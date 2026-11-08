@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { WodView } from '@/components/wod/WodView'
 import type { Profile } from '@/lib/types/database'
 
-export default async function WodPage({ searchParams }: { searchParams: Promise<{ box?: string }> }) {
+export default async function WodPage({ searchParams }: { searchParams: Promise<{ box?: string; wod?: string }> }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
@@ -32,13 +32,21 @@ export default async function WodPage({ searchParams }: { searchParams: Promise<
         .order('published_at', { ascending: false })
     : { data: [] as any[] }
 
-  // An athlete in several boxes can have several WODs today: ?box= picks one.
-  const { box: boxParam } = await searchParams
-  const todays = (dailyWods ?? []) as any[]
-  const wod = todays.find(w => w.box_id === boxParam) ?? todays[0] ?? null
-  const todayWods = todays
-    .filter((w, i) => todays.findIndex(x => x.box_id === w.box_id) === i)
-    .map(w => ({ boxId: w.box_id as string, boxName: (w.boxes?.name as string) ?? 'Box' }))
+  // Several WODs today (several boxes, or one per class time): ?wod= picks one.
+  // By default show the next class still to come, else the last one.
+  const { box: boxParam, wod: wodParam } = await searchParams
+  const todays = ((dailyWods ?? []) as any[])
+    .sort((x, y) => String(x.class_time ?? '').localeCompare(String(y.class_time ?? '')))
+  const nowHm = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' }).format(new Date())
+  const upcoming = todays.find(w => !w.class_time || String(w.class_time).slice(0, 5) >= nowHm)
+  const wod = todays.find(w => w.id === wodParam) ?? todays.find(w => w.box_id === boxParam)
+    ?? upcoming ?? todays[todays.length - 1] ?? null
+  const multiBox = new Set(todays.map(w => w.box_id)).size > 1
+  const todayWods = todays.map(w => ({
+    id: w.id as string,
+    label: [multiBox ? (w.boxes?.name as string) ?? 'Box' : null, w.class_time ? String(w.class_time).slice(0, 5) : null]
+      .filter(Boolean).join(' · ') || (w.title as string),
+  }))
 
   let results: any[] = []
   if (wod) {
@@ -74,8 +82,13 @@ export default async function WodPage({ searchParams }: { searchParams: Promise<
     .filter(r => r.movements?.name)
     .map(r => ({ name: r.movements.name as string, valueLb: Number(r.value_lb) }))
 
+  // How-to for each of today's movements (tap a movement in the WOD).
+  const names = ((wod?.movements ?? []) as any[]).map(m => String(m.name ?? '')).filter(Boolean)
+  const { data: library } = names.length ? await supabase.from('movements').select('*').in('name', names) : { data: [] as any[] }
+
   return (
     <WodView
+      library={(library ?? []) as any[]}
       key={wod?.id ?? 'none'}
       profile={profile}
       todayWods={todayWods}

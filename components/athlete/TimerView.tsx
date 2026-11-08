@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Topbar } from '@/components/layout/Topbar'
 import type { Profile } from '@/lib/types/database'
-import { Play, Pause, RotateCcw, Flag, Plus, Minus, Volume2, VolumeX, ClipboardCheck } from 'lucide-react'
+import { Play, Pause, RotateCcw, Flag, Plus, Minus, Volume2, VolumeX, ClipboardCheck } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 
 export type TimerMode = 'fortime' | 'amrap' | 'emom' | 'tabata'
@@ -245,7 +245,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
               onClick={() => setMode(m.key)}
               disabled={running || state === 'countdown'}
               className={cn(
-                'h-11 rounded-xl font-barlow font-extrabold text-base tracking-wide uppercase transition-colors disabled:opacity-40',
+                'h-11 rounded-xl font-display font-extrabold text-base transition-colors disabled:opacity-40 tracking-tight',
                 mode === m.key ? 'bg-p3 text-t' : 'text-mu hover:text-t',
               )}
             >
@@ -288,7 +288,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
         )}
 
         {/* Round / phase line */}
-        <div className="h-8 text-center font-barlow text-xl tracking-[2px] uppercase tabular-nums" aria-live="polite">
+        <div className="h-8 text-center font-display text-xl tracking-[2px] tabular-nums tracking-tight" aria-live="polite">
           {mode === 'emom' && (running || state === 'paused') && (
             <span className="text-mu">Ronda <span className="text-t">{emomRound}</span> / {emomTotalRounds}</span>
           )}
@@ -308,7 +308,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
         <div className="text-center my-2">
           <div
             className={cn(
-              'font-barlow font-black leading-none tabular-nums transition-colors duration-200',
+              'font-display font-extrabold leading-none tabular-nums transition-colors duration-200 tracking-tight',
               state === 'done' ? 'text-gr' : state === 'countdown' ? 'text-or' : running ? (isRest ? 'text-bl' : 'text-ac') : 'text-t',
             )}
             style={{ fontSize: 'clamp(84px, 26vw, 160px)', letterSpacing: '-0.02em' }}
@@ -316,7 +316,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
           >
             {state === 'countdown' ? getReady : fmt(displayMs)}
           </div>
-          <div className="h-9 mt-1 font-barlow text-2xl font-black text-mu tabular-nums">
+          <div className="h-9 mt-1 font-display text-2xl font-extrabold text-mu tabular-nums tracking-tight">
             {state === 'countdown' && <span className="text-xl tracking-[2px] uppercase">Prepárate</span>}
             {mode === 'tabata' && running && `${String(tabataPhaseLeft).padStart(2, '0')}s`}
             {mode === 'emom' && running && `${String(emomIntervalLeft).padStart(2, '0')}s`}
@@ -332,7 +332,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
                 className="size-16 rounded-full bg-p2 text-t grid place-items-center active:scale-[0.96] transition-transform">
                 <Minus size={24} strokeWidth={2.5} aria-hidden />
               </button>
-              <div className="font-barlow text-7xl font-black leading-none text-t min-w-[96px] tabular-nums" aria-live="polite">
+              <div className="font-display text-7xl font-extrabold leading-none text-t min-w-[96px] tabular-nums tracking-tight" aria-live="polite">
                 {amrapRounds}
               </div>
               <button onClick={() => setAmrapRounds(r => r + 1)} aria-label="Sumar una ronda"
@@ -346,25 +346,25 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
         {/* Controls */}
         <div className="flex gap-3 justify-center items-center flex-wrap mt-6">
           {state === 'countdown' ? (
-            <button onClick={reset} className="h-14 px-8 rounded-full bg-p2 text-t font-barlow text-lg font-black tracking-wide uppercase active:scale-[0.96] transition-transform">
+            <button onClick={reset} className="h-14 px-8 rounded-full bg-p2 text-t font-display text-lg font-extrabold active:scale-[0.96] transition-transform tracking-tight">
               Cancelar
             </button>
           ) : !running ? (
             <button onClick={start} disabled={state === 'done'}
-              className="h-14 px-9 rounded-full bg-ac text-onac font-barlow text-lg font-black tracking-wide uppercase active:scale-[0.96] transition-transform flex items-center gap-2 min-w-[160px] justify-center disabled:opacity-40">
+              className="h-14 px-9 rounded-full bg-ac text-onac font-display text-lg font-extrabold active:scale-[0.96] transition-transform flex items-center gap-2 min-w-[160px] justify-center disabled:opacity-40 tracking-tight">
               <Play size={18} fill="currentColor" aria-hidden />
               {state === 'paused' ? 'Continuar' : 'Iniciar'}
             </button>
           ) : (
             <button onClick={pause}
-              className="h-14 px-9 rounded-full bg-p2 text-t font-barlow text-lg font-black tracking-wide uppercase active:scale-[0.96] transition-transform flex items-center gap-2 min-w-[160px] justify-center">
+              className="h-14 px-9 rounded-full bg-p2 text-t font-display text-lg font-extrabold active:scale-[0.96] transition-transform flex items-center gap-2 min-w-[160px] justify-center tracking-tight">
               <Pause size={18} fill="currentColor" aria-hidden />
               Pausa
             </button>
           )}
           {mode === 'fortime' && running && (
             <button onClick={finishNow}
-              className="h-14 px-7 rounded-full bg-gr/15 text-gr font-barlow text-lg font-black tracking-wide uppercase active:scale-[0.96] transition-transform flex items-center gap-2">
+              className="h-14 px-7 rounded-full bg-gr/15 text-gr font-display text-lg font-extrabold active:scale-[0.96] transition-transform flex items-center gap-2 tracking-tight">
               <Flag size={18} aria-hidden />
               Terminé
             </button>
@@ -384,7 +384,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
         {/* Result panel */}
         {state === 'done' && (
           <div className="mt-8 p-6 rounded-2xl bg-p text-center" role="status">
-            <div className="font-barlow text-4xl font-black text-gr leading-none">¡Tiempo!</div>
+            <div className="font-display text-4xl font-extrabold text-gr leading-none tracking-tight">¡Tiempo!</div>
             <div className="text-t mt-2 text-lg font-semibold tabular-nums">{resultLine}</div>
             {(mode === 'fortime' || mode === 'amrap') && (
               <Link href="/wod" className="mt-5 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-ac text-onac font-bold active:scale-[0.96] transition-transform">
@@ -432,7 +432,7 @@ function CfgBox({ label, val, onChange, max, min = 0 }: {
         onChange={e => commit(e.target.value)}
         onBlur={handleBlur}
         onFocus={e => e.currentTarget.select()}
-        className="w-full text-center bg-transparent border-0 font-barlow text-4xl font-black text-t outline-none tabular-nums"
+        className="w-full text-center bg-transparent border-0 font-display text-4xl font-extrabold text-t outline-none tabular-nums tracking-tight"
       />
     </label>
   )

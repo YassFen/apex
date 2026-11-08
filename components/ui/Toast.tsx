@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useCallback, useContext, useRef, useState } from 'react'
-import { AlertCircle, CheckCircle2, Info, Trophy, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Info, Trophy, X } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 
 export type ToastType = 'ok' | 'pr' | 'error' | 'info'
