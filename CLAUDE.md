@@ -217,6 +217,14 @@ Every Tailwind color is a CSS variable holding RGB channels (`--c-bg`, `--c-ac`,
 - An athlete in several boxes filters the calendar with `BoxFilter` (`apex.boxFilter` in localStorage); `/wod?box=` picks between several WODs of the same day.
 - Animations use the `motion` package (`motion/react`): shared helpers in `components/ui/motion.tsx` (`Reveal`, `AnimatedNumber`, `Segmented`, `ActivePill`, `SPRING`, `EASE_OUT`). `MotionConfig reducedMotion="user"` is set in `DashboardShell`. `Modal` portals to `<body>` so transformed ancestors can't trap it. Performance rules: no `backdrop-blur` on sticky bars or overlays, no `filter: blur` glows (use radial gradients), no `layout` animations on lists that don't reorder, no per-item motion components in big grids (use CSS `animate-*`). The page transition is an opacity fade. Fonts come from `next/font` (Geist). `lib/supabase/session.ts` (`getUser`, `getProfile`, React `cache`) dedupes the user/profile lookups between the dashboard layout and the page. The service worker only handles page navigations.
 
+### Security (009)
+
+`next.config.ts` sends the security headers (CSP, HSTS, no framing, nosniff, referrer and permissions policy); a new external host (images, embeds, APIs) must be added to the CSP there. `009_security_hardening.sql`: boxes are readable only by their owner and members (the invite code was public), visitors without an account get only the public profile columns (never the email, so public pages must select explicit columns, not `*`), update policies have `with check`, owner/plan/email can't be changed from the app, storage buckets accept only JPEG/PNG/WebP up to 5 MB, and user text columns have length limits. Still to do in the Supabase dashboard: CAPTCHA on sign-in/sign-up, leaked-password protection, custom SMTP.
+
+### UI rules (userinterface.wiki)
+
+Labels are `text-xs font-semibold text-mu` in sentence case (no tiny uppercase tracking labels; uppercase is only for WOD-type badges). Weights stop at `font-bold`. Cards are flat `bg-p` with no border. Anything the person triggers animates in 300ms or less (press 120-180ms, entrances ease-out, exits ease-in and shorter, stagger 30ms per item); only data fills (rings, progress bars) may run longer. Every button gets a press scale from the base layer in `globals.css`; `.hit-44` widens a small icon button's touch area. The top bar title shrinks by length, nested screens get a back arrow (`Topbar`), and the bottom bar is user-editable (`apex.tabs.<mode>` in localStorage, `MobileNav`). Challenge exercises come from `lib/constants/challenge-exercises.ts` (category → subcategory → exercise).
+
 ### Notifications
 
 In-app only (no push server). `app/(dashboard)/layout.tsx` builds notices with `buildNotices()` (`lib/utils/notifications.ts`): event countdown at 7/3/1/0 days, tomorrow's WOD with its class time, today's WOD still to log, new box events. `NotificationBell` (Topbar) shows them; read state and preferences live in localStorage. With permission, new notices also show as system notifications via the service worker while the app is open.
@@ -291,7 +299,7 @@ const WOD_TYPE_COLORS = {
 - **Body, labels, inputs**: `font-sans` (Geist, the default)
 - **Sheets/popups**: `Modal` (big title, round close button, drag down to close) + `ModalActions` (outlined secondary + filled primary pill)
 - **Invite codes, monospace data**: add `tracking-widest` with `font-barlow`
-- **Section labels**: `text-[10px] uppercase tracking-[1.6px] text-fa font-bold`
+- **Section labels**: `text-xs font-semibold text-mu`
 
 ### CSS Variables (globals.css)
 
