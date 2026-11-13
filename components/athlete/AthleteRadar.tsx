@@ -124,7 +124,7 @@ export function AthleteRadar({ prs, size = 280 }: { prs: PrRow[]; size?: number 
 
       {editing ? (
         <div className="w-full p-3 rounded-xl bg-p3 border border-[var(--ln)] mb-3">
-          <div className="text-[10px] uppercase tracking-[1.6px] text-fa font-bold mb-2">
+          <div className="text-xs text-mu font-semibold mb-2">
             Ejes del perfil ({axisKeys.length}, mín. 3)
           </div>
           <div className="flex flex-wrap gap-1.5">

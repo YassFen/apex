@@ -340,7 +340,7 @@ export function PublishWodPanel({
 
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
-            <div className="font-display text-xl font-extrabold tracking-tight">
+            <div className="font-display text-xl font-bold tracking-tight">
               {isToday ? 'WOD de hoy' : `WOD · ${relativeDayLabel(date, today)}`}
             </div>
             <div className="text-mu text-xs mt-0.5 first-letter:uppercase">
@@ -408,7 +408,7 @@ export function PublishWodPanel({
                     return (
                       <button key={t} type="button" onClick={() => setType(t)}
                         className={`p-3 rounded-xl border text-left transition ${active ? info.cls : 'border-[var(--ln2)] text-mu hover:border-mu hover:text-t'}`}>
-                        <div className="font-display font-extrabold text-[15px] tracking-tight">{info.label}</div>
+                        <div className="font-display font-bold text-[15px] tracking-tight">{info.label}</div>
                         <div className={`text-[10px] mt-0.5 leading-snug ${active ? 'opacity-80' : 'text-fa'}`}>{info.desc}</div>
                       </button>
                     )
@@ -484,7 +484,7 @@ export function PublishWodPanel({
                 </button>
               ) : (
                 <div className="p-4 bg-p3 rounded-xl border border-ac/15">
-                  <div className="text-[10px] uppercase tracking-[1.4px] text-ac font-bold mb-2.5">
+                  <div className="text-xs text-ac font-semibold mb-2.5">
                     {editingIdx !== null ? 'Editar movimiento' : 'Agregar movimiento'}
                   </div>
 
@@ -610,7 +610,7 @@ function Step({ n, title, sub, icon, done, open, onToggle, children }: {
     <div className={`rounded-[24px] transition-colors ${done ? 'bg-p ring-1 ring-inset ring-ac/30' : 'bg-p'}`}>
       <button type="button" onClick={onToggle}
               className="w-full flex items-center gap-3 p-4 text-left">
-        <div className={`w-8 h-8 rounded-full grid place-items-center font-display font-extrabold text-sm flex-shrink-0 ${
+        <div className={`w-8 h-8 rounded-full grid place-items-center font-display font-bold text-sm flex-shrink-0 ${
           done ? 'bg-ac text-onac' : 'bg-p3 text-mu border border-[var(--ln2)]'
         }`}>
           {done ? <Check size={14} strokeWidth={3} /> : n}
@@ -618,7 +618,7 @@ function Step({ n, title, sub, icon, done, open, onToggle, children }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-mu">{icon}</span>
-            <div className="font-display font-extrabold text-base truncate tracking-tight">{title}</div>
+            <div className="font-display font-bold text-base truncate tracking-tight">{title}</div>
           </div>
           <div className="text-mu text-[12px] mt-0.5 truncate">{sub}</div>
         </div>
@@ -635,7 +635,7 @@ function Step({ n, title, sub, icon, done, open, onToggle, children }: {
 
 function Label({ children, small }: { children: React.ReactNode; small?: boolean }) {
   return (
-    <div className={`uppercase tracking-[1.6px] text-mu font-bold mb-1.5 ${small ? 'text-[9px]' : 'text-[10px]'}`}>
+    <div className={` text-mu font-semibold mb-1.5 ${small ? 'text-xs' : 'text-xs'}`}>
       {children}
     </div>
   )
@@ -648,13 +648,13 @@ function MovDisplayRow({ index, mov, onEdit, onDelete }: {
   const showWeight = shouldShowWeight(mov.category)
   return (
     <div className="rounded-xl border border-[var(--ln)] bg-p3 flex items-center gap-3 px-3 py-3">
-      <div className="w-7 h-7 rounded-full bg-ac text-onac grid place-items-center font-display font-extrabold text-xs flex-shrink-0 tracking-tight">
+      <div className="w-7 h-7 rounded-full bg-ac text-onac grid place-items-center font-display font-bold text-xs flex-shrink-0 tracking-tight">
         {index + 1}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
           {mov.reps && (
-            <span className="font-display font-extrabold text-[17px] text-t leading-none tracking-tight">{mov.reps}</span>
+            <span className="font-display font-bold text-[17px] text-t leading-none tracking-tight">{mov.reps}</span>
           )}
           <span className="font-semibold text-sm text-t leading-tight">{mov.name}</span>
           {showWeight && mov.weight && (
@@ -693,7 +693,7 @@ function DayStrip({ date, today, scheduled, aheadDays }: { date: string; today: 
               active ? 'text-onac' : 'bg-p text-mu hover:text-t')}>
             {active && <ActivePill layoutId="publish-day" className="rounded-2xl bg-ac" />}
             <span className="text-[10px] font-bold uppercase">{d === today ? 'Hoy' : formatDateOnly(d, { weekday: 'short' }).replace('.', '')}</span>
-            <span className="font-display text-2xl font-extrabold leading-none tracking-tight">{Number(d.slice(8, 10))}</span>
+            <span className="font-display text-2xl font-bold leading-none tracking-tight">{Number(d.slice(8, 10))}</span>
             <span className={cn('size-1.5 rounded-full', wod ? (active ? 'bg-onac' : wod.isLive ? 'bg-ac' : 'bg-fa') : 'bg-transparent')} aria-hidden />
           </Link>
         )

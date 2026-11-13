@@ -158,7 +158,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
             <div className="size-14 rounded-2xl bg-p2 grid place-items-center text-mu">
               {memberships.length === 0 ? <Users size={26} aria-hidden /> : <CalendarClock size={26} aria-hidden />}
             </div>
-            <h2 className="font-display text-2xl font-extrabold text-t tracking-tight">
+            <h2 className="font-display text-2xl font-bold text-t tracking-tight">
               {memberships.length === 0 ? 'Aún no estás en un box' : 'Sin WOD por ahora'}
             </h2>
             <p className="text-mu text-sm max-w-xs text-pretty">
@@ -190,7 +190,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
                   {wod.duration_mins && <span className="text-mu text-xs tabular-nums">{wod.duration_mins} min</span>}
                   {wod.boxes?.name && <span className="text-mu text-xs truncate">· {wod.boxes.name}</span>}
                 </div>
-                <h2 className="font-display text-[32px] leading-tight font-extrabold text-balance tracking-tight">{wod.title}</h2>
+                <h2 className="font-display text-[32px] leading-tight font-bold text-balance tracking-tight">{wod.title}</h2>
                 {wod.description && (
                   <p className="text-mu text-sm leading-relaxed whitespace-pre-line mt-2 text-pretty">{wod.description}</p>
                 )}
@@ -202,7 +202,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
                     <li key={i}>
                     <button type="button" onClick={() => setInfo(library.find(x => x.name.toLowerCase() === String(m.name ?? '').toLowerCase()) ?? { id: `wod-${i}`, name: m.name, category: 'weightlifting', description: null, video_url: null })}
                       className="w-full text-left flex items-center gap-3 py-3 px-3.5 bg-p2 rounded-xl hover:bg-p3 active:scale-[0.99] transition">
-                      <span className="size-7 rounded-full bg-p3 grid place-items-center text-mu font-display font-extrabold text-sm tabular-nums flex-shrink-0 tracking-tight">
+                      <span className="size-7 rounded-full bg-p3 grid place-items-center text-mu font-display font-bold text-sm tabular-nums flex-shrink-0 tracking-tight">
                         {i + 1}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -224,8 +224,8 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
                   <>
                     <div className="flex items-center justify-between p-4 bg-ac/10 rounded-xl">
                       <div>
-                        <div className="text-[11px] uppercase tracking-[1.4px] text-ac font-bold">Tu resultado</div>
-                        <div className="font-display text-3xl font-extrabold tabular-nums tracking-tight">{myResult.result_value}</div>
+                        <div className="text-xs text-ac font-semibold">Tu resultado</div>
+                        <div className="font-display text-3xl font-bold tabular-nums tracking-tight">{myResult.result_value}</div>
                       </div>
                       <Badge color={myResult.rx_level === 'rx+' ? 'orange' : myResult.rx_level === 'scaled' ? 'blue' : 'lime'}>
                         {myResult.rx_level.toUpperCase()}
@@ -304,7 +304,7 @@ function YourNumbers({ movements, maxes, unit }: { movements: any[]; maxes: { na
     <Card>
       <div className="flex items-center gap-2 mb-3">
         <Dumbbell size={16} className="text-ac" aria-hidden />
-        <h3 className="font-display text-lg font-extrabold tracking-tight">Tus números</h3>
+        <h3 className="font-display text-lg font-bold tracking-tight">Tus números</h3>
       </div>
       <ul className="flex flex-col gap-3">
         {matches.map(m => (
@@ -317,7 +317,7 @@ function YourNumbers({ movements, maxes, unit }: { movements: any[]; maxes: { na
               {PERCENTS.map(p => (
                 <div key={p} className="rounded-xl bg-p2 py-2 text-center">
                   <div className="text-[10px] text-mu font-bold">{p}%</div>
-                  <div className="font-display text-lg font-extrabold tabular-nums leading-tight tracking-tight">{toUnit(m.valueLb * p / 100)}</div>
+                  <div className="font-display text-lg font-bold tabular-nums leading-tight tracking-tight">{toUnit(m.valueLb * p / 100)}</div>
                 </div>
               ))}
             </div>

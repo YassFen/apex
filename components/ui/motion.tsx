@@ -12,13 +12,13 @@ export const SPRING_SOFT = { type: 'spring', stiffness: 170, damping: 24 } as co
  * Fades and lifts its content in the first time it scrolls into view.
  * Transform + opacity only: a filter would make it a containing block for fixed children.
  */
-export function Reveal({ delay = 0, y = 18, className, children, ...props }: HTMLMotionProps<'div'> & { delay?: number; y?: number }) {
+export function Reveal({ delay = 0, y = 12, className, children, ...props }: HTMLMotionProps<'div'> & { delay?: number; y?: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '0px 0px -40px 0px' }}
-      transition={{ duration: 0.55, ease: EASE_OUT, delay }}
+      transition={{ duration: 0.32, ease: EASE_OUT, delay }}
       className={className}
       {...props}
     >

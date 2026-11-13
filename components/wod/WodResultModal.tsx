@@ -117,7 +117,7 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
     onSaved()
   }
 
-  const numCls = inputBase.replace('text-base sm:text-sm', '') + ' h-16 text-center font-display text-4xl font-extrabold tabular-nums tracking-tight'
+  const numCls = inputBase.replace('text-base sm:text-sm', '') + ' h-16 text-center font-display text-4xl font-bold tabular-nums tracking-tight'
 
   return (
     <Modal open onClose={onClose} title={isEditing ? 'Corregir resultado' : 'Registrar resultado'} subtitle={wod.title}>
@@ -138,7 +138,7 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
                   setMm(v)
                   if (v.length === 2) ssRef.current?.focus() // jump to seconds like a time picker
                 }} className={numCls} autoFocus />
-              <span className="font-display text-4xl font-extrabold text-mu tracking-tight" aria-hidden>:</span>
+              <span className="font-display text-4xl font-bold text-mu tracking-tight" aria-hidden>:</span>
               <input ref={ssRef} aria-label="Segundos" inputMode="numeric" pattern="[0-9]*" maxLength={2} value={ss} placeholder="00"
                 onChange={e => setSs(e.target.value.replace(/\D/g, ''))} className={numCls} />
             </div>
@@ -152,7 +152,7 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
             <div className="flex items-center gap-2">
               <input aria-label="Rondas completas" inputMode="numeric" pattern="[0-9]*" value={rounds} placeholder="0"
                 onChange={e => setRounds(e.target.value.replace(/\D/g, ''))} className={numCls} autoFocus />
-              <span className="font-display text-4xl font-extrabold text-mu tracking-tight" aria-hidden>+</span>
+              <span className="font-display text-4xl font-bold text-mu tracking-tight" aria-hidden>+</span>
               <input aria-label="Repeticiones extra" inputMode="numeric" pattern="[0-9]*" value={extraReps} placeholder="0"
                 onChange={e => setExtraReps(e.target.value.replace(/\D/g, ''))} className={numCls} />
             </div>

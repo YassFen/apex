@@ -114,19 +114,19 @@ export function EventView({ profile, event, today, prs, benchmarks, canEdit }: {
 
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-3xl w-full mx-auto">
         {/* ── Hero ───────────────────────────────── */}
-        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE_OUT }}
+        <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: EASE_OUT }}
           className="rounded-[28px] bg-p p-1.5 ring-1 ring-t/[.05]">
           <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-rd/20 via-p2 to-p2 p-5 sm:p-6">
             <div className="absolute -right-16 -top-16 size-56 rounded-full bg-[radial-gradient(closest-side,rgb(var(--c-rd)/0.25),transparent)]" aria-hidden />
             <div className="relative flex items-start gap-4">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rd/15 text-rd text-[10px] font-bold uppercase tracking-[1.2px]">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rd/15 text-rd text-xs font-semibold ">
                     <Trophy size={12} aria-hidden /> {EVENT_KIND_LABEL[event.kind] ?? 'Evento'}
                   </span>
                   <span className="text-[11px] text-mu font-semibold">{event.boxName ? event.boxName : 'Personal'}</span>
                 </div>
-                <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-[0.95] mt-2 text-balance tracking-tight">{event.name}</h1>
+                <h1 className="font-display text-4xl sm:text-5xl font-bold leading-[0.95] mt-2 text-balance tracking-tight">{event.name}</h1>
                 <div className="text-mu text-sm mt-2 first-letter:uppercase">
                   {multi
                     ? `${Number(event.startsOn.slice(8))}–${formatDateOnly(event.endsOn, { day: 'numeric', month: 'long', year: 'numeric' })}`
@@ -142,10 +142,10 @@ export function EventView({ profile, event, today, prs, benchmarks, canEdit }: {
                 </div>
               </div>
               <div className="text-center flex-shrink-0">
-                <div className="font-display text-6xl font-extrabold leading-none tabular-nums tracking-tight">
+                <div className="font-display text-6xl font-bold leading-none tabular-nums tracking-tight">
                   {finished ? <CheckCircle2 size={48} className="text-gr mx-auto" aria-label="Terminado" /> : days <= 0 ? '¡Ya!' : <AnimatedNumber value={days} />}
                 </div>
-                <div className="text-[10px] uppercase tracking-[1.6px] text-mu font-bold mt-1">
+                <div className="text-xs text-mu font-semibold mt-1">
                   {finished ? 'Terminó' : days <= 0 ? 'En curso' : days === 1 ? 'día' : 'días'}
                 </div>
               </div>
@@ -158,7 +158,7 @@ export function EventView({ profile, event, today, prs, benchmarks, canEdit }: {
           <Reveal>
             <Card>
               <div className="flex items-center justify-between gap-3 mb-3">
-                <h2 className="font-display text-lg font-extrabold tracking-tight">{me ? 'Tu inscripción' : '¿Vas a competir?'}</h2>
+                <h2 className="font-display text-lg font-bold tracking-tight">{me ? 'Tu inscripción' : '¿Vas a competir?'}</h2>
                 {me && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-ac/15 text-ac text-xs font-bold"><CheckCircle2 size={13} aria-hidden />Vas</span>}
               </div>
               <div className="grid sm:grid-cols-2 gap-2">
@@ -185,8 +185,8 @@ export function EventView({ profile, event, today, prs, benchmarks, canEdit }: {
             <Card className="flex items-center gap-5">
               <ReadinessRing score={readiness.score} />
               <div className="min-w-0 flex-1">
-                <div className="text-[10px] uppercase tracking-[1.6px] text-fa font-bold">Preparación</div>
-                <div className="font-display text-2xl font-extrabold leading-tight tracking-tight">{copy.title}</div>
+                <div className="text-xs text-mu font-semibold">Preparación</div>
+                <div className="font-display text-2xl font-bold leading-tight tracking-tight">{copy.title}</div>
                 <p className="text-mu text-sm text-pretty mt-0.5">{copy.body}</p>
                 <p className="text-fa text-xs mt-1.5">Basado en {readiness.known} de {readiness.total} movimientos · {category === 'f' ? 'cargas femeninas' : 'cargas masculinas'}</p>
               </div>
@@ -234,7 +234,7 @@ export function EventView({ profile, event, today, prs, benchmarks, canEdit }: {
         {event.boxId && event.participants.length > 0 && (
           <Reveal>
             <Card>
-              <h2 className="font-display text-lg font-extrabold mb-3 flex items-center gap-2 tracking-tight">
+              <h2 className="font-display text-lg font-bold mb-3 flex items-center gap-2 tracking-tight">
                 <Users size={16} className="text-ac" aria-hidden />Van {event.participants.length}
               </h2>
               <ul className="flex flex-wrap gap-2 stagger">
@@ -255,7 +255,7 @@ export function EventView({ profile, event, today, prs, benchmarks, canEdit }: {
         {event.notes && (
           <Reveal>
             <Card>
-              <h2 className="font-display text-lg font-extrabold mb-2 tracking-tight">Notas</h2>
+              <h2 className="font-display text-lg font-bold mb-2 tracking-tight">Notas</h2>
               <p className="text-mu text-sm whitespace-pre-line">{event.notes}</p>
             </Card>
           </Reveal>
@@ -297,7 +297,7 @@ function ReadinessRing({ score }: { score: number | null }) {
           transition={{ duration: 1.1, ease: EASE_OUT, delay: 0.15 }} />
       </svg>
       <div className="absolute inset-0 grid place-items-center">
-        <span className={cn('font-display text-3xl font-extrabold tabular-nums tracking-tight', tone)}>
+        <span className={cn('font-display text-3xl font-bold tabular-nums tracking-tight', tone)}>
           {score === null ? '—' : <><AnimatedNumber value={value} />%</>}
         </span>
       </div>
@@ -316,11 +316,11 @@ function WorkoutCard({ workout, index, assessments, unit, benchmark, results, me
     <Card padding={false} className="overflow-hidden">
       <div className="p-5 pb-3">
         <div className="flex items-center gap-2 flex-wrap mb-1.5">
-          <span className="text-[10px] uppercase tracking-[1.6px] text-fa font-bold">Workout {index + 1}</span>
+          <span className="text-xs text-mu font-semibold">Workout {index + 1}</span>
           <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-bold uppercase', meta.cls)}>{meta.label}</span>
           {workout.time_cap_mins ? <span className="flex items-center gap-1 text-xs text-mu"><Timer size={12} aria-hidden />{workout.type === 'amrap' ? '' : 'Cap '}{workout.time_cap_mins} min</span> : null}
         </div>
-        <h3 className="font-display text-[22px] font-extrabold leading-tight tracking-tight text-balance">{workout.title}</h3>
+        <h3 className="font-display text-[22px] font-bold leading-tight tracking-tight text-balance">{workout.title}</h3>
         {workout.description && <p className="text-mu text-sm mt-2 whitespace-pre-line">{workout.description}</p>}
         {benchmark && (
           <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full bg-ac/15 text-ac text-xs font-bold">
@@ -365,9 +365,9 @@ function MovementRow({ a, unit }: { a: MovementAssessment; unit: Unit }) {
   return (
     <li className="px-5 py-3.5 border-t border-[var(--ln)]">
       <div className="flex items-baseline gap-2">
-        <span className="font-display text-xl font-extrabold text-ac tabular-nums min-w-[2.25rem] tracking-tight">{a.movement.reps}</span>
+        <span className="font-display text-xl font-bold text-ac tabular-nums min-w-[2.25rem] tracking-tight">{a.movement.reps}</span>
         <span className="font-semibold text-sm flex-1 min-w-0 truncate">{a.movement.name}</span>
-        {a.loadLb && <span className="font-display text-lg font-extrabold tabular-nums tracking-tight">{showLoad(a.loadLb, unit)}</span>}
+        {a.loadLb && <span className="font-display text-lg font-bold tabular-nums tracking-tight">{showLoad(a.loadLb, unit)}</span>}
       </div>
       {a.zone !== 'unknown' || a.advice ? (
         <div className="mt-2 pl-[2.75rem]">

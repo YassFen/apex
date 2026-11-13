@@ -13,7 +13,7 @@ export const inputBase =
 
 export const inputCls = inputBase + ' h-12'
 
-export const labelCls = 'block text-[11px] uppercase tracking-[1.4px] text-mu font-bold mb-2'
+export const labelCls = 'block text-xs text-mu font-semibold mb-2'
 
 interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: React.ReactNode

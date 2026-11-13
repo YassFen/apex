@@ -76,7 +76,7 @@ export default function CreateBoxPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="size-14 mx-auto mb-4 rounded-2xl bg-ac grid place-items-center"><Dumbbell size={26} className="text-onac" aria-hidden /></div>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight">CREA TU BOX</h1>
+          <h1 className="font-display text-4xl font-bold tracking-tight">CREA TU BOX</h1>
           <p className="text-mu text-sm mt-2">Configura tu box para gestionar atletas y publicar WODs</p>
         </div>
 
@@ -89,7 +89,7 @@ export default function CreateBoxPage() {
         <Card>
           <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <div>
-              <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+              <label className="block text-xs text-mu font-semibold mb-1.5">
                 Nombre del Box *
               </label>
               <input
@@ -102,7 +102,7 @@ export default function CreateBoxPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+                <label className="block text-xs text-mu font-semibold mb-1.5">
                   Ciudad
                 </label>
                 <input
@@ -113,7 +113,7 @@ export default function CreateBoxPage() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+                <label className="block text-xs text-mu font-semibold mb-1.5">
                   País
                 </label>
                 <select

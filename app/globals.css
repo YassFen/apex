@@ -167,7 +167,7 @@ select, option { background-color: var(--p2); color: var(--t); }
 }
 
 @keyframes fadeUp {
-  from { opacity:0; transform: translateY(12px); }
+  from { opacity:0; transform: translateY(8px); }
   to   { opacity:1; transform: translateY(0); }
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -202,35 +202,31 @@ select, option { background-color: var(--p2); color: var(--t); }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.animate-fade-up  { animation: fadeUp .35s var(--ease-out) backwards; }
-.animate-fade-in  { animation: fadeIn .25s ease-out backwards; }
-.animate-scale-in { animation: scaleIn .28s var(--ease-out) backwards; }
-.animate-pop      { animation: pop .5s var(--ease-spring) backwards; }
-.animate-toast-in { animation: toastIn .32s var(--ease-out) backwards; }
+.animate-fade-up  { animation: fadeUp .3s var(--ease-out) backwards; }
+.animate-fade-in  { animation: fadeIn .2s ease-out backwards; }
+.animate-scale-in { animation: scaleIn .24s var(--ease-out) backwards; }
+.animate-pop      { animation: pop .36s var(--ease-spring) backwards; }
+.animate-toast-in { animation: toastIn .26s var(--ease-out) backwards; }
 .animate-ping-slow { animation: ping 1.6s cubic-bezier(0, 0, .2, 1) infinite; }
 
 /* Phones: modal slides up as a sheet. Larger screens: it scales in. */
-.animate-sheet { animation: sheetUp .34s var(--ease-out) backwards; }
+.animate-sheet { animation: sheetUp .3s var(--ease-out) backwards; }
 @media (min-width: 640px) { .animate-sheet { animation: scaleIn .26s var(--ease-out) backwards; } }
 
 /* Children enter one after another (cards, list rows). */
-.stagger > * { animation: fadeUp .4s var(--ease-out) backwards; }
-.stagger > *:nth-child(1)  { animation-delay: 0ms; }
-.stagger > *:nth-child(2)  { animation-delay: 40ms; }
-.stagger > *:nth-child(3)  { animation-delay: 80ms; }
-.stagger > *:nth-child(4)  { animation-delay: 120ms; }
-.stagger > *:nth-child(5)  { animation-delay: 160ms; }
-.stagger > *:nth-child(6)  { animation-delay: 200ms; }
-.stagger > *:nth-child(7)  { animation-delay: 240ms; }
-.stagger > *:nth-child(8)  { animation-delay: 280ms; }
-.stagger > *:nth-child(n+9) { animation-delay: 300ms; }
+.stagger > * { animation: fadeUp .3s var(--ease-out) backwards; }
+.stagger > *:nth-child(2)  { animation-delay: 30ms; }
+.stagger > *:nth-child(3)  { animation-delay: 60ms; }
+.stagger > *:nth-child(4)  { animation-delay: 90ms; }
+.stagger > *:nth-child(5)  { animation-delay: 120ms; }
+.stagger > *:nth-child(n+6) { animation-delay: 150ms; }
 
 /* Lift on hover for tappable cards (pointer devices only), press on tap. */
-.tap-card { transition: transform .18s var(--ease-out), background-color .18s ease-out, box-shadow .18s ease-out; }
-.tap-card:active { transform: scale(.98); }
+.tap-card { transition: transform .15s var(--ease-out), background-color .15s ease-out, box-shadow .15s ease-out; }
+.tap-card:active { transform: scale(.985, .97); }
 @media (hover: hover) {
   .tap-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -12px rgb(0 0 0 / .35); }
-  .tap-card:hover:active { transform: scale(.98); }
+  .tap-card:hover:active { transform: scale(.985, .97); }
 }
 
 /* Loading placeholder with a soft moving sheen. */
@@ -268,3 +264,22 @@ select, option { background-color: var(--p2); color: var(--t); }
 @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 .animate-floaty { animation: floaty 3.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .animate-glow, .animate-floaty { animation: none; } }
+
+/* ── Touch feedback and type polish (userinterface.wiki rules) ─────────────
+   In the base layer so any Tailwind utility on the element still wins. */
+@layer base {
+  /* Everything you can press answers the finger right away (120-180ms), even without its own style. */
+  button, [role="button"], a[href] { transition: transform .14s var(--ease-out), background-color .15s ease-out, color .15s ease-out, opacity .15s ease-out; }
+  button:not(:disabled):active, [role="button"]:active { transform: scale(.97); }
+
+  /* Headings break into even lines; paragraphs avoid a lonely last word. */
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+
+  /* Never fake a bold or italic the font doesn't have. */
+  html { font-synthesis: none; text-rendering: optimizeLegibility; }
+}
+
+/* Small icon buttons keep a 44px touch area without growing on screen. */
+.hit-44 { position: relative; }
+.hit-44::after { content: ''; position: absolute; inset: 50% auto auto 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }

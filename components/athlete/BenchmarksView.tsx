@@ -182,7 +182,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
             onClick={openCustom}
             className="relative overflow-hidden text-left p-5 rounded-2xl border border-dashed border-ac/30 bg-ac/5 hover:bg-ac/10 transition group"
           >
-            <div className="font-display text-lg font-extrabold text-ac tracking-tight">Benchmark personalizado</div>
+            <div className="font-display text-lg font-bold text-ac tracking-tight">Benchmark personalizado</div>
             <div className="text-mu text-[11px] mt-1 leading-snug">Registra cualquier WOD, Hero WOD o benchmark de tu box</div>
             <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac text-onac text-[11px] font-bold">
               <PenLine size={12} strokeWidth={2.5} />
@@ -202,7 +202,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                   onClick={() => { setModalBm(bm); setCustomMode(false); setResult(''); setNotes('') }}
                   className="relative overflow-hidden text-left p-5 rounded-2xl border border-dashed border-[var(--ln2)] bg-transparent hover:bg-ac/5 hover:border-ac/30 transition group"
                 >
-                  <div className="font-display text-lg font-extrabold tracking-tight">{bm.name}</div>
+                  <div className="font-display text-lg font-bold tracking-tight">{bm.name}</div>
                   <div className="text-mu text-[11px] mt-1 leading-snug">{bm.desc}</div>
                   <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ac/10 text-ac text-[11px] font-bold border border-ac/20 group-hover:bg-ac group-hover:text-onac transition">
                     <Plus size={12} strokeWidth={2.5} />
@@ -214,12 +214,12 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
             return (
               <div key={bm.name}
-                   className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[var(--ln2)] transition">
+                   className="relative overflow-hidden p-5 rounded-2xl bg-p hover:border-[var(--ln2)] transition">
                 <div className="flex items-start justify-between mb-2">
-                  <div className="font-display text-lg font-extrabold tracking-tight">{bm.name}</div>
+                  <div className="font-display text-lg font-bold tracking-tight">{bm.name}</div>
                 </div>
 
-                <div className="font-display font-extrabold leading-none text-ac my-2 tabular-nums tracking-tight"
+                <div className="font-display font-bold leading-none text-ac my-2 tabular-nums tracking-tight"
                      style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
                   {normalizeResult(best.result, bm.unit)}
                 </div>
@@ -227,7 +227,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
                 <div className="mt-3 pt-3 border-t border-[var(--ln)] flex items-center justify-between">
                   {level && (
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${LEVEL_CLS[level.color]}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${LEVEL_CLS[level.color]}`}>
                                             {level.label}
                     </span>
                   )}
@@ -254,16 +254,16 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
             return (
               <div key={name}
-                   className="relative overflow-hidden p-5 rounded-2xl bg-p border border-[var(--ln)] hover:border-[var(--ln2)] transition">
+                   className="relative overflow-hidden p-5 rounded-2xl bg-p hover:border-[var(--ln2)] transition">
                 <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none"
                      style={{ background: 'radial-gradient(circle, rgb(var(--c-ac) / .05) 0%, transparent 70%)' }} />
                 <div className="flex items-start justify-between mb-2">
-                  <div className="font-display text-lg font-extrabold tracking-tight">{name}</div>
+                  <div className="font-display text-lg font-bold tracking-tight">{name}</div>
                 </div>
 
                 {best && (
                   <>
-                    <div className="font-display font-extrabold leading-none text-ac my-2 tabular-nums tracking-tight"
+                    <div className="font-display font-bold leading-none text-ac my-2 tabular-nums tracking-tight"
                          style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
                       {normalizeResult(best.result, extraUnit)}
                     </div>
@@ -272,7 +272,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                     )}
                     <div className="mt-3 pt-3 border-t border-[var(--ln)] flex items-center justify-between">
                       {level && (
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${LEVEL_CLS[level.color]}`}>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${LEVEL_CLS[level.color]}`}>
                                                     {level.label}
                         </span>
                       )}
@@ -312,7 +312,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
             {customMode && (
               <>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+                  <label className="block text-xs text-mu font-semibold mb-1.5">
                     Nombre del benchmark
                   </label>
                   <input
@@ -324,7 +324,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+                  <label className="block text-xs text-mu font-semibold mb-1.5">
                     Tipo de resultado
                   </label>
                   <div className="flex gap-2">
@@ -348,7 +348,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
             {/* Result input */}
             <div>
-              <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+              <label className="block text-xs text-mu font-semibold mb-1.5">
                 Resultado ({activeUnit === 'time' ? 'mm:ss · escribe solo dígitos' : 'rondas'})
               </label>
               <input
@@ -362,7 +362,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
             </div>
 
             <div>
-              <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Notas</label>
+              <label className="block text-xs text-mu font-semibold mb-1.5">Notas</label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}

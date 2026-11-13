@@ -93,7 +93,7 @@ export function ResetPasswordForm({ email: sessionEmail, expired }: { email: str
       <BrandMark />
 
       <div>
-        <h1 className="font-display text-4xl font-extrabold text-balance tracking-tight">{heading}</h1>
+        <h1 className="font-display text-4xl font-bold text-balance tracking-tight">{heading}</h1>
         <p className="text-mu text-sm mt-1 break-words text-pretty">{sub}</p>
       </div>
 
@@ -120,7 +120,7 @@ export function ResetPasswordForm({ email: sessionEmail, expired }: { email: str
               id="reset-code" name="code" required autoFocus autoComplete="one-time-code"
               inputMode="numeric" pattern="[0-9]*" maxLength={8} placeholder="000000"
               value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
-              className={inputBase + ' h-16 text-center font-display text-4xl font-extrabold tracking-[0.3em] tabular-nums'}
+              className={inputBase + ' h-16 text-center font-display text-4xl font-bold tracking-[0.3em] tabular-nums'}
             />
           </div>
           {error && <Alert tone="error">{error}</Alert>}

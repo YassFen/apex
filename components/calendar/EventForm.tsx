@@ -43,7 +43,7 @@ const emptyMov = (): MovRow => ({ name: '', reps: '', m: '', f: '' })
 const emptyWorkout = (n: number): WorkoutDraft => ({ key: newKey(), title: `Workout ${n}`, type: 'fortime', cap: '', description: '', movs: [emptyMov()] })
 
 const Label = ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
-  <label htmlFor={htmlFor} className="block text-[10px] uppercase tracking-[1.6px] text-fa font-bold mb-1.5 px-1">{children}</label>
+  <label htmlFor={htmlFor} className="block text-xs text-mu font-semibold mb-1.5 px-1">{children}</label>
 )
 const inputCls = 'w-full h-12 px-4 rounded-2xl bg-p2 text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 placeholder:text-fa'
 
@@ -188,7 +188,7 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
 
         <div className="flex items-end justify-between px-1">
           <div>
-            <h2 className="font-display text-xl font-extrabold tracking-tight">Workouts</h2>
+            <h2 className="font-display text-xl font-bold tracking-tight">Workouts</h2>
             <p className="text-mu text-xs">Con las cargas te decimos qué tan preparado vas. Pesos en {unit}.</p>
           </div>
         </div>
@@ -201,12 +201,12 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
               <Card className="flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <GripVertical size={16} className="text-fa" aria-hidden />
-                  <span className="text-[10px] uppercase tracking-[1.6px] text-fa font-bold">Workout {wi + 1}</span>
+                  <span className="text-xs text-mu font-semibold">Workout {wi + 1}</span>
                   <button type="button" onClick={() => setWorkouts(ws => ws.filter(x => x.key !== w.key))} aria-label={`Quitar workout ${wi + 1}`}
                     className="ml-auto size-9 rounded-full grid place-items-center text-mu hover:text-rd hover:bg-rd/10"><Trash2 size={16} aria-hidden /></button>
                 </div>
                 <input value={w.title} onChange={e => patchW(w.key, { title: e.target.value })} placeholder="Nombre (ej: 26.1 o Fran)"
-                  aria-label="Nombre del workout" className={cn(inputCls, 'font-display text-xl sm:text-xl font-extrabold tracking-tight')} />
+                  aria-label="Nombre del workout" className={cn(inputCls, 'font-display text-xl sm:text-xl font-bold tracking-tight')} />
                 <div className="grid grid-cols-[1fr_96px] gap-2">
                   <div className="flex gap-1 overflow-x-auto scrollbar-none">
                     {(Object.keys(WOD_TYPE_META) as EventWorkout['type'][]).map(t => (

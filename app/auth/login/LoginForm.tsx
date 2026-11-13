@@ -60,7 +60,7 @@ export function LoginForm({ confirmed = false, initialError = '', initialEmail =
       <BrandMark />
 
       <div>
-        <h1 className="font-display text-4xl font-extrabold text-balance tracking-tight">Bienvenido</h1>
+        <h1 className="font-display text-4xl font-bold text-balance tracking-tight">Bienvenido</h1>
         <p className="text-mu text-sm mt-1">Entra para ver el WOD de hoy y tus récords.</p>
       </div>
 

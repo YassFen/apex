@@ -62,25 +62,25 @@ export default async function AnalyticsPage() {
         <div className="p-4 lg:p-6 flex flex-col gap-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
             <Card>
-              <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Atletas activos</div>
-              <div className="font-display text-[50px] font-extrabold leading-none text-ac tracking-tight">{athletes}</div>
+              <div className="text-xs text-mu font-semibold mb-2">Atletas activos</div>
+              <div className="font-display text-[50px] font-bold leading-none text-ac tracking-tight">{athletes}</div>
             </Card>
             <Card>
-              <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">WODs publicados</div>
-              <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">{totalWods}</div>
+              <div className="text-xs text-mu font-semibold mb-2">WODs publicados</div>
+              <div className="font-display text-[50px] font-bold leading-none tracking-tight">{totalWods}</div>
             </Card>
             <Card>
-              <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Resultados registrados</div>
-              <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">{totalResults}</div>
+              <div className="text-xs text-mu font-semibold mb-2">Resultados registrados</div>
+              <div className="font-display text-[50px] font-bold leading-none tracking-tight">{totalResults}</div>
             </Card>
             <Card>
-              <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">% RX</div>
-              <div className="font-display text-[50px] font-extrabold leading-none text-gr tracking-tight">{rxPct}%</div>
+              <div className="text-xs text-mu font-semibold mb-2">% RX</div>
+              <div className="font-display text-[50px] font-bold leading-none text-gr tracking-tight">{rxPct}%</div>
             </Card>
           </div>
 
           <Card>
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-3">WODs por tipo</div>
+            <div className="text-xs text-mu font-semibold mb-3">WODs por tipo</div>
             {Object.keys(wodsByType).length === 0 ? (
               <div className="text-mu text-sm">Aún no hay WODs publicados.</div>
             ) : (
@@ -99,7 +99,7 @@ export default async function AnalyticsPage() {
           </Card>
 
           <Card>
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-3">Últimos WODs</div>
+            <div className="text-xs text-mu font-semibold mb-3">Últimos WODs</div>
             {(wods ?? []).length === 0 ? (
               <div className="text-mu text-sm">Sin WODs todavía.</div>
             ) : (
@@ -150,20 +150,20 @@ export default async function AnalyticsPage() {
       <div className="p-4 lg:p-6 flex flex-col gap-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
           <Card>
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">RMs actuales</div>
-            <div className="font-display text-[50px] font-extrabold leading-none text-ac tracking-tight">{prBests.length}</div>
+            <div className="text-xs text-mu font-semibold mb-2">RMs actuales</div>
+            <div className="font-display text-[50px] font-bold leading-none text-ac tracking-tight">{prBests.length}</div>
           </Card>
           <Card>
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Total registros</div>
-            <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">{prs.length}</div>
+            <div className="text-xs text-mu font-semibold mb-2">Total registros</div>
+            <div className="font-display text-[50px] font-bold leading-none tracking-tight">{prs.length}</div>
           </Card>
           <Card>
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Categorías</div>
-            <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">{Object.keys(byCategory).length}</div>
+            <div className="text-xs text-mu font-semibold mb-2">Categorías</div>
+            <div className="font-display text-[50px] font-bold leading-none tracking-tight">{Object.keys(byCategory).length}</div>
           </Card>
           <Card>
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-2">Este mes</div>
-            <div className="font-display text-[50px] font-extrabold leading-none tracking-tight">
+            <div className="text-xs text-mu font-semibold mb-2">Este mes</div>
+            <div className="font-display text-[50px] font-bold leading-none tracking-tight">
               {prs.filter((p: any) => new Date(p.recorded_at).getMonth() === new Date().getMonth()).length}
             </div>
           </Card>
@@ -171,7 +171,7 @@ export default async function AnalyticsPage() {
 
         <div className="grid sm:grid-cols-2 gap-3.5">
           <Card>
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-3">RMs por categoría</div>
+            <div className="text-xs text-mu font-semibold mb-3">RMs por categoría</div>
             {Object.keys(byCategory).length === 0 ? (
               <div className="text-mu text-sm">Registra tu primer RM para ver estadísticas.</div>
             ) : (
@@ -190,7 +190,7 @@ export default async function AnalyticsPage() {
           </Card>
 
           <Card>
-            <div className="text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-3">Registros por mes</div>
+            <div className="text-xs text-mu font-semibold mb-3">Registros por mes</div>
             {monthEntries.length === 0 ? (
               <div className="text-mu text-sm">Sin registros todavía.</div>
             ) : (

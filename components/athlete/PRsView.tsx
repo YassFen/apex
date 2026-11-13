@@ -190,11 +190,11 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
               <table className="w-full border-collapse table-fixed sm:table-auto">
                 <thead>
                   <tr className="bg-p2">
-                    <th className="text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-3 sm:px-4">Movimiento</th>
-                    <th className="text-left text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-4 hidden md:table-cell">Cat.</th>
-                    <th className="text-right text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-4 hidden sm:table-cell">Último</th>
-                    <th className="text-right text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-3 sm:px-4">RM</th>
-                    <th className="text-center text-[10px] uppercase tracking-[1.6px] text-fa font-bold py-3.5 px-2 sm:px-4 hidden sm:table-cell">Tend.</th>
+                    <th className="text-left text-xs text-mu font-semibold py-3.5 px-3 sm:px-4">Movimiento</th>
+                    <th className="text-left text-xs text-mu font-semibold py-3.5 px-4 hidden md:table-cell">Cat.</th>
+                    <th className="text-right text-xs text-mu font-semibold py-3.5 px-4 hidden sm:table-cell">Último</th>
+                    <th className="text-right text-xs text-mu font-semibold py-3.5 px-3 sm:px-4">RM</th>
+                    <th className="text-center text-xs text-mu font-semibold py-3.5 px-2 sm:px-4 hidden sm:table-cell">Tend.</th>
                     <th className="py-3.5 px-1 sm:px-2 w-12 sm:w-16"></th>
                   </tr>
                 </thead>
@@ -230,7 +230,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                         <td className="py-3 px-3 sm:px-4">
                           <div className="font-semibold text-t text-sm truncate">{name}</div>
                           <div className="flex items-center gap-2 mt-0.5 md:hidden">
-                            <span className={`inline-block px-1.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide ${badge.cls}`}>
+                            <span className={`inline-block px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${badge.cls}`}>
                               {badge.label}
                             </span>
                             {/* Inline previous value on mobile (replaces hidden "Último" column) */}
@@ -240,7 +240,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                           </div>
                         </td>
                         <td className="py-3 px-4 hidden md:table-cell">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${badge.cls}`}>
+                          <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${badge.cls}`}>
                             {badge.label}
                           </span>
                         </td>
@@ -251,7 +251,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                           </div>
                         </td>
                         <td className="py-3 px-3 sm:px-4 text-right whitespace-nowrap">
-                          <div className="font-display text-lg sm:text-xl font-extrabold text-ac tracking-tight">
+                          <div className="font-display text-lg sm:text-xl font-bold text-ac tracking-tight">
                             {bestF.value}
                             <span className="text-[11px] text-mu font-normal ml-1">{bestF.unit}</span>
                           </div>
@@ -304,7 +304,7 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="font-display text-[32px] font-extrabold leading-none text-ac tracking-tight">
+                    <div className="font-display text-[32px] font-bold leading-none text-ac tracking-tight">
                       {bestFmt.value}
                       <span className="text-[13px] text-mu font-normal ml-1">{bestFmt.unit}</span>
                     </div>

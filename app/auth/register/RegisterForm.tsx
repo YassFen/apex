@@ -76,7 +76,7 @@ export function RegisterForm() {
           <MailCheck size={28} aria-hidden />
         </div>
         <div>
-          <h1 className="font-display text-4xl font-extrabold text-balance tracking-tight">Revisa tu correo</h1>
+          <h1 className="font-display text-4xl font-bold text-balance tracking-tight">Revisa tu correo</h1>
           <p className="text-mu text-sm mt-2 text-pretty">
             Enviamos un enlace de confirmación a <span className="text-t font-semibold">{sentTo}</span>.
             Ábrelo para activar tu cuenta y luego inicia sesión. Si no lo ves, revisa spam o promociones.
@@ -97,12 +97,12 @@ export function RegisterForm() {
       <BrandMark />
 
       <div>
-        <h1 className="font-display text-4xl font-extrabold text-balance tracking-tight">Crear cuenta</h1>
+        <h1 className="font-display text-4xl font-bold text-balance tracking-tight">Crear cuenta</h1>
         <p className="text-mu text-sm mt-1">Tus marcas y el WOD de tu box en un solo lugar.</p>
       </div>
 
       <fieldset>
-        <legend className="block text-[11px] uppercase tracking-[1.4px] text-mu font-bold mb-2">Soy</legend>
+        <legend className="block text-xs text-mu font-semibold mb-2">Soy</legend>
         <div className="grid grid-cols-2 gap-3">
           {ROLES.map(r => {
             const Icon = r.icon

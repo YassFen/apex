@@ -64,7 +64,7 @@ export function Modal({ open, onClose, title, subtitle, eyebrow, children, class
             initial={{ y: '100%', opacity: 0.6 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0.6 }}
-            transition={{ duration: 0.42, ease: SHEET_EASE }}
+            transition={{ duration: 0.3, ease: SHEET_EASE }}
             drag="y" dragListener={false} dragControls={drag}
             dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={(_, info) => { if (info.offset.y > 110 || info.velocity.y > 600) onClose() }}

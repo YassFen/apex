@@ -54,7 +54,7 @@ export function WodHistoryView({ profile, entries, hasBox }: { profile: Profile;
             <div className="size-14 rounded-2xl bg-p2 grid place-items-center text-mu">
               <CalendarDays size={26} aria-hidden />
             </div>
-            <h2 className="font-display text-2xl font-extrabold tracking-tight">Aún no hay historial</h2>
+            <h2 className="font-display text-2xl font-bold tracking-tight">Aún no hay historial</h2>
             <p className="text-mu text-sm max-w-xs text-pretty">
               {hasBox
                 ? 'Cuando tu coach publique WODs y registres tus resultados, verás aquí tus últimos 60 días.'
@@ -88,7 +88,7 @@ export function WodHistoryView({ profile, entries, hasBox }: { profile: Profile;
 
             {groups.map(([month, list]) => (
               <section key={month} className="flex flex-col gap-2">
-                <h2 className="text-[11px] uppercase tracking-[1.4px] text-mu font-bold px-1 pt-2">
+                <h2 className="text-xs text-mu font-semibold px-1 pt-2">
                   {formatDateOnly(`${month}-01`, { month: 'long', year: 'numeric' })}
                 </h2>
                 <ol className="flex flex-col gap-2 stagger">
@@ -107,7 +107,7 @@ function Stat({ icon: Icon, label, value, sub }: { icon: typeof Flame; label: st
   return (
     <Card padding={false} className="p-4">
       <Icon size={16} className="text-ac mb-2" aria-hidden />
-      <div className="font-display text-3xl font-extrabold tabular-nums leading-none tracking-tight">{value}</div>
+      <div className="font-display text-3xl font-bold tabular-nums leading-none tracking-tight">{value}</div>
       <div className="text-[12px] text-mu mt-1.5 leading-tight whitespace-nowrap">{label}</div>
       <div className="text-[11px] text-fa leading-tight whitespace-nowrap">{sub}</div>
     </Card>
@@ -124,7 +124,7 @@ function Row({ e }: { e: HistoryEntry }) {
     <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-p">
       <div className={cn('w-12 flex-shrink-0 text-center rounded-xl py-1.5', e.isToday ? 'bg-ac text-onac' : 'bg-p2')}>
         <div className={cn('text-[10px] uppercase font-bold', e.isToday ? '' : 'text-mu')}>{e.isToday ? 'Hoy' : day}</div>
-        <div className="font-display text-xl font-extrabold leading-none tabular-nums tracking-tight">{num}</div>
+        <div className="font-display text-xl font-bold leading-none tabular-nums tracking-tight">{num}</div>
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 mb-0.5">
@@ -135,7 +135,7 @@ function Row({ e }: { e: HistoryEntry }) {
       </div>
       {e.result ? (
         <div className="text-right flex-shrink-0">
-          <div className="font-display text-xl font-extrabold tabular-nums leading-none tracking-tight">{e.result.value}</div>
+          <div className="font-display text-xl font-bold tabular-nums leading-none tracking-tight">{e.result.value}</div>
           <div className="text-[11px] text-mu mt-1 flex items-center justify-end gap-1">
             {medal && <Medal size={12} className={medal} aria-label="Podio" />}
             #{e.result.place} · {e.result.level.toUpperCase()}

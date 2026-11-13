@@ -71,7 +71,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
           <div className="w-[38px] h-[38px] rounded-xl bg-ac grid place-items-center flex-shrink-0">
             <Dumbbell size={20} className="text-onac" strokeWidth={2.5} />
           </div>
-          <div className="font-display text-[26px] font-extrabold tracking-tight">AP<span className="text-ac">E</span>X</div>
+          <div className="font-display text-[26px] font-bold tracking-tight">AP<span className="text-ac">E</span>X</div>
         </div>
 
         {/* Box selector + mode toggle */}
@@ -111,7 +111,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
         <nav className="flex-1 py-2 px-2.5 overflow-y-auto flex flex-col gap-1">
           {nav.map(group => (
             <div key={group.label}>
-              <div className="px-2.5 pt-3 pb-1.5 text-[10px] uppercase tracking-[2px] text-fa font-bold">{group.label}</div>
+              <div className="px-2.5 pt-3 pb-1.5 text-xs text-mu font-semibold">{group.label}</div>
               {group.items.map(item => {
                 const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/') && !nav.some(g => g.items.some(i => i.href !== item.href && pathname.startsWith(i.href) && i.href.length > item.href.length)))
                 const Icon = item.icon
@@ -144,7 +144,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
           ) : (
-            <div className="w-9 h-9 rounded-full bg-p3 grid place-items-center font-black text-sm text-t flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-p3 grid place-items-center font-bold text-sm text-t flex-shrink-0">
               {initials}
             </div>
           )}
@@ -157,7 +157,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
           </div>
         </Link>
 
-        <div className="px-5 pb-3 pt-1 text-[9px] uppercase tracking-[1.8px] text-fa/70 font-bold text-center">
+        <div className="px-5 pb-3 pt-1 text-xs text-mu/70 font-semibold text-center">
           APEX · v{APP_VERSION}
         </div>
       </aside>

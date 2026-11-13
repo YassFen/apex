@@ -230,7 +230,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
 
         {/* ── Movement selector ── */}
         <div>
-          <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Movimiento</label>
+          <label className="block text-xs text-mu font-semibold mb-1.5">Movimiento</label>
           <select value={movId} onChange={e => handleMovChange(e.target.value)}
             className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac">
             {Object.entries(byCategory).map(([label, movs]) => (
@@ -247,7 +247,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
         {/* ── Weightlifting / Olympic: 1RM / 2RM / 3RM ── */}
         {(category === 'weightlifting' || category === 'olympic') && (
           <div>
-            <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Tipo de récord</label>
+            <label className="block text-xs text-mu font-semibold mb-1.5">Tipo de récord</label>
             <div className="flex rounded-xl border border-[var(--ln)] overflow-hidden">
               {(['1rm', '2rm', '3rm'] as const).map(m => (
                 <button key={m} type="button" onClick={() => setMetric(m)}
@@ -269,7 +269,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
         {/* ── Gymnastics: reps vs weighted ── */}
         {category === 'gymnastics' && (
           <div>
-            <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Tipo de récord</label>
+            <label className="block text-xs text-mu font-semibold mb-1.5">Tipo de récord</label>
             <div className="flex rounded-xl border border-[var(--ln)] overflow-hidden">
               <button type="button" onClick={() => { setMetric('max_reps'); setWeight('') }}
                 className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
@@ -295,7 +295,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
         {/* ── Monoestructural: tiempo vs calorías ── */}
         {category === 'cardio' && (
           <div>
-            <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Tipo de récord</label>
+            <label className="block text-xs text-mu font-semibold mb-1.5">Tipo de récord</label>
             <div className="flex rounded-xl border border-[var(--ln)] overflow-hidden">
               <button type="button" onClick={() => { setMetric('time'); setCalories('') }}
                 className={`flex-1 py-2.5 text-sm font-bold transition-colors ${
@@ -322,7 +322,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
         {isWeight && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+              <label className="block text-xs text-mu font-semibold mb-1.5">
                 {category === 'gymnastics' ? 'Peso añadido' : 'Carga'} ({unit})
               </label>
               <input type="number" required step="any" min="0.5" value={weight}
@@ -331,7 +331,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
                 placeholder="0" />
             </div>
             <div>
-              <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Unidad</label>
+              <label className="block text-xs text-mu font-semibold mb-1.5">Unidad</label>
               <div className="flex rounded-xl border border-[var(--ln)] overflow-hidden" style={{ height: '44px' }}>
                 {(['kg', 'lb'] as const).map(u => (
                   <button key={u} type="button" onClick={() => setUnit(u)}
@@ -347,7 +347,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
         {/* ── Reps input ── */}
         {isReps && (
           <div>
-            <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+            <label className="block text-xs text-mu font-semibold mb-1.5">
               Repeticiones máximas consecutivas <span className="text-fa normal-case">(reps)</span>
             </label>
             <input type="number" required step="1" min="1" value={reps}
@@ -360,7 +360,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
         {/* ── Calorías input ── */}
         {isCals && (
           <div>
-            <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+            <label className="block text-xs text-mu font-semibold mb-1.5">
               Calorías máximas <span className="text-fa normal-case">(cal)</span>
             </label>
             <input type="number" required step="1" min="1" value={calories}
@@ -373,7 +373,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
         {/* ── Time input with auto-colon ── */}
         {isTime && (
           <div>
-            <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+            <label className="block text-xs text-mu font-semibold mb-1.5">
               Tiempo <span className="text-fa normal-case">(min : seg)</span>
             </label>
             <input
@@ -387,7 +387,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
 
         {/* ── Date (native picker opens on click anywhere in the input) ── */}
         <div>
-          <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">Fecha</label>
+          <label className="block text-xs text-mu font-semibold mb-1.5">Fecha</label>
           <input
             type="date" value={date} max={todayISO()}
             onChange={e => setDate(e.target.value)}
@@ -398,7 +398,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
 
         {/* ── Notes ── */}
         <div>
-          <label className="block text-[10px] uppercase tracking-[1.8px] text-mu font-bold mb-1.5">
+          <label className="block text-xs text-mu font-semibold mb-1.5">
             Notas <span className="text-fa normal-case">(opcional)</span>
           </label>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}

@@ -134,7 +134,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
           /* ── Month ─────────────────────────────── */
           <Card padding={false} className="p-3 sm:p-4 overflow-hidden">
             <div className="flex items-center justify-between gap-2 mb-3 px-1">
-              <h2 className="font-display text-2xl font-extrabold tracking-tight" aria-live="polite">
+              <h2 className="font-display text-2xl font-bold tracking-tight" aria-live="polite">
                 {MONTHS[m - 1]} <span className="text-mu">{y}</span>
               </h2>
               <div className="flex items-center gap-1">
@@ -186,7 +186,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
                         outside ? 'text-fa/70' : 'text-t', !isSel && 'hover:bg-p2')}>
                       {isSel && <motion.span layoutId="cal-selected" transition={SPRING} className="absolute inset-0 -z-10 rounded-xl bg-p2 ring-1 ring-ac/50" aria-hidden />}
                       <span className={cn('size-7 grid place-items-center rounded-full text-sm font-semibold tabular-nums',
-                        isToday && 'bg-ac text-onac font-black')}>
+                        isToday && 'bg-ac text-onac font-bold')}>
                         {Number(d.slice(8))}
                       </span>
                       <span className="flex gap-0.5 items-center h-1.5">
@@ -219,8 +219,8 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
                 transition={{ duration: 0.22, ease: EASE_OUT }}
                 className="flex flex-col gap-3">
                 <div className="px-1">
-                  <div className="text-[10px] uppercase tracking-[1.6px] text-fa font-bold">{relativeDayLabel(selected, today)}</div>
-                  <h2 className="font-display text-2xl font-extrabold first-letter:uppercase tracking-tight">
+                  <div className="text-xs text-mu font-semibold">{relativeDayLabel(selected, today)}</div>
+                  <h2 className="font-display text-2xl font-bold first-letter:uppercase tracking-tight">
                     {formatDateOnly(selected, { weekday: 'long', day: 'numeric', month: 'long' })}
                   </h2>
                 </div>
@@ -258,7 +258,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
         ) : (
           <Reveal>
             <div className="flex items-center justify-between mb-2 px-1">
-              <h2 className="font-display text-xl font-extrabold tracking-tight">Próximos eventos</h2>
+              <h2 className="font-display text-xl font-bold tracking-tight">Próximos eventos</h2>
               <Link href="/calendar/event/new" className="text-ac text-sm font-bold flex items-center gap-1">Agregar <Plus size={14} aria-hidden /></Link>
             </div>
             {upcomingEvents.length === 0 ? (
@@ -289,20 +289,20 @@ function NextEventHero({ event, today }: { event: CalEvent; today: string }) {
   return (
     <Link href={`/calendar/event/${event.id}`} className="block group">
       <motion.div
-        initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5, ease: EASE_OUT }}
+        initial={{ opacity: 0, y: 16, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.3, ease: EASE_OUT }}
         whileTap={{ scale: 0.985 }}
         className="relative overflow-hidden rounded-[28px] bg-p p-1.5 ring-1 ring-t/[.05]">
         <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-rd/20 via-p2 to-p2 p-5 flex items-center gap-4">
           <div className="absolute -right-10 -top-10 size-40 rounded-full bg-[radial-gradient(closest-side,rgb(var(--c-rd)/0.25),transparent)]" aria-hidden />
           <div className="relative text-center flex-shrink-0 w-20">
-            <div className="font-display text-6xl font-extrabold leading-none tabular-nums tracking-tight">{live ? '¡Ya!' : days}</div>
-            <div className="text-[10px] uppercase tracking-[1.6px] text-mu font-bold mt-1">{live ? 'En curso' : days === 1 ? 'día' : 'días'}</div>
+            <div className="font-display text-6xl font-bold leading-none tabular-nums tracking-tight">{live ? '¡Ya!' : days}</div>
+            <div className="text-xs text-mu font-semibold mt-1">{live ? 'En curso' : days === 1 ? 'día' : 'días'}</div>
           </div>
           <div className="relative min-w-0 flex-1">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rd/15 text-rd text-[10px] font-bold uppercase tracking-[1.2px]">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rd/15 text-rd text-xs font-semibold ">
               <Trophy size={12} aria-hidden /> {EVENT_KIND_LABEL[event.kind] ?? 'Evento'}
             </div>
-            <div className="font-display text-lg font-extrabold leading-tight mt-1.5 tracking-tight text-balance break-words">{event.name}</div>
+            <div className="font-display text-lg font-bold leading-tight mt-1.5 tracking-tight text-balance break-words">{event.name}</div>
             <div className="text-mu text-xs mt-0.5 first-letter:uppercase">
               {formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}{event.location && <span className="block normal-case">{event.location}</span>}
             </div>
@@ -324,7 +324,7 @@ function EventRow({ event, today }: { event: CalEvent; today: string }) {
       className="tap-card flex items-center gap-3 p-3.5 rounded-2xl bg-p hover:bg-p2">
       <span className="w-12 flex-shrink-0 text-center rounded-xl bg-rd/15 text-rd py-1.5">
         <span className="block text-[10px] font-bold uppercase">{formatDateOnly(event.startsOn, { month: 'short' }).replace('.', '')}</span>
-        <span className="block font-display text-2xl font-extrabold leading-none tracking-tight">{Number(event.startsOn.slice(8))}</span>
+        <span className="block font-display text-2xl font-bold leading-none tracking-tight">{Number(event.startsOn.slice(8))}</span>
       </span>
       <span className="min-w-0 flex-1">
         <span className="block font-bold text-sm leading-tight break-words">{event.name}</span>
@@ -339,7 +339,7 @@ function EventRow({ event, today }: { event: CalEvent; today: string }) {
         </span>
       </span>
       <span className="text-right flex-shrink-0">
-        <span className="block font-display text-xl font-extrabold leading-none tabular-nums tracking-tight">{days > 0 ? days : days === 0 ? 'Hoy' : '—'}</span>
+        <span className="block font-display text-xl font-bold leading-none tabular-nums tracking-tight">{days > 0 ? days : days === 0 ? 'Hoy' : '—'}</span>
         {days > 0 && <span className="block text-[10px] text-mu">días</span>}
       </span>
     </Link>
@@ -364,12 +364,12 @@ function WodCard({ wod, today, boxName, tone, canEdit }: { wod: CalWod; today: s
           </span>
         )}
       </div>
-      <h3 className="font-display text-2xl font-extrabold leading-tight tracking-tight">{wod.title}</h3>
+      <h3 className="font-display text-2xl font-bold leading-tight tracking-tight">{wod.title}</h3>
       {wod.movements.length > 0 && (
         <ul className="mt-2 flex flex-col gap-1">
           {wod.movements.slice(0, 8).map((mv: any, i: number) => (
             <li key={i} className="flex items-baseline gap-2 text-sm">
-              <span className="font-display font-extrabold text-ac tabular-nums min-w-[2.5rem] tracking-tight">{mv.reps}</span>
+              <span className="font-display font-bold text-ac tabular-nums min-w-[2.5rem] tracking-tight">{mv.reps}</span>
               <span className="min-w-0 break-words">{mv.name}</span>
               {mv.weight && <span className="text-mu text-xs ml-auto flex-shrink-0">{mv.weight}</span>}
             </li>

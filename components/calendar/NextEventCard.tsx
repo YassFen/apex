@@ -30,14 +30,14 @@ export function NextEventCard({ event }: { event: NextEvent | null }) {
       <motion.div whileTap={{ scale: 0.985 }} className="relative overflow-hidden rounded-[20px] bg-p p-4 flex items-center gap-4">
         <div className="absolute -left-10 -bottom-12 size-36 rounded-full bg-[radial-gradient(closest-side,rgb(var(--c-rd)/0.25),transparent)]" aria-hidden />
         <div className="relative w-16 text-center flex-shrink-0">
-          <div className="font-display text-5xl font-extrabold leading-none tabular-nums tracking-tight">{event.days <= 0 ? '¡Ya!' : event.days}</div>
-          <div className="text-[10px] uppercase tracking-[1.4px] text-mu font-bold mt-0.5">{event.days <= 0 ? 'hoy' : event.days === 1 ? 'día' : 'días'}</div>
+          <div className="font-display text-5xl font-bold leading-none tabular-nums tracking-tight">{event.days <= 0 ? '¡Ya!' : event.days}</div>
+          <div className="text-xs text-mu font-semibold mt-0.5">{event.days <= 0 ? 'hoy' : event.days === 1 ? 'día' : 'días'}</div>
         </div>
         <div className="relative min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-rd text-[10px] font-bold uppercase tracking-[1.2px]">
+          <div className="flex items-center gap-1.5 text-rd text-xs font-semibold ">
             <Trophy size={12} aria-hidden />{EVENT_KIND_LABEL[event.kind] ?? 'Evento'}
           </div>
-          <div className="font-display text-lg font-extrabold leading-tight tracking-tight text-balance break-words">{event.name}</div>
+          <div className="font-display text-lg font-bold leading-tight tracking-tight text-balance break-words">{event.name}</div>
           <div className="text-mu text-xs first-letter:uppercase">{formatDateOnly(event.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           {r !== null && (
             <div className="flex items-center gap-2 mt-2">

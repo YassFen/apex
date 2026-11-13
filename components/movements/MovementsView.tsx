@@ -77,7 +77,7 @@ export function MovementsView({ profile, movements, records, coachBoxes }: {
           ))}
         </div>
 
-        <div className="text-[11px] uppercase tracking-[1.4px] text-mu font-semibold px-1">{list.length} ejercicios</div>
+        <div className="text-xs text-mu font-semibold px-1">{list.length} ejercicios</div>
         <ul className="flex flex-col gap-2.5 stagger">
           {list.map(m => {
             const g = guideFor(m.name, m.category)

@@ -63,7 +63,7 @@ export function ChallengesView({ profile, boxes, challenges, today, openId, move
           <p className="text-mu text-sm px-1">Los retos se activan al aplicar la migración <code>008_challenges_media.sql</code> en Supabase.</p>
         ) : (
           <>
-            <div className="text-[11px] uppercase tracking-[1.4px] text-mu font-semibold px-1">
+            <div className="text-xs text-mu font-semibold px-1">
               {tab === 'done' ? 'Retos terminados' : 'Retos creados por atletas de tu box'}
             </div>
             <AnimatePresence mode="popLayout">

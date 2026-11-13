@@ -35,7 +35,7 @@ export function WelcomeView() {
         onDragEnd={(_, info) => { if (info.offset.x < -50) go(1); else if (info.offset.x > 50) go(-1) }}
         className="relative flex-1 flex flex-col px-6 pt-[calc(56px+env(safe-area-inset-top))] pb-[calc(28px+env(safe-area-inset-bottom))] max-w-md w-full mx-auto touch-pan-y">
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-          className="text-center font-display text-[44px] font-black italic tracking-[-0.04em] leading-none">
+          className="text-center font-display text-[44px] font-bold italic tracking-[-0.04em] leading-none">
           APEX
         </motion.div>
 

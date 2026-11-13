@@ -352,7 +352,7 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
                 <div className="font-display text-xl font-bold truncate tracking-tight">{ownedBox.name}</div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-mu">Código</span>
-                  <span className="font-display text-sm font-extrabold tracking-widest text-ac">{ownedBox.invite_code}</span>
+                  <span className="font-display text-sm font-bold tracking-widest text-ac">{ownedBox.invite_code}</span>
                   <button type="button" onClick={() => copyCode(ownedBox.invite_code)} className="text-fa hover:text-ac transition-colors" aria-label="Copiar código">
                     {codeCopied ? <Check size={14} /> : <Copy size={14} />}
                   </button>
@@ -417,7 +417,7 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
                     <div className="font-semibold text-[15px] truncate">{box.name}</div>
                     <div className="text-mu text-xs truncate">{box.city}{box.city && box.country ? ', ' : ''}{box.country}</div>
                   </div>
-                  {box.invite_code && <div className="font-display text-sm font-extrabold tracking-widest text-ac">{box.invite_code}</div>}
+                  {box.invite_code && <div className="font-display text-sm font-bold tracking-widest text-ac">{box.invite_code}</div>}
                 </div>
               ))}
             </Card>
