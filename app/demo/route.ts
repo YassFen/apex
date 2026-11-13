@@ -6,6 +6,6 @@ export function GET(request: NextRequest) {
   const res = NextResponse.redirect(new URL('/dashboard', request.url))
   // Every visit to /demo starts from fresh demo data.
   const id = crypto.randomUUID()
-  res.cookies.set(DEMO_COOKIE, id, { path: '/', maxAge: 60 * 60 * 6, sameSite: 'lax' })
+  res.cookies.set(DEMO_COOKIE, id, { path: '/', maxAge: 60 * 60 * 6, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' })
   return res
 }
