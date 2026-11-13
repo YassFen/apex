@@ -1,4 +1,5 @@
 'use client'
+import { Logo } from '@/components/ui/Logo'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'motion/react'
@@ -35,15 +36,15 @@ export function WelcomeView() {
         onDragEnd={(_, info) => { if (info.offset.x < -50) go(1); else if (info.offset.x > 50) go(-1) }}
         className="relative flex-1 flex flex-col px-6 pt-[calc(56px+env(safe-area-inset-top))] pb-[calc(28px+env(safe-area-inset-bottom))] max-w-md w-full mx-auto touch-pan-y">
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-          className="text-center font-display text-[44px] font-bold italic tracking-[-0.04em] leading-none">
-          APEX
+          className="flex justify-center">
+          <Logo size={40} markClassName="text-white" />
         </motion.div>
 
         <div className="flex-1" />
 
         <AnimatePresence mode="wait">
           <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="text-center mb-6">
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }} className="text-center mb-6">
             <h1 className="font-display text-[32px] leading-[1.05] font-bold tracking-tight text-balance">{slide.title}</h1>
             <p className="text-white/75 text-[15px] mt-2 text-pretty">{slide.body}</p>
           </motion.div>

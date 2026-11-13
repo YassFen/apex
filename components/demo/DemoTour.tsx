@@ -141,7 +141,7 @@ export function DemoTour() {
             <motion.div key="card" role="dialog" aria-label="Recorrido de la demo"
               initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 360, damping: 32 }}
-              className="fixed z-[56] inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] lg:bottom-6 lg:left-auto lg:right-6 lg:w-[400px] rounded-[28px] bg-t text-bg p-5 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.55)]">
+              className="fixed z-[56] inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] lg:bottom-6 lg:left-auto lg:right-6 lg:w-[400px] rounded-[28px] bg-t text-bg p-5 shadow-e3">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[11px] font-bold text-bg/60 tabular-nums">{state.step + 1} de {STEPS.length}</span>
                 <div className="flex-1 h-1 rounded-full bg-bg/15 overflow-hidden">
@@ -151,7 +151,7 @@ export function DemoTour() {
                   className="size-8 rounded-full grid place-items-center hover:bg-bg/10"><X size={16} weight="bold" /></button>
               </div>
               <AnimatePresence mode="wait">
-                <motion.div key={state.step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.2 }}>
+                <motion.div key={state.step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.15 }}>
                   <h2 className="font-display text-xl font-bold tracking-tight">{step.title}</h2>
                   <p className="text-[15px] text-bg/80 mt-1.5 text-pretty">{step.body}</p>
                 </motion.div>
@@ -178,7 +178,7 @@ export function DemoTour() {
         {!state.open && (
           <motion.button key="resume" type="button" onClick={resume}
             initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }}
-            className="fixed z-[56] right-3 bottom-[calc(84px+env(safe-area-inset-bottom))] lg:bottom-6 lg:right-6 h-11 pl-3 pr-4 rounded-full bg-or text-white text-sm font-semibold flex items-center gap-1.5 shadow-lg">
+            className="fixed z-[56] right-3 bottom-[calc(84px+env(safe-area-inset-bottom))] lg:bottom-6 lg:right-6 h-11 pl-3 pr-4 rounded-full bg-or text-white text-sm font-semibold flex items-center gap-1.5 shadow-e2">
             <Compass size={18} weight="fill" />
             {state.step > 0 ? `Continuar recorrido · ${state.step + 1}/${STEPS.length}` : 'Ver recorrido'}
           </motion.button>

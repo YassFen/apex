@@ -1,4 +1,5 @@
 'use client'
+import { Logo } from '@/components/ui/Logo'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -68,10 +69,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
       {/* Desktop only: phones and tablets use the bottom tab bar. */}
       <aside className="hidden lg:flex fixed top-0 left-0 bottom-0 w-[240px] bg-p flex-col z-30">
         <div className="px-5 py-[22px] flex items-center gap-3">
-          <div className="w-[38px] h-[38px] rounded-xl bg-ac grid place-items-center flex-shrink-0">
-            <Dumbbell size={20} className="text-onac" strokeWidth={2.5} />
-          </div>
-          <div className="font-display text-[26px] font-bold tracking-tight">AP<span className="text-ac">E</span>X</div>
+          <Logo size={34} />
         </div>
 
         {/* Box selector + mode toggle */}

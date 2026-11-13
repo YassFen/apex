@@ -216,7 +216,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
             <AnimatePresence mode="wait" initial={false}>
               <motion.div key={selected}
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.22, ease: EASE_OUT }}
+                transition={{ duration: 0.15, ease: EASE_OUT }}
                 className="flex flex-col gap-3">
                 <div className="px-1">
                   <div className="text-xs text-mu font-semibold">{relativeDayLabel(selected, today)}</div>
@@ -505,7 +505,7 @@ function WeekGrid({ selected, today, byDay, onSelect, onShift }: {
                 return (
                   <motion.button key={w.id} type="button" onClick={e => { e.stopPropagation(); onSelect(dd) }}
                     initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING}
-                    className={cn('absolute inset-x-0.5 rounded-lg px-1 py-0.5 text-left overflow-hidden text-white shadow-sm',
+                    className={cn('absolute inset-x-0.5 rounded-lg px-1 py-0.5 text-left overflow-hidden text-white shadow-e1',
                       w.isLive ? (TYPE_BAR[w.type] ?? 'bg-mu') : 'bg-fa', w.myResult && 'ring-2 ring-gr ring-offset-1 ring-offset-p')}
                     style={{ top, height }}>
                     <span className="block text-[9px] font-bold tabular-nums leading-tight">{w.classTime}</span>

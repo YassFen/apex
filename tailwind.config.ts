@@ -43,6 +43,10 @@ const config: Config = {
         sans: ['var(--font-geist)', 'system-ui', '-apple-system', 'sans-serif'],
         display: ['var(--font-geist)', 'system-ui', '-apple-system', 'sans-serif'],
       },
+      boxShadow: {
+        // Elevation scale (globals.css): e1 raised control, e2 floating card, e3 sheet/dialog.
+        e1: 'var(--shadow-1)', e2: 'var(--shadow-2)', e3: 'var(--shadow-3)',
+      },
       borderRadius: {
         card: '20px',
       },

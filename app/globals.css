@@ -162,6 +162,10 @@ select, option { background-color: var(--p2); color: var(--t); }
    transform would turn the element into the containing block of any
    position:fixed child (modals, banners) and break them. */
 :root {
+  /* Elevation: layered, same downward direction, deep neutral (never pure black). */
+  --shadow-1: 0 1px 2px rgb(8 10 16 / .16), 0 2px 6px rgb(8 10 16 / .10);
+  --shadow-2: 0 2px 4px rgb(8 10 16 / .14), 0 8px 18px rgb(8 10 16 / .16), 0 18px 36px rgb(8 10 16 / .14);
+  --shadow-3: 0 4px 8px rgb(8 10 16 / .14), 0 16px 32px rgb(8 10 16 / .20), 0 32px 64px rgb(8 10 16 / .22);
   --ease-out: cubic-bezier(.22, 1, .36, 1);
   --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
 }
@@ -222,10 +226,13 @@ select, option { background-color: var(--p2); color: var(--t); }
 .stagger > *:nth-child(n+6) { animation-delay: 150ms; }
 
 /* Lift on hover for tappable cards (pointer devices only), press on tap. */
-.tap-card { transition: transform .15s var(--ease-out), background-color .15s ease-out, box-shadow .15s ease-out; }
+:where(.tap-card) { position: relative; }
+.tap-card { transition: transform .15s var(--ease-out), background-color .15s ease-out; }
+.tap-card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--shadow-2); opacity: 0; transition: opacity .15s ease-out; pointer-events: none; }
 .tap-card:active { transform: scale(.985, .97); }
 @media (hover: hover) {
-  .tap-card:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -12px rgb(0 0 0 / .35); }
+  .tap-card:hover { transform: translateY(-2px); }
+  .tap-card:hover::after { opacity: 1; }
   .tap-card:hover:active { transform: scale(.985, .97); }
 }
 
@@ -277,7 +284,13 @@ select, option { background-color: var(--p2); color: var(--t); }
   p { text-wrap: pretty; }
 
   /* Never fake a bold or italic the font doesn't have. */
-  html { font-synthesis: none; text-rendering: optimizeLegibility; }
+  html { font-synthesis: none; text-rendering: optimizeLegibility; font-optical-sizing: auto; }
+
+  /* Numbers keep the same width so they line up and don't jitter while they count. */
+  .font-display, time, [inputmode="decimal"], [inputmode="numeric"] { font-variant-numeric: lining-nums tabular-nums; }
+
+  /* Underlines sit below the descenders. */
+  a, .underline { text-underline-offset: 3px; text-decoration-skip-ink: auto; }
 }
 
 /* Small icon buttons keep a 44px touch area without growing on screen. */

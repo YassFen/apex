@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: 'APEX – CrossFit Platform',
   description: 'El WOD de tu box, tus récords y el leaderboard en vivo.',
   manifest: '/manifest.json',
-  icons: { icon: '/icons/icon-192.png', apple: '/icons/apple-touch-icon.png' },
+  icons: { icon: [{ url: '/icon.svg', type: 'image/svg+xml' }, { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }], apple: '/icons/apple-touch-icon.png' },
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'APEX' },
 }
 

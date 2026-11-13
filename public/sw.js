@@ -29,7 +29,7 @@ self.addEventListener('push', e => {
     self.registration.showNotification(data.title ?? 'APEX', {
       body: data.body ?? '¡Nuevo WOD publicado!',
       icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      badge: '/icons/badge-96.png',
       data: { url: data.url ?? '/wod' },
     })
   )

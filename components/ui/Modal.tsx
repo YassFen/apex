@@ -52,8 +52,8 @@ export function Modal({ open, onClose, title, subtitle, eyebrow, children, class
       {open && (
         <motion.div
           key="overlay"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          transition={{ duration: 0.22 }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: 'none', transition: { duration: 0.18, ease: 'easeIn' } }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
           className="fixed inset-0 z-[60] bg-black/55 flex items-end sm:items-center justify-center sm:p-4"
           onClick={e => e.target === e.currentTarget && onClose()}
         >
@@ -63,14 +63,14 @@ export function Modal({ open, onClose, title, subtitle, eyebrow, children, class
             tabIndex={-1}
             initial={{ y: '100%', opacity: 0.6 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0.6 }}
+            exit={{ y: '100%', opacity: 0.6, transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }}
             transition={{ duration: 0.3, ease: SHEET_EASE }}
             drag="y" dragListener={false} dragControls={drag}
             dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={(_, info) => { if (info.offset.y > 110 || info.velocity.y > 600) onClose() }}
             className={cn(
               'relative w-full sm:max-w-[520px] bg-p rounded-t-[32px] sm:rounded-[32px] px-5 pt-3 sm:p-7 ring-1 ring-t/[0.08]',
-              'max-h-[92dvh] overflow-y-auto overscroll-contain outline-none shadow-[0_-24px_60px_-20px_rgb(0_0_0/0.45)]',
+              'max-h-[92dvh] overflow-y-auto overscroll-contain outline-none shadow-e3',
               'pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-7',
               className,
             )}

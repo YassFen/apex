@@ -234,7 +234,7 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
                 </div>
                 <AnimatePresence mode="wait" initial={false}>
                   {tab === 'table' ? (
-                    <motion.ul key="table" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.2 }}
+                    <motion.ul key="table" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.15 }}
                       className="px-2 pb-2">
                       {TABLE_PCTS.map(p => {
                         const wt = roundToLoadable(oneRM * p / 100, unit)
@@ -259,7 +259,7 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
                       })}
                     </motion.ul>
                   ) : (
-                    <motion.div key="warmup" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}
+                    <motion.div key="warmup" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.15 }}
                       className="px-4 pb-4">
                       <p className="text-mu text-xs mb-3 flex items-center gap-1.5"><Flame size={14} className="text-or" aria-hidden />Rampa hasta {fmt(target)} {unit} ({pct}%)</p>
                       <ol className="flex flex-col gap-1.5">

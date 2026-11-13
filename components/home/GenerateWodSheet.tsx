@@ -24,7 +24,7 @@ export function GenerateWodSheet({ open, onClose, hits, maxesLb, unit }: {
       title={<>Hoy toca <span className="text-ac">{wod.focus.map(g => MUSCLE_LABEL[g].toLowerCase()).join(' y ')}</span></>}>
       <AnimatePresence mode="wait">
         <motion.div key={seed} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.3, ease: EASE_OUT }}
+          transition={{ duration: 0.15, ease: EASE_OUT }}
           className="rounded-[24px] bg-p2 p-5">
           <div className="flex items-center gap-2 mb-2">
             <span className={cn('px-2.5 py-1 rounded-full text-[11px] font-bold uppercase', meta.cls)}>{meta.label}</span>

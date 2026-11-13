@@ -104,7 +104,7 @@ export function ChallengesView({ profile, boxes, challenges, today, openId, move
         <div className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] lg:bottom-8 inset-x-0 lg:left-[240px] flex justify-center z-30 pointer-events-none">
           <motion.button type="button" onClick={() => setCreating(true)} whileTap={{ scale: 0.95 }}
             initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 380, damping: 28, delay: 0.3 }}
-            className="pointer-events-auto h-12 pl-5 pr-4 rounded-full bg-t text-bg font-semibold flex items-center gap-2 shadow-[0_12px_30px_-10px_rgb(0_0_0/0.5)]">
+            className="pointer-events-auto h-12 pl-5 pr-4 rounded-full bg-t text-bg font-semibold flex items-center gap-2 shadow-e2">
             Crear un reto <ArrowRight size={18} weight="bold" />
           </motion.button>
         </div>
@@ -319,7 +319,7 @@ function CreateChallenge({ open, onClose, boxes, today }: { open: boolean; onClo
         </div>
         {/* 3. Exercise */}
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={`${catId}-${subIdx}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}
+          <motion.div key={`${catId}-${subIdx}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}
             className="flex flex-wrap gap-1">
             {sub.items.map(m => (
               <button key={m} type="button" onClick={() => pickExercise(m)} className={cn(chip(mov === m), 'whitespace-nowrap')}>

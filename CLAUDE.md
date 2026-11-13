@@ -225,6 +225,14 @@ Every Tailwind color is a CSS variable holding RGB channels (`--c-bg`, `--c-ac`,
 
 Labels are `text-xs font-semibold text-mu` in sentence case (no tiny uppercase tracking labels; uppercase is only for WOD-type badges). Weights stop at `font-bold`. Cards are flat `bg-p` with no border. Anything the person triggers animates in 300ms or less (press 120-180ms, entrances ease-out, exits ease-in and shorter, stagger 30ms per item); only data fills (rings, progress bars) may run longer. Every button gets a press scale from the base layer in `globals.css`; `.hit-44` widens a small icon button's touch area. The top bar title shrinks by length, nested screens get a back arrow (`Topbar`), and the bottom bar is user-editable (`apex.tabs.<mode>` in localStorage, `MobileNav`). Challenge exercises come from `lib/constants/challenge-exercises.ts` (category → subcategory → exercise).
 
+### Brand
+
+The logo is a plate seen from the front with the summit cut out (`components/ui/Logo.tsx`: `LogoMark` and `Logo`, colored by the text color). Files: `public/brand/` (SVG mark in lime/black/white, app icon, favicons), `public/icons/` (192, 512, maskable 512, apple-touch, one-colour notification badge) and `app/icon.svg` (tab icon). They are generated from one path; change the path in `Logo.tsx` and regenerate the PNGs with sharp if the mark ever changes.
+
+### UI skill
+
+`.claude/skills/userinterface-wiki/` (MIT, from raphaelsalaja/userinterface-wiki) holds 152 UI rules; review UI changes against it. Applied here: one shadow scale (`shadow-e1/e2/e3`, layered, tinted, top-down), exits shorter than entrances with ease-in, `mode="wait"` transitions at 150ms, hover shadows fade through a pseudo-element, tabular numbers on `font-display`.
+
 ### Notifications
 
 In-app only (no push server). `app/(dashboard)/layout.tsx` builds notices with `buildNotices()` (`lib/utils/notifications.ts`): event countdown at 7/3/1/0 days, tomorrow's WOD with its class time, today's WOD still to log, new box events. `NotificationBell` (Topbar) shows them; read state and preferences live in localStorage. With permission, new notices also show as system notifications via the service worker while the app is open.

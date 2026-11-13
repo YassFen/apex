@@ -1,3 +1,4 @@
+import { Logo } from '@/components/ui/Logo'
 import { notFound } from 'next/navigation'
 import { roleLabel } from '@/lib/utils/cn'
 import Link from 'next/link'
@@ -53,7 +54,7 @@ export default async function PublicAthletePage({ params }: { params: Promise<{ 
       <div className="max-w-2xl mx-auto px-4 py-6 lg:py-10">
         {/* Back to APEX logo */}
         <Link href="/" className="inline-flex items-center gap-2 text-mu hover:text-t text-sm font-semibold mb-6">
-          <span className="font-display text-[22px] font-bold tracking-[3px] tracking-tight">AP<span className="text-ac">E</span>X</span>
+          <Logo size={24} className="text-t" />
         </Link>
 
         {/* Header card */}

@@ -107,7 +107,7 @@ export function MovementsView({ profile, movements, records, coachBoxes }: {
         <div className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] lg:bottom-8 inset-x-0 lg:left-[240px] flex justify-center z-30 pointer-events-none">
           <motion.button type="button" onClick={() => setCreating(true)} whileTap={{ scale: 0.95 }}
             initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 380, damping: 28, delay: 0.3 }}
-            className="pointer-events-auto h-12 pl-5 pr-4 rounded-full bg-t text-bg font-semibold flex items-center gap-2 shadow-[0_12px_30px_-10px_rgb(0_0_0/0.5)]">
+            className="pointer-events-auto h-12 pl-5 pr-4 rounded-full bg-t text-bg font-semibold flex items-center gap-2 shadow-e2">
             Crear ejercicio <ArrowRight size={18} weight="bold" />
           </motion.button>
         </div>
@@ -164,7 +164,7 @@ export function MovementDetail({ movement: m, onClose, records, unit, canEditPho
             {canEditPhoto && (
               <>
                 <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-                  className="absolute bottom-3 right-3 h-10 px-4 rounded-full bg-t text-bg text-sm font-semibold flex items-center gap-2 shadow-lg disabled:opacity-60">
+                  className="absolute bottom-3 right-3 h-10 px-4 rounded-full bg-t text-bg text-sm font-semibold flex items-center gap-2 shadow-e2 disabled:opacity-60">
                   <Camera size={18} weight="fill" />{uploading ? 'Subiendo…' : 'Cambiar foto'}
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={changePhoto} className="hidden" />
