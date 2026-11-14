@@ -1,4 +1,5 @@
 'use client'
+import { playSound } from '@/lib/utils/sound'
 import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import { AlertCircle, CheckCircle2, Info, Trophy, X } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
@@ -32,6 +33,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     // Keep at most 3 on screen so they never pile up.
     setToasts(t => [...t.slice(-2), { id, message, type }])
     setTimeout(() => dismiss(id), type === 'error' ? 5000 : 3000)
+    playSound(type === 'pr' ? 'pr' : type === 'error' ? 'error' : type === 'ok' ? 'success' : 'tick')
     try { navigator.vibrate?.(type === 'pr' ? [18, 40, 28] : type === 'error' ? [40, 30, 40] : 12) } catch {}
   }, [dismiss])
 
@@ -40,7 +42,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="fixed z-[99] inset-x-4 bottom-[calc(76px+env(safe-area-inset-bottom))] lg:inset-x-auto lg:right-6 lg:bottom-auto lg:top-6 flex flex-col gap-2 items-stretch lg:items-end pointer-events-none"
+        className="fixed z-[99] inset-x-4 bottom-[calc(88px+env(safe-area-inset-bottom))] lg:inset-x-auto lg:right-6 lg:bottom-auto lg:top-6 flex flex-col gap-2 items-stretch lg:items-end pointer-events-none"
       >
         {toasts.map(t => {
           const Icon = ICONS[t.type]

@@ -1,4 +1,5 @@
 'use client'
+import { playSound } from '@/lib/utils/sound'
 import { useEffect } from 'react'
 import { animate, motion, useMotionValue, useReducedMotion, useTransform, type HTMLMotionProps } from 'motion/react'
 import { cn } from '@/lib/utils/cn'
@@ -71,7 +72,7 @@ export function Segmented<T extends string>({ value, onChange, options, id, clas
       {options.map(([k, label]) => {
         const active = k === value
         return (
-          <button key={k} type="button" role="tab" aria-selected={active} onClick={() => onChange(k)}
+          <button key={k} type="button" role="tab" aria-selected={active} onClick={() => { if (!active) playSound('tick'); onChange(k) }}
             className={cn('relative isolate rounded-xl font-bold transition-colors', size === 'sm' ? 'min-h-8 text-xs' : 'min-h-10 text-sm', active ? 'text-t' : 'text-mu hover:text-t')}>
             {active && <ActivePill layoutId={`seg-${id}`} />}
             {label}

@@ -104,7 +104,7 @@ export function MovementsView({ profile, movements, records, coachBoxes }: {
       </div>
 
       {coachBoxes.length > 0 && (
-        <div className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] lg:bottom-8 inset-x-0 lg:left-[240px] flex justify-center z-30 pointer-events-none">
+        <div className="fixed bottom-[calc(92px+env(safe-area-inset-bottom))] lg:bottom-8 inset-x-0 lg:left-[240px] flex justify-center z-30 pointer-events-none">
           <motion.button type="button" onClick={() => setCreating(true)} whileTap={{ scale: 0.95 }}
             initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 380, damping: 28, delay: 0.3 }}
             className="pointer-events-auto h-12 pl-5 pr-4 rounded-full bg-t text-bg font-semibold flex items-center gap-2 shadow-e2">

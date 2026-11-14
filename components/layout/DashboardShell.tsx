@@ -18,7 +18,7 @@ export function DashboardShell({ profile, boxes, notices = [], children }: { pro
       <ToastProvider>
         <div className="flex min-h-dvh bg-bg">
           <Sidebar profile={profile} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <main className="flex-1 min-w-0 flex flex-col lg:ml-[240px] min-h-dvh pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-0">
+          <main className="flex-1 min-w-0 flex flex-col lg:ml-[240px] min-h-dvh pb-[calc(96px+env(safe-area-inset-bottom))] lg:pb-0">
             {/* DEMO MODE: mode switch, guided tour, exit */}
             {profile.id === DEMO_USER_ID && <DemoTour />}
             {children}

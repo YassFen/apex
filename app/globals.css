@@ -296,3 +296,52 @@ select, option { background-color: var(--p2); color: var(--t); }
 /* Small icon buttons keep a 44px touch area without growing on screen. */
 .hit-44 { position: relative; }
 .hit-44::after { content: ''; position: absolute; inset: 50% auto auto 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+
+/* ── Glass ─────────────────────────────────────────────────────────────────
+   The bottom bar is always glass: a small floating capsule, so its blur is cheap.
+   "Cristal" (data-surface="glass") also turns cards into translucent panes over a soft
+   light, and blurs sheets. Cards are NOT blurred (dozens of blurred layers would lag);
+   they are tinted panes with a top highlight, which reads as glass over the ambient light. */
+.glass-bar {
+  background: rgb(var(--c-p2) / .68);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .12), inset 0 0 0 1px rgb(var(--c-t) / .08), var(--shadow-2);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-bar { background: rgb(var(--c-p2) / .96); }
+}
+
+:root[data-surface="glass"] body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(70% 45% at 8% 0%, rgb(var(--c-ac) / .22), transparent 70%),
+    radial-gradient(60% 40% at 100% 22%, rgb(var(--c-bl) / .18), transparent 70%),
+    radial-gradient(70% 45% at 30% 100%, rgb(var(--c-pu) / .16), transparent 70%);
+}
+:root[data-surface="glass"] body, :root[data-surface="glass"] .bg-bg { background-color: transparent; }
+:root[data-surface="glass"] { background: rgb(var(--c-bg)); }
+:root[data-surface="glass"] header.bg-bg { background: linear-gradient(rgb(var(--c-bg) / .92), rgb(var(--c-bg) / .78) 70%, transparent); }
+
+:root[data-surface="glass"] .bg-p {
+  background-color: rgb(var(--c-t) / .06);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .09), inset 0 0 0 1px rgb(var(--c-t) / .06);
+}
+:root[data-surface="glass"] .bg-p2, :root[data-surface="glass"] .hover\:bg-p2:hover { background-color: rgb(var(--c-t) / .07); }
+:root[data-surface="glass"] .bg-p3, :root[data-surface="glass"] .hover\:bg-p3:hover { background-color: rgb(var(--c-t) / .12); }
+:root[data-surface="glass"] input, :root[data-surface="glass"] textarea { background-color: rgb(var(--c-t) / .07); }
+
+/* Sheets sit over content, so they do blur what is behind them. */
+:root[data-surface="glass"] .glass-sheet {
+  background-color: rgb(var(--c-p) / .74);
+  -webkit-backdrop-filter: blur(30px) saturate(170%);
+  backdrop-filter: blur(30px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .14), var(--shadow-3);
+}
+:root[data-surface="glass"] .glass-bar { background: rgb(var(--c-t) / .10); }
+
+/* Light glass: panes are white tints instead of dark ones. */
+:root[data-surface="glass"][data-theme="light"] .bg-p { background-color: rgb(255 255 255 / .62); box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), inset 0 0 0 1px rgb(255 255 255 / .5), var(--shadow-1); }
+:root[data-surface="glass"][data-theme="light"] .bg-p2, :root[data-surface="glass"][data-theme="light"] .hover\:bg-p2:hover { background-color: rgb(var(--c-t) / .05); }
+:root[data-surface="glass"][data-theme="light"] .bg-p3, :root[data-surface="glass"][data-theme="light"] .hover\:bg-p3:hover { background-color: rgb(var(--c-t) / .09); }
+:root[data-surface="glass"][data-theme="light"] .glass-bar { background: rgb(255 255 255 / .6); }

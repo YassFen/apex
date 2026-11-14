@@ -1,5 +1,7 @@
 'use client'
-import { useEffect, useId, useRef } from 'react'
+import { MorphIcon } from '@/components/ui/MorphIcon'
+import { playSound } from '@/lib/utils/sound'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useDragControls } from 'motion/react'
 import { X } from '@/components/ui/icons'
@@ -29,6 +31,7 @@ export function Modal({ open, onClose, title, subtitle, eyebrow, children, class
 
   useEffect(() => {
     if (!open) return
+    playSound('open')
     const handler = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     document.addEventListener('keydown', handler)
     const prevOverflow = document.body.style.overflow
@@ -69,7 +72,7 @@ export function Modal({ open, onClose, title, subtitle, eyebrow, children, class
             dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={(_, info) => { if (info.offset.y > 110 || info.velocity.y > 600) onClose() }}
             className={cn(
-              'relative w-full sm:max-w-[520px] bg-p rounded-t-[32px] sm:rounded-[32px] px-5 pt-3 sm:p-7 ring-1 ring-t/[0.08]',
+              'glass-sheet relative w-full sm:max-w-[520px] bg-p rounded-t-[32px] sm:rounded-[32px] px-5 pt-3 sm:p-7 ring-1 ring-t/[0.08]',
               'max-h-[92dvh] overflow-y-auto overscroll-contain outline-none shadow-e3',
               'pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-7',
               className,
@@ -83,7 +86,7 @@ export function Modal({ open, onClose, title, subtitle, eyebrow, children, class
               type="button" onClick={onClose} aria-label="Cerrar"
               className="absolute top-4 right-4 sm:top-5 sm:right-5 size-9 rounded-full grid place-items-center text-t ring-1 ring-t/25 hover:bg-p2 active:scale-90 transition"
             >
-              <X size={16} weight="bold" aria-hidden />
+              <CloseGlyph />
             </button>
             {(title || subtitle || eyebrow) && (
               <div className="mb-5 pr-12">
@@ -125,4 +128,11 @@ export function ModalActions({ secondary, primary, onSecondary, onPrimary, prima
       </button>
     </div>
   )
+}
+
+/** The close cross turns in from a plus as the sheet arrives (secondary action backing the main one). */
+function CloseGlyph() {
+  const [icon, setIcon] = useState<'plus' | 'cross'>('plus')
+  useEffect(() => { const id = setTimeout(() => setIcon('cross'), 90); return () => clearTimeout(id) }, [])
+  return <MorphIcon icon={icon} size={16} strokeWidth={2} />
 }

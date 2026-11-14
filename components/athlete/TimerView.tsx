@@ -1,4 +1,5 @@
 'use client'
+import { MorphIcon } from '@/components/ui/MorphIcon'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Topbar } from '@/components/layout/Topbar'
@@ -349,17 +350,13 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
             <button onClick={reset} className="h-14 px-8 rounded-full bg-p2 text-t font-display text-lg font-bold active:scale-[0.96] transition-transform tracking-tight">
               Cancelar
             </button>
-          ) : !running ? (
-            <button onClick={start} disabled={state === 'done'}
-              className="h-14 px-9 rounded-full bg-ac text-onac font-display text-lg font-bold active:scale-[0.96] transition-transform flex items-center gap-2 min-w-[160px] justify-center disabled:opacity-40 tracking-tight">
-              <Play size={18} fill="currentColor" aria-hidden />
-              {state === 'paused' ? 'Continuar' : 'Iniciar'}
-            </button>
           ) : (
-            <button onClick={pause}
-              className="h-14 px-9 rounded-full bg-p2 text-t font-display text-lg font-bold active:scale-[0.96] transition-transform flex items-center gap-2 min-w-[160px] justify-center tracking-tight">
-              <Pause size={18} fill="currentColor" aria-hidden />
-              Pausa
+            /* One button for start/pause: the triangle folds into the two pause bars. */
+            <button onClick={running ? pause : start} disabled={state === 'done'}
+              className={cn('h-14 px-9 rounded-full font-display text-lg font-bold active:scale-[0.96] transition-[transform,background-color,color] duration-200 flex items-center gap-2.5 min-w-[160px] justify-center disabled:opacity-40 tracking-tight',
+                running ? 'bg-p2 text-t' : 'bg-ac text-onac')}>
+              <MorphIcon icon={running ? 'pause' : 'play'} size={18} strokeWidth={2.4} />
+              {running ? 'Pausa' : state === 'paused' ? 'Continuar' : 'Iniciar'}
             </button>
           )}
           {mode === 'fortime' && running && (

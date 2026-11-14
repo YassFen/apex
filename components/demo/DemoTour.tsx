@@ -141,7 +141,7 @@ export function DemoTour() {
             <motion.div key="card" role="dialog" aria-label="Recorrido de la demo"
               initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 360, damping: 32 }}
-              className="fixed z-[56] inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] lg:bottom-6 lg:left-auto lg:right-6 lg:w-[400px] rounded-[28px] bg-t text-bg p-5 shadow-e3">
+              className="fixed z-[56] inset-x-3 bottom-[calc(88px+env(safe-area-inset-bottom))] lg:bottom-6 lg:left-auto lg:right-6 lg:w-[400px] rounded-[28px] bg-t text-bg p-5 shadow-e3">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[11px] font-bold text-bg/60 tabular-nums">{state.step + 1} de {STEPS.length}</span>
                 <div className="flex-1 h-1 rounded-full bg-bg/15 overflow-hidden">
@@ -178,7 +178,7 @@ export function DemoTour() {
         {!state.open && (
           <motion.button key="resume" type="button" onClick={resume}
             initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }}
-            className="fixed z-[56] right-3 bottom-[calc(84px+env(safe-area-inset-bottom))] lg:bottom-6 lg:right-6 h-11 pl-3 pr-4 rounded-full bg-or text-white text-sm font-semibold flex items-center gap-1.5 shadow-e2">
+            className="fixed z-[56] right-3 bottom-[calc(92px+env(safe-area-inset-bottom))] lg:bottom-6 lg:right-6 h-11 pl-3 pr-4 rounded-full bg-or text-white text-sm font-semibold flex items-center gap-1.5 shadow-e2">
             <Compass size={18} weight="fill" />
             {state.step > 0 ? `Continuar recorrido · ${state.step + 1}/${STEPS.length}` : 'Ver recorrido'}
           </motion.button>

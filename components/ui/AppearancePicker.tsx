@@ -1,7 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Check, Monitor, Moon, Sun } from '@/components/ui/icons'
-import { ACCENTS, DEFAULT_THEME, THEME_EVENT, applyTheme, readTheme, type Accent, type ThemeMode } from '@/lib/utils/theme'
+import { ACCENTS, DEFAULT_THEME, THEME_EVENT, applyTheme, readTheme, type Accent, type Surface, type ThemeMode } from '@/lib/utils/theme'
+import { playSound, setSoundEnabled, soundEnabled } from '@/lib/utils/sound'
+import { Switch } from '@/components/ui/Switch'
 import { labelCls } from '@/components/ui/Field'
 import { cn } from '@/lib/utils/cn'
 
@@ -15,7 +17,8 @@ export function AppearancePicker() {
   const [theme, setTheme] = useState(DEFAULT_THEME)
 
   // The saved choice lives in localStorage, which only exists in the browser.
-  useEffect(() => { setTheme(readTheme()) }, [])
+  const [sound, setSound] = useState(true)
+  useEffect(() => { setTheme(readTheme()); setSound(soundEnabled()) }, [])
 
   function update(next: Partial<typeof theme>) {
     const merged = { ...theme, ...next }
@@ -37,6 +40,35 @@ export function AppearancePicker() {
           ))}
         </div>
       </div>
+
+      <div>
+        <span className={labelCls}>Estilo</span>
+        <div role="radiogroup" aria-label="Estilo" className="grid grid-cols-2 gap-2">
+          {([['solid', 'Sólido', 'Superficies opacas, máximo contraste'], ['glass', 'Cristal', 'Translúcido, con luz de fondo']] as const).map(([key, label, desc]) => {
+            const active = theme.surface === key
+            return (
+              <button key={key} type="button" role="radio" aria-checked={active} onClick={() => update({ surface: key as Surface })}
+                className={cn('p-2 rounded-[20px] text-left transition-colors ring-1 ring-inset', active ? 'ring-ac bg-p2' : 'ring-transparent bg-p2 hover:bg-p3')}>
+                {/* Tiny preview of the style */}
+                <span className={cn('relative block h-16 rounded-[14px] overflow-hidden', key === 'glass' ? 'bg-[radial-gradient(120%_90%_at_10%_0%,rgb(var(--c-ac)/0.55),transparent_60%),radial-gradient(90%_90%_at_100%_100%,rgb(var(--c-bl)/0.5),transparent_60%)] bg-p3' : 'bg-bg')}>
+                  <span className={cn('absolute inset-x-2 top-2 h-6 rounded-lg', key === 'glass' ? 'bg-white/20 ring-1 ring-inset ring-white/25' : 'bg-p3')} />
+                  <span className={cn('absolute inset-x-5 bottom-1.5 h-4 rounded-full', key === 'glass' ? 'bg-white/25 ring-1 ring-inset ring-white/30' : 'bg-p3')} />
+                </span>
+                <span className="block text-sm font-semibold mt-2 px-1">{label}</span>
+                <span className="block text-xs text-mu px-1 pb-1 leading-snug">{desc}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <label className="flex items-center gap-3 p-3.5 rounded-2xl bg-p2 cursor-pointer">
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">Sonidos</span>
+          <span className="block text-xs text-mu leading-snug">Toques suaves al navegar, guardar y lograr un récord</span>
+        </span>
+        <Switch checked={sound} label="Sonidos" onChange={v => { setSoundEnabled(v); setSound(v); if (v) playSound('success') }} />
+      </label>
 
       <div>
         <span className={labelCls}>Color de acento</span>

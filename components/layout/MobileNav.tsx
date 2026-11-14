@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils/cn'
 import { SPRING } from '@/components/ui/motion'
 import { useShell, type ViewMode } from '@/lib/hooks/useShell'
 import { Modal } from '@/components/ui/Modal'
+import { MorphIcon } from '@/components/ui/MorphIcon'
+import { playSound } from '@/lib/utils/sound'
 import type { Profile } from '@/lib/types/database'
 
 type Item = { href: string; label: string; short: string; icon: typeof Flame; desc: string }
@@ -85,14 +87,17 @@ export function MobileNav({ profile }: { profile: Profile }) {
   return (
     <>
       <nav aria-label="Navegación principal"
-        className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-p pb-[env(safe-area-inset-bottom)] shadow-[0_-1px_0_var(--ln)]">
-        <div className="grid grid-cols-5 h-[62px] px-1.5">
+        className="fixed z-40 lg:hidden inset-x-0 bottom-[calc(10px+env(safe-area-inset-bottom))] px-3 pointer-events-none">
+        <div className="glass-bar pointer-events-auto mx-auto max-w-[460px] h-[64px] p-1.5 rounded-full flex items-stretch gap-0.5">
           {tabs.map(item => (
             <TabLink key={item.href} item={item} active={isActive(pathname, item.href)} />
           ))}
-          <button type="button" onClick={() => setMoreOpen(true)} aria-haspopup="dialog" aria-expanded={moreOpen}
-            className="relative flex flex-col items-center justify-center gap-1 text-center">
-            <TabIcon Icon={MoreHorizontal} active={moreActive || moreOpen} label="Más" />
+          <button type="button" onClick={() => { playSound('tap'); setMoreOpen(true) }} aria-haspopup="dialog" aria-expanded={moreOpen} aria-label="Más"
+            className={cn('relative isolate flex-1 min-w-0 rounded-full flex flex-col items-center justify-center gap-0.5 transition-colors',
+              moreActive || moreOpen ? 'text-onac' : 'text-mu')}>
+            {(moreActive || moreOpen) && <motion.span layoutId="tab-pill" transition={SPRING} className="absolute inset-0 -z-10 rounded-full bg-ac shadow-e1" aria-hidden />}
+            <MorphIcon icon={moreOpen ? 'cross' : 'more'} size={22} strokeWidth={moreOpen ? 1.6 : 2.4} />
+            <span className="text-[10px] font-semibold leading-none">Más</span>
           </button>
         </div>
       </nav>
@@ -217,27 +222,16 @@ function TabBarEditor({ open, onClose, items, pinned, onChange, onReset }: {
 }
 
 function TabLink({ item, active }: { item: Item; active: boolean }) {
+  const Icon = item.icon
   return (
-    <Link href={item.href} aria-current={active ? 'page' : undefined}
-      className="relative flex flex-col items-center justify-center gap-1 text-center min-w-0">
-      <TabIcon Icon={item.icon} active={active} label={item.short} />
+    <Link href={item.href} aria-current={active ? 'page' : undefined} onClick={() => { if (!active) playSound('tap') }}
+      className={cn('relative isolate flex-1 min-w-0 rounded-full flex flex-col items-center justify-center gap-0.5 transition-colors',
+        active ? 'text-onac' : 'text-mu')}>
+      {active && <motion.span layoutId="tab-pill" transition={SPRING} className="absolute inset-0 -z-10 rounded-full bg-ac shadow-e1" aria-hidden />}
+      <motion.span animate={{ scale: active ? 1.06 : 1, y: active ? -0.5 : 0 }} transition={SPRING} className="grid place-items-center">
+        <Icon size={22} weight={active ? 'fill' : 'regular'} aria-hidden />
+      </motion.span>
+      <span className="text-[10px] font-semibold leading-none whitespace-nowrap">{item.short}</span>
     </Link>
-  )
-}
-
-function TabIcon({ Icon, active, label }: { Icon: typeof Flame; active: boolean; label: string }) {
-  return (
-    <>
-      <span className={cn(
-        'relative isolate h-8 w-14 rounded-full grid place-items-center transition-colors duration-300',
-        active ? 'text-ac' : 'text-mu',
-      )}>
-        {active && <motion.span layoutId="tab-pill" transition={SPRING} className="absolute inset-0 -z-10 rounded-full bg-ac/15" aria-hidden />}
-        <motion.span animate={{ scale: active ? 1 : 0.92, y: active ? -1 : 0 }} transition={SPRING} className="grid place-items-center">
-          <Icon size={24} weight={active ? 'fill' : 'regular'} aria-hidden />
-        </motion.span>
-      </span>
-      <span className={cn('text-[10px] font-bold leading-none transition-colors whitespace-nowrap', active ? 'text-t' : 'text-mu')}>{label}</span>
-    </>
   )
 }

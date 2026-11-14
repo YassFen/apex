@@ -1,4 +1,5 @@
 'use client'
+import { MorphIcon } from '@/components/ui/MorphIcon'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { addDaysISO, formatDateOnly, relativeDayLabel } from '@/lib/utils/dates'
@@ -622,7 +623,7 @@ function Step({ n, title, sub, icon, done, open, onToggle, children }: {
           </div>
           <div className="text-mu text-[12px] mt-0.5 truncate">{sub}</div>
         </div>
-        {open ? <ChevronUp size={18} className="text-mu flex-shrink-0" /> : <ChevronDown size={18} className="text-mu flex-shrink-0" />}
+        <MorphIcon icon={open ? 'chevron-up' : 'chevron-down'} size={18} strokeWidth={1.8} className="text-mu flex-shrink-0" />
       </button>
       {open && (
         <div className="px-4 pb-4 pt-0 border-t border-[var(--ln)]">

@@ -1,5 +1,6 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { playSound } from '@/lib/utils/sound'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronRight, Minus, Plus, Search, Sparkles, Dumbbell, Flame, X } from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
@@ -55,6 +56,15 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
   const loadable = target >= bar
   const { plates, leftover } = loadable ? platesPerSide(target, bar, unit) : { plates: [], leftover: 0 }
   const repsPossible = oneRM > 0 ? repsAtWeight(oneRM, target) : 0
+
+  // The bar "sounds" when plates go on or come off (not on the first render).
+  const plateKey = plates.join('-')
+  const firstPlates = useRef(true)
+  useEffect(() => {
+    if (firstPlates.current) { firstPlates.current = false; return }
+    const id = setTimeout(() => playSound('plate'), 120)
+    return () => clearTimeout(id)
+  }, [plateKey])
 
   // The athlete's real 1RM for the chosen movement, to compare the estimate with.
   const realOneRM = selectedPr
@@ -304,10 +314,10 @@ function Stepper({ label, onMinus, onPlus, children }: { label: string; onMinus:
     <div>
       <div className="text-xs font-semibold text-mu mb-1.5 px-1">{label}</div>
       <div className="flex items-center gap-1 h-16 p-1.5 rounded-2xl bg-p2 focus-within:ring-2 focus-within:ring-ac/50 transition-shadow">
-        <motion.button type="button" whileTap={{ scale: 0.85 }} onClick={onMinus} aria-label={`Menos ${label}`}
+        <motion.button type="button" whileTap={{ scale: 0.85 }} onClick={() => { playSound('tick'); onMinus() }} aria-label={`Menos ${label}`}
           className="size-11 flex-shrink-0 rounded-xl bg-p3 grid place-items-center text-mu hover:text-t"><Minus size={18} aria-hidden /></motion.button>
         <div className="flex-1 min-w-0 flex justify-center">{children}</div>
-        <motion.button type="button" whileTap={{ scale: 0.85 }} onClick={onPlus} aria-label={`Más ${label}`}
+        <motion.button type="button" whileTap={{ scale: 0.85 }} onClick={() => { playSound('tick'); onPlus() }} aria-label={`Más ${label}`}
           className="size-11 flex-shrink-0 rounded-xl bg-p3 grid place-items-center text-mu hover:text-t"><Plus size={18} aria-hidden /></motion.button>
       </div>
     </div>

@@ -257,7 +257,7 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
           <Plus size={18} aria-hidden /> Agregar workout
         </motion.button>
 
-        <div className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] lg:bottom-6 inset-x-0 lg:left-[240px] px-4 z-30 pointer-events-none">
+        <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] lg:bottom-6 inset-x-0 lg:left-[240px] px-4 z-30 pointer-events-none">
           <motion.button type="submit" disabled={saving} whileTap={{ scale: 0.97 }}
             initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ ...SPRING, delay: 0.2 }}
             className="pointer-events-auto mx-auto w-full max-w-2xl h-14 rounded-full bg-ac text-onac font-bold text-base flex items-center justify-center gap-2 shadow-[0_12px_32px_-8px_rgb(var(--c-ac)/0.6)] disabled:opacity-60">
