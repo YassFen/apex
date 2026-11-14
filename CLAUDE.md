@@ -215,7 +215,7 @@ Every Tailwind color is a CSS variable holding RGB channels (`--c-bg`, `--c-ac`,
 
 - `lib/utils/readiness.ts` compares each event movement's load (for the athlete's category) with their records: 1RM, or an Epley estimate from a 2RM/3RM, or max reps for bodyweight. It returns a zone (Cómodo/Exigente/Al límite/Muy pesado/Sobre tu 1RM), reps possible and how to split the sets, plus an overall 0-100 score.
 - An athlete in several boxes filters the calendar with `BoxFilter` (`apex.boxFilter` in localStorage); `/wod?box=` picks between several WODs of the same day.
-- Animations use the `motion` package (`motion/react`): shared helpers in `components/ui/motion.tsx` (`Reveal`, `AnimatedNumber`, `Segmented`, `ActivePill`, `SPRING`, `EASE_OUT`). `MotionConfig reducedMotion="user"` is set in `DashboardShell`. `Modal` portals to `<body>` so transformed ancestors can't trap it. Performance rules: no `backdrop-blur` on sticky bars or overlays, no `filter: blur` glows (use radial gradients), no `layout` animations on lists that don't reorder, no per-item motion components in big grids (use CSS `animate-*`). The page transition is an opacity fade. Fonts come from `next/font` (Geist). `lib/supabase/session.ts` (`getUser`, `getProfile`, React `cache`) dedupes the user/profile lookups between the dashboard layout and the page. The service worker only handles page navigations.
+- Animations use the `motion` package (`motion/react`): shared helpers in `components/ui/motion.tsx` (`Reveal`, `AnimatedNumber`, `Segmented`, `ActivePill`, `SPRING`, `EASE_OUT`). `MotionConfig reducedMotion="user"` is set in `DashboardShell`. `Modal` portals to `<body>` so transformed ancestors can't trap it. Performance rules: no `backdrop-blur` on sticky bars or cards (only the small tab bar and sheets, see Glass), no `filter: blur` glows (use radial gradients), no `layout` animations on lists that don't reorder, no per-item motion components in big grids (use CSS `animate-*`). The page transition is an opacity fade. Fonts come from `next/font` (Geist). `lib/supabase/session.ts` (`getUser`, `getProfile`, React `cache`) dedupes the user/profile lookups between the dashboard layout and the page. The service worker only handles page navigations.
 
 ### Security (009)
 
@@ -232,6 +232,14 @@ The logo is a plate seen from the front with the summit cut out (`components/ui/
 ### UI skill
 
 `.claude/skills/userinterface-wiki/` (MIT, from raphaelsalaja/userinterface-wiki) holds 152 UI rules; review UI changes against it. Applied here: one shadow scale (`shadow-e1/e2/e3`, layered, tinted, top-down), exits shorter than entrances with ease-in, `mode="wait"` transitions at 150ms, hover shadows fade through a pseudo-element, tabular numbers on `font-display`.
+
+### Glass, sounds and morphing icons
+
+- The bottom bar (`MobileNav`) is a floating glass capsule (`.glass-bar`: the only always-on `backdrop-filter`, cheap because it is small); the active tab is an accent pill. Content needs `pb-[calc(96px+safe-area)]` and floating buttons sit at `bottom-[calc(88px+…)]` or higher.
+- "Cristal" is a surface style next to mode and accent (`theme.surface`, `data-surface="glass"` on `<html>`, picked in Appearance). It is pure CSS at the end of `globals.css`: an ambient light behind the page, `.bg-p/.bg-p2/.bg-p3` become translucent panes, and sheets (`.glass-sheet` on `Modal`) blur what is behind. Cards are tinted, never blurred, so scrolling stays smooth; don't add `backdrop-filter` to cards or sticky headers.
+- Sounds: `playSound(name)` from `lib/utils/sound.ts` (Web Audio, synthesized, no files). Already wired into toasts (ok/pr/error), `Switch`, `Segmented`, `Modal` open, tab changes and the calculator plates. Off switch in Appearance (`apex.sound`), silent with reduced motion; never play on typing.
+- `components/ui/MorphIcon.tsx`: icons made of exactly three lines on a 14×14 grid that morph into each other (more/cross, play/pause, plus/cross, chevrons, arrows, check, menu). Used in the "Más" tab, timer start/pause, modal close and collapsible panels.
+- Calendar: `WeekStrip` (seven days, selected in an outlined box, swipe for another week, week progress) or the month grid, then the selected day as a timeline by class time (`TimelineRow`).
 
 ### Notifications
 
