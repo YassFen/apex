@@ -20,13 +20,39 @@
 :root[data-accent="rosa"]    { --ac-d: 244 114 182; --onac-d: 0 0 0;       --ac-l: 190 24 93;   --onac-l: 255 255 255; }
 :root[data-accent="azul"]    { --ac-d: 96 165 250;  --onac-d: 0 0 0;       --ac-l: 37 99 235;   --onac-l: 255 255 255; }
 
+/* Palettes: the surface colors of the whole app. Each has a dark set (--d-*) and a light set (--l-*). */
+:root {
+  --d-bg: 0 0 0;       --d-p: 14 14 14;     --d-p2: 26 26 26;    --d-p3: 36 36 36;
+  --l-bg: 243 243 246; --l-p: 255 255 255;  --l-p2: 236 236 241; --l-p3: 224 224 231;
+}
+:root[data-palette="grafito"] {
+  --d-bg: 13 15 18;    --d-p: 22 25 30;     --d-p2: 31 35 42;    --d-p3: 42 47 56;
+  --l-bg: 240 242 245; --l-p: 255 255 255;  --l-p2: 233 236 241; --l-p3: 220 224 231;
+}
+:root[data-palette="oceano"] {
+  --d-bg: 5 12 24;     --d-p: 11 22 40;     --d-p2: 18 33 56;    --d-p3: 27 45 73;
+  --l-bg: 236 243 250; --l-p: 255 255 255;  --l-p2: 225 235 246; --l-p3: 210 223 238;
+}
+:root[data-palette="bosque"] {
+  --d-bg: 6 14 11;     --d-p: 12 24 19;     --d-p2: 19 35 28;    --d-p3: 28 47 38;
+  --l-bg: 238 245 240; --l-p: 255 255 255;  --l-p2: 226 237 230; --l-p3: 212 226 217;
+}
+:root[data-palette="vino"] {
+  --d-bg: 16 7 14;     --d-p: 28 14 25;     --d-p2: 40 21 36;    --d-p3: 54 30 49;
+  --l-bg: 247 240 244; --l-p: 255 255 255;  --l-p2: 240 229 236; --l-p3: 229 215 224;
+}
+:root[data-palette="arena"] {
+  --d-bg: 17 14 10;    --d-p: 28 24 18;     --d-p2: 40 34 26;    --d-p3: 53 46 36;
+  --l-bg: 247 243 235; --l-p: 255 253 249;  --l-p2: 238 232 221; --l-p3: 226 218 204;
+}
+
 /* Dark */
 :root {
   color-scheme: dark;
-  --c-bg: 0 0 0;
-  --c-p:  14 14 14;
-  --c-p2: 26 26 26;
-  --c-p3: 36 36 36;
+  --c-bg: var(--d-bg);
+  --c-p: var(--d-p);
+  --c-p2: var(--d-p2);
+  --c-p3: var(--d-p3);
 
   --c-t:  255 255 255;
   --c-mu: 158 158 158;
@@ -48,10 +74,10 @@
 /* Light (the media-query block below repeats it for "Sistema") */
 :root[data-theme="light"] {
   color-scheme: light;
-  --c-bg: 243 243 246;
-  --c-p:  255 255 255;
-  --c-p2: 236 236 241;
-  --c-p3: 224 224 231;
+  --c-bg: var(--l-bg);
+  --c-p: var(--l-p);
+  --c-p2: var(--l-p2);
+  --c-p3: var(--l-p3);
 
   --c-t:  17 17 22;
   --c-mu: 88 88 100;
@@ -71,10 +97,10 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
     color-scheme: light;
-    --c-bg: 243 243 246;
-    --c-p:  255 255 255;
-    --c-p2: 236 236 241;
-    --c-p3: 224 224 231;
+    --c-bg: var(--l-bg);
+    --c-p: var(--l-p);
+    --c-p2: var(--l-p2);
+    --c-p3: var(--l-p3);
 
     --c-t:  17 17 22;
     --c-mu: 88 88 100;
@@ -127,7 +153,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 input[type=number] { -moz-appearance: textfield; }
 
 /* Inputs blend with surfaces — no harsh borders */
-input, textarea, select {
+:where(input, textarea, select) {
   background: var(--p2);
   color: var(--t);
 }
@@ -297,51 +323,69 @@ select, option { background-color: var(--p2); color: var(--t); }
 .hit-44 { position: relative; }
 .hit-44::after { content: ''; position: absolute; inset: 50% auto auto 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
 
+/* ── Range slider: thin track filled up to the thumb (set --fill on the input) ── */
+input[type="range"].range { -webkit-appearance: none; appearance: none; height: 28px; background: transparent; cursor: pointer; }
+.range::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: linear-gradient(90deg, rgb(var(--c-ac)) var(--fill, 50%), rgb(var(--c-t) / .12) var(--fill, 50%)); }
+.range::-moz-range-track { height: 6px; border-radius: 999px; background: linear-gradient(90deg, rgb(var(--c-ac)) var(--fill, 50%), rgb(var(--c-t) / .12) var(--fill, 50%)); }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-1), 0 0 0 1px rgb(0 0 0 / .08); transition: transform .14s var(--ease-out); }
+.range::-moz-range-thumb { width: 24px; height: 24px; border: 0; border-radius: 50%; background: #fff; box-shadow: var(--shadow-1), 0 0 0 1px rgb(0 0 0 / .08); }
+.range:active::-webkit-slider-thumb { transform: scale(1.12); }
+
 /* ── Glass ─────────────────────────────────────────────────────────────────
    The bottom bar is always glass: a small floating capsule, so its blur is cheap.
-   "Cristal" (data-surface="glass") also turns cards into translucent panes over a soft
-   light, and blurs sheets. Cards are NOT blurred (dozens of blurred layers would lag);
-   they are tinted panes with a top highlight, which reads as glass over the ambient light. */
+   "Cristal" (data-surface="glass") paints a soft colored light behind the whole app (it follows
+   the palette and the accent), turns cards into translucent panes, and blurs the top bar and
+   sheets. Cards are tinted, never blurred: dozens of blurred layers would make scrolling lag. */
 .glass-bar {
-  background: rgb(var(--c-p2) / .68);
+  background: rgb(var(--c-p) / .74);
   -webkit-backdrop-filter: blur(22px) saturate(170%);
   backdrop-filter: blur(22px) saturate(170%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .12), inset 0 0 0 1px rgb(var(--c-t) / .08), var(--shadow-2);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass-bar { background: rgb(var(--c-p2) / .96); }
+  .glass-bar { background: rgb(var(--c-p) / .97); }
 }
 
+:root[data-surface="glass"] { background: rgb(var(--c-bg)); }
 :root[data-surface="glass"] body::before {
   content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(70% 45% at 8% 0%, rgb(var(--c-ac) / .22), transparent 70%),
-    radial-gradient(60% 40% at 100% 22%, rgb(var(--c-bl) / .18), transparent 70%),
-    radial-gradient(70% 45% at 30% 100%, rgb(var(--c-pu) / .16), transparent 70%);
+    radial-gradient(85% 50% at 0% 0%, rgb(var(--c-ac) / .30), transparent 72%),
+    radial-gradient(75% 45% at 100% 28%, rgb(var(--c-bl) / .22), transparent 72%),
+    radial-gradient(85% 50% at 15% 100%, rgb(var(--c-pu) / .26), transparent 72%),
+    radial-gradient(60% 40% at 95% 92%, rgb(var(--c-ac) / .16), transparent 72%),
+    linear-gradient(160deg, rgb(var(--c-p2)), rgb(var(--c-bg)) 45%, rgb(var(--c-p)));
 }
-:root[data-surface="glass"] body, :root[data-surface="glass"] .bg-bg { background-color: transparent; }
-:root[data-surface="glass"] { background: rgb(var(--c-bg)); }
-:root[data-surface="glass"] header.bg-bg { background: linear-gradient(rgb(var(--c-bg) / .92), rgb(var(--c-bg) / .78) 70%, transparent); }
+:root[data-surface="glass"] body, :root[data-surface="glass"] .min-h-dvh.bg-bg { background-color: transparent; }
+
+/* Top bar: frosted, fading out at the bottom so there is no hard edge over the content. */
+:root[data-surface="glass"] header.bg-bg {
+  background: rgb(var(--c-bg) / .42);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-mask-image: linear-gradient(#000 72%, transparent);
+  mask-image: linear-gradient(#000 72%, transparent);
+}
 
 :root[data-surface="glass"] .bg-p {
-  background-color: rgb(var(--c-t) / .06);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .09), inset 0 0 0 1px rgb(var(--c-t) / .06);
+  background-color: rgb(var(--c-t) / .075);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .10), inset 0 0 0 1px rgb(var(--c-t) / .07);
 }
-:root[data-surface="glass"] .bg-p2, :root[data-surface="glass"] .hover\:bg-p2:hover { background-color: rgb(var(--c-t) / .07); }
-:root[data-surface="glass"] .bg-p3, :root[data-surface="glass"] .hover\:bg-p3:hover { background-color: rgb(var(--c-t) / .12); }
-:root[data-surface="glass"] input, :root[data-surface="glass"] textarea { background-color: rgb(var(--c-t) / .07); }
+:root[data-surface="glass"] .bg-p2, :root[data-surface="glass"] .hover\:bg-p2:hover { background-color: rgb(var(--c-t) / .08); }
+:root[data-surface="glass"] .bg-p3, :root[data-surface="glass"] .hover\:bg-p3:hover { background-color: rgb(var(--c-t) / .13); }
+:root[data-surface="glass"] :where(input, textarea) { background-color: rgb(var(--c-t) / .08); }
 
-/* Sheets sit over content, so they do blur what is behind them. */
+/* Sheets and the bar sit over content, so they blur what is behind and stay dark enough to read. */
 :root[data-surface="glass"] .glass-sheet {
-  background-color: rgb(var(--c-p) / .74);
+  background-color: rgb(var(--c-p) / .78);
   -webkit-backdrop-filter: blur(30px) saturate(170%);
   backdrop-filter: blur(30px) saturate(170%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .14), var(--shadow-3);
 }
-:root[data-surface="glass"] .glass-bar { background: rgb(var(--c-t) / .10); }
+:root[data-surface="glass"] .glass-bar { background: rgb(var(--c-bg) / .58); }
 
 /* Light glass: panes are white tints instead of dark ones. */
-:root[data-surface="glass"][data-theme="light"] .bg-p { background-color: rgb(255 255 255 / .62); box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), inset 0 0 0 1px rgb(255 255 255 / .5), var(--shadow-1); }
+:root[data-surface="glass"][data-theme="light"] .bg-p { background-color: rgb(255 255 255 / .66); box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), inset 0 0 0 1px rgb(255 255 255 / .5), var(--shadow-1); }
 :root[data-surface="glass"][data-theme="light"] .bg-p2, :root[data-surface="glass"][data-theme="light"] .hover\:bg-p2:hover { background-color: rgb(var(--c-t) / .05); }
 :root[data-surface="glass"][data-theme="light"] .bg-p3, :root[data-surface="glass"][data-theme="light"] .hover\:bg-p3:hover { background-color: rgb(var(--c-t) / .09); }
-:root[data-surface="glass"][data-theme="light"] .glass-bar { background: rgb(255 255 255 / .6); }
+:root[data-surface="glass"][data-theme="light"] .glass-bar, :root[data-surface="glass"][data-theme="light"] header.bg-bg { background: rgb(255 255 255 / .6); }

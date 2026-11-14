@@ -100,15 +100,15 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
           options={[['kg', 'kg'], ['lb', 'lb']] as const} />
       } />
 
-      <div className="p-4 lg:p-6 grid lg:grid-cols-[1fr_1fr] gap-4 max-w-5xl mx-auto w-full items-start">
+      <div className="p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl mx-auto w-full items-start">
         {/* ── 1RM ───────────────────────────────────────────── */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-w-0">
           <section className="rounded-[24px] bg-p" aria-label="Calcular 1RM">
             <div className="p-4 sm:p-5">
               {prs.length > 0 && (
                 <button type="button" onClick={() => setPickerOpen(true)}
-                  className="tap-card w-full flex items-center gap-3 p-3 rounded-2xl bg-p2 mb-4 text-left">
-                  <span className="size-10 rounded-xl bg-ac/15 text-ac grid place-items-center flex-shrink-0"><Dumbbell size={18} aria-hidden /></span>
+                  className="w-full flex items-center gap-3 p-2.5 pr-3 rounded-full bg-p2 mb-5 text-left">
+                  <span className="size-10 rounded-full bg-ac/15 text-ac grid place-items-center flex-shrink-0"><Dumbbell size={18} aria-hidden /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-xs font-semibold text-mu">Desde tus récords</span>
                     <span className="block font-semibold text-sm truncate">
@@ -124,7 +124,7 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
                 </button>
               )}
 
-              <div className="grid grid-cols-[1fr_auto] gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
                 <Stepper label={`Peso (${unit})`} onMinus={() => nudgeWeight(-1)} onPlus={() => nudgeWeight(1)}>
                   <input type="text" inputMode="decimal" value={weight} placeholder="0" aria-label={`Peso levantado en ${unit}`}
                     onChange={e => { setWeight(e.target.value.replace(/[^\d.,]/g, '')); setPrId(null) }}
@@ -181,16 +181,16 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
                 </div>
                 <input type="range" min="30" max="105" step="1" value={pct} aria-label="Porcentaje del 1RM"
                   onChange={e => setPct(Number(e.target.value))}
-                  className="w-full accent-ac mt-4" />
+                  className="range w-full mt-3" style={{ '--fill': `${((pct - 30) / 75) * 100}%` } as React.CSSProperties} />
 
                 <div className="grid grid-cols-2 gap-2.5 mt-4">
-                  <div className="p-4 rounded-2xl bg-p2">
+                  <div className="p-4 rounded-[20px] bg-p2 min-w-0">
                     <div className="text-xs font-semibold text-mu mb-1.5">Carga la barra con</div>
                     <div className="font-display text-4xl font-bold leading-none tracking-tight">
                       <AnimatedNumber value={target} decimals={target % 1 ? 1 : 0} /><span className="text-base text-mu font-bold ml-1">{unit}</span>
                     </div>
                   </div>
-                  <div className="p-4 rounded-2xl bg-p2">
+                  <div className="p-4 rounded-[20px] bg-p2 min-w-0">
                     <div className="text-xs font-semibold text-mu mb-1.5">Reps posibles</div>
                     <div className="font-display text-4xl font-bold leading-none tracking-tight">
                       {repsPossible > 0 ? <>~<AnimatedNumber value={repsPossible} /></> : '—'}
@@ -204,7 +204,7 @@ export function RMCalcView({ profile, prs }: { profile: Profile; prs: CalcPr[] }
         </div>
 
         {/* ── Barbell + tables ─────────────────────────────── */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-w-0">
           {oneRM > 0 && (
             <Reveal delay={0.05}>
               <Card padding={false} className="p-5 overflow-hidden">
@@ -313,12 +313,12 @@ function Stepper({ label, onMinus, onPlus, children }: { label: string; onMinus:
   return (
     <div>
       <div className="text-xs font-semibold text-mu mb-1.5 px-1">{label}</div>
-      <div className="flex items-center gap-1 h-16 p-1.5 rounded-2xl bg-p2 focus-within:ring-2 focus-within:ring-ac/50 transition-shadow">
+      <div className="flex items-center gap-1 h-[60px] p-1.5 rounded-full bg-p2 focus-within:ring-2 focus-within:ring-ac/50 transition-shadow">
         <motion.button type="button" whileTap={{ scale: 0.85 }} onClick={() => { playSound('tick'); onMinus() }} aria-label={`Menos ${label}`}
-          className="size-11 flex-shrink-0 rounded-xl bg-p3 grid place-items-center text-mu hover:text-t"><Minus size={18} aria-hidden /></motion.button>
+          className="size-12 flex-shrink-0 rounded-full bg-p3 grid place-items-center text-t"><Minus size={18} weight="bold" aria-hidden /></motion.button>
         <div className="flex-1 min-w-0 flex justify-center">{children}</div>
         <motion.button type="button" whileTap={{ scale: 0.85 }} onClick={() => { playSound('tick'); onPlus() }} aria-label={`Más ${label}`}
-          className="size-11 flex-shrink-0 rounded-xl bg-p3 grid place-items-center text-mu hover:text-t"><Plus size={18} aria-hidden /></motion.button>
+          className="size-12 flex-shrink-0 rounded-full bg-p3 grid place-items-center text-t"><Plus size={18} weight="bold" aria-hidden /></motion.button>
       </div>
     </div>
   )

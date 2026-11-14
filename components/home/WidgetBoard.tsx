@@ -2,9 +2,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AnimatePresence, Reorder, motion, useDragControls } from 'motion/react'
-import { ArrowCounterClockwise, DotsSixVertical, SlidersHorizontal, X } from '@/components/ui/icons'
+import { ArrowCounterClockwise, DotsSixVertical, SlidersHorizontal } from '@/components/ui/icons'
+import { MorphIcon } from '@/components/ui/MorphIcon'
+import { playSound } from '@/lib/utils/sound'
 import { Card } from '@/components/ui/Card'
-import { Switch } from '@/components/ui/Switch'
 import { useToast } from '@/components/ui/Toast'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/cn'
@@ -66,6 +67,7 @@ export function WidgetBoard({ scope, profile, widgets, header }: { scope: BoardS
 
   const byId = new Map(widgets.map(w => [w.id, w]))
   const visible = layout.filter(l => l.on && byId.has(l.id))
+  const hidden = layout.filter(l => !l.on && byId.has(l.id))
 
   return (
     <>
@@ -74,30 +76,45 @@ export function WidgetBoard({ scope, profile, widgets, header }: { scope: BoardS
         {!editing && (
           <button type="button" data-tour="personalize" onClick={() => setEditing(true)} aria-label="Personalizar inicio"
             className="flex-shrink-0 h-9 px-3 rounded-full bg-p text-sm font-medium flex items-center gap-1.5 hover:bg-p2">
-            <SlidersHorizontal size={16} /> <span className="hidden sm:inline">Personalizar</span>
+            <SlidersHorizontal size={16} /> Personalizar
           </button>
         )}
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
         {editing ? (
-          <motion.div key="edit" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="flex flex-col gap-3">
-            <div className="flex items-center justify-between px-1 gap-3">
-              <div>
-                <h3 className="font-semibold">Personaliza tu inicio</h3>
-                <p className="text-mu text-sm">Arrastra para ordenar. Apaga lo que no uses.</p>
-              </div>
+          <motion.div key="edit" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }} className="flex flex-col gap-3">
+            <div className="sticky top-[72px] z-10 flex items-center justify-between gap-3 p-2 pl-4 rounded-full glass-bar">
+              <p className="text-sm font-semibold min-w-0">Arrastra para ordenar</p>
               <div className="flex gap-2 flex-shrink-0">
-                <button type="button" onClick={() => setLayout(merge(null, widgets))} aria-label="Restablecer" className="size-10 rounded-full bg-p grid place-items-center"><ArrowCounterClockwise size={18} /></button>
+                <button type="button" onClick={() => setLayout(merge(null, widgets))} aria-label="Restablecer" className="size-10 rounded-full bg-p2 grid place-items-center"><ArrowCounterClockwise size={18} /></button>
                 <button type="button" onClick={finish} className="h-10 px-5 rounded-full bg-ac text-onac font-semibold">Listo</button>
               </div>
             </div>
-            <Reorder.Group axis="y" values={layout} onReorder={setLayout} className="flex flex-col gap-2">
-              {layout.filter(l => byId.has(l.id)).map(item => (
-                <EditRow key={item.id} item={item} widget={byId.get(item.id) as Widget}
-                  onToggle={on => setLayout(l => l.map(x => x.id === item.id ? { ...x, on } : x))} />
+
+            {/* The real widgets, shortened, each with a grab bar and a remove button */}
+            <Reorder.Group axis="y" values={visible} onReorder={next => setLayout([...(next as LayoutItem[]), ...layout.filter(l => !l.on)])} className="flex flex-col gap-3">
+              {visible.map(item => (
+                <EditCard key={item.id} item={item} widget={byId.get(item.id) as Widget}
+                  onHide={() => { playSound('toggleOff'); setLayout(l => l.map(x => x.id === item.id ? { ...x, on: false } : x)) }} />
               ))}
             </Reorder.Group>
+
+            {hidden.length > 0 && (
+              <div className="rounded-[24px] bg-p p-4">
+                <p className="text-xs font-semibold text-mu mb-2.5">Agregar al inicio</p>
+                <div className="flex flex-wrap gap-2">
+                  {hidden.map(item => (
+                    <button key={item.id} type="button"
+                      onClick={() => { playSound('toggleOn'); setLayout(l => [...l.filter(x => x.on), { ...item, on: true }, ...l.filter(x => !x.on && x.id !== item.id)]) }}
+                      className="h-10 pl-2 pr-4 rounded-full bg-p2 hover:bg-p3 text-sm font-semibold flex items-center gap-2">
+                      <span className="size-6 rounded-full bg-ac text-onac grid place-items-center"><MorphIcon icon="plus" size={12} strokeWidth={2.4} /></span>
+                      {byId.get(item.id)?.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div key="view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4">
@@ -120,21 +137,27 @@ export function WidgetBoard({ scope, profile, widgets, header }: { scope: BoardS
   )
 }
 
-function EditRow({ item, widget, onToggle }: { item: LayoutItem; widget: Widget; onToggle: (on: boolean) => void }) {
+function EditCard({ item, widget, onHide }: { item: LayoutItem; widget: Widget; onHide: () => void }) {
   const controls = useDragControls()
   return (
     <Reorder.Item value={item} dragListener={false} dragControls={controls}
-      whileDrag={{ scale: 1.03, boxShadow: '0 18px 40px -12px rgb(0 0 0 / 0.35)' }}
-      className={cn('flex items-center gap-3 p-3 pr-4 rounded-[20px] bg-p select-none', !item.on && 'opacity-60')}>
-      <span onPointerDown={e => controls.start(e)} className="size-10 grid place-items-center text-mu cursor-grab active:cursor-grabbing touch-none" aria-label={`Mover ${widget.label}`}>
-        <DotsSixVertical size={22} weight="bold" />
-      </span>
-      <span className="flex-1 min-w-0">
-        <span className="block font-semibold text-[15px]">{widget.label}</span>
-        <span className="block text-mu text-[13px] leading-snug">{widget.desc}</span>
-      </span>
-      {!item.on && <X size={14} className="text-fa" aria-hidden />}
-      <Switch checked={item.on} onChange={onToggle} label={`Mostrar ${widget.label}`} />
+      onDragStart={() => playSound('tick')} onDragEnd={() => playSound('tap')}
+      whileDrag={{ scale: 1.02, zIndex: 20 }} transition={{ type: 'spring', stiffness: 500, damping: 34 }}
+      className="relative rounded-[24px] bg-p select-none overflow-hidden">
+      <div className="flex items-center gap-1 h-12 pl-1 pr-2">
+        <span onPointerDown={e => controls.start(e)} aria-label={`Mover ${widget.label}`}
+          className="flex-1 min-w-0 h-full flex items-center gap-1.5 px-2 cursor-grab active:cursor-grabbing touch-none">
+          <DotsSixVertical size={22} weight="bold" className="text-mu flex-shrink-0" />
+          <span className="font-semibold text-sm truncate">{widget.label}</span>
+        </span>
+        <button type="button" onClick={onHide} aria-label={`Quitar ${widget.label}`}
+          className="size-8 rounded-full bg-p3 grid place-items-center flex-shrink-0"><MorphIcon icon="minus" size={14} strokeWidth={2.2} /></button>
+      </div>
+      {/* Shortened live preview: you see what you are moving, but it can't be tapped */}
+      <div className="relative max-h-[120px] overflow-hidden pointer-events-none px-2" aria-hidden>
+        <div className="origin-top scale-[0.94]">{widget.render()}</div>
+        <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-bg/90 to-transparent" />
+      </div>
     </Reorder.Item>
   )
 }

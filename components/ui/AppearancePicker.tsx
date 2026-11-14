@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Check, Monitor, Moon, Sun } from '@/components/ui/icons'
-import { ACCENTS, DEFAULT_THEME, THEME_EVENT, applyTheme, readTheme, type Accent, type Surface, type ThemeMode } from '@/lib/utils/theme'
+import { ACCENTS, DEFAULT_THEME, PALETTES, THEME_EVENT, accentVars, applyTheme, readTheme, type Accent, type Surface, type ThemeMode } from '@/lib/utils/theme'
 import { playSound, setSoundEnabled, soundEnabled } from '@/lib/utils/sound'
 import { Switch } from '@/components/ui/Switch'
 import { labelCls } from '@/components/ui/Field'
@@ -38,6 +38,27 @@ export function AppearancePicker() {
               <Icon size={16} aria-hidden /> {label}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <span className={labelCls}>Tema</span>
+        <div role="radiogroup" aria-label="Tema" className="grid grid-cols-3 gap-2">
+          {PALETTES.map(pl => {
+            const active = theme.palette === pl.key
+            return (
+              <button key={pl.key} type="button" role="radio" aria-checked={active} onClick={() => update({ palette: pl.key })}
+                className={cn('p-1.5 rounded-[18px] text-left ring-1 ring-inset transition-colors', active ? 'ring-ac bg-p2' : 'ring-transparent bg-p2 hover:bg-p3')}>
+                {/* Mini screen in that palette: background, a card, the accent */}
+                <span className="relative block h-14 rounded-[12px] overflow-hidden ring-1 ring-inset ring-white/10" style={{ background: pl.bg }}>
+                  <span className="absolute left-1.5 right-1.5 top-1.5 h-5 rounded-md" style={{ background: pl.card }} />
+                  <span className="absolute left-1.5 bottom-1.5 h-3 w-8 rounded-full bg-ac" />
+                  <span className="absolute right-1.5 bottom-1.5 size-3 rounded-full" style={{ background: pl.card }} />
+                </span>
+                <span className="block text-xs font-semibold mt-1.5 px-1 pb-0.5">{pl.label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -87,6 +108,19 @@ export function AppearancePicker() {
             )
           })}
         </div>
+        {/* Any color: the app derives the light-mode shade and the text color on top of it */}
+        <label className={cn('mt-2 flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-colors ring-1 ring-inset', theme.accent === 'custom' ? 'bg-p2 ring-ac' : 'bg-p2 ring-transparent hover:bg-p3')}>
+          <span className="relative size-9 rounded-full overflow-hidden ring-1 ring-inset ring-t/15 flex-shrink-0"
+            style={{ background: theme.custom ?? 'conic-gradient(#f43f5e, #f59e0b, #84cc16, #06b6d4, #6366f1, #d946ef, #f43f5e)' }}>
+            <input type="color" aria-label="Color propio" value={theme.custom ?? '#c8f53e'}
+              onChange={e => { const vars = accentVars(e.target.value); if (vars) update({ accent: 'custom', custom: e.target.value, vars }) }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">Tu propio color</span>
+            <span className="block text-xs text-mu leading-snug">Elige cualquiera; se adapta solo al modo claro</span>
+          </span>
+        </label>
       </div>
     </div>
   )

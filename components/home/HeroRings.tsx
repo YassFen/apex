@@ -129,48 +129,54 @@ export function HeroRings({ data, onLog, onGenerate }: { data: HeroData; onLog: 
   const page = shown[Math.min(i, shown.length - 1)]
   const go = (n: number) => { const next = (i + n + shown.length) % shown.length; setDir(n); setI(next) }
 
-  const R = 92, C = 2 * Math.PI * R, ARC = 0.78
+  // Dial: a full ring like a plate seen from the front, with a knurled bezel of 60 ticks
+  // that light up one after another up to the value.
+  const R = 84, C = 2 * Math.PI * R, TICKS = 60
   if (!page) return null
-  const fill = Math.max(0.03, page.value / 100)
-  // Where the arc ends, for the glowing head dot (the svg is rotated 130°).
-  const ang = ((130 + 360 * ARC * fill) * Math.PI) / 180
-  const head = { x: 110 + R * Math.cos(ang), y: 110 + R * Math.sin(ang) }
+  const fill = Math.min(1, Math.max(0.02, page.value / 100))
+  const lit = Math.round(fill * TICKS)
 
   return (
-    <section data-tour="hero" className="relative -mx-4 lg:mx-0 px-4 pt-2 pb-5 lg:rounded-[32px] overflow-hidden" aria-label="Tu estado">
+    <section data-tour="hero" className="relative px-0 pt-2 pb-5" aria-label="Tu estado">
       {/* Background wash follows the tile's tone */}
       <AnimatePresence initial={false}>
         <motion.div key={page.glow} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.6 }}
           className="absolute inset-0 -z-10" aria-hidden
-          style={{ background: `radial-gradient(110% 75% at 50% 15%, rgb(var(${page.glow}) / 0.20), transparent 65%)` }} />
+          style={{ background: `radial-gradient(closest-side at 50% 38%, rgb(var(${page.glow}) / 0.24), transparent)` }} />
       </AnimatePresence>
 
       <button type="button" onClick={() => setEditing(true)} aria-label="Elegir qué mostrar"
-        className="absolute top-2 right-4 z-10 h-9 px-3 rounded-full bg-p/80 text-sm font-medium flex items-center gap-1.5 active:scale-95 transition">
+        className="absolute top-1 right-0 z-10 h-9 px-3 rounded-full bg-p text-sm font-medium flex items-center gap-1.5 active:scale-95 transition">
         <PencilSimple size={15} /> Editar
       </button>
 
-      <motion.div className="relative mx-auto w-[260px] h-[250px] touch-pan-y cursor-grab active:cursor-grabbing"
+      <motion.div className="relative mx-auto size-[264px] touch-pan-y cursor-grab active:cursor-grabbing"
         drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.25}
         onDragEnd={(_, info) => { if (info.offset.x < -50) go(1); else if (info.offset.x > 50) go(-1) }}>
         <svg viewBox="0 0 220 220" className="absolute inset-0 w-full h-full" aria-hidden>
-          <g transform="rotate(130 110 110)">
-            <circle cx="110" cy="110" r={R} fill="none" strokeWidth="16" strokeLinecap="round" className="stroke-t/10" strokeDasharray={`${C * ARC} ${C}`} />
-            {/* tick marks */}
-            {Array.from({ length: 21 }, (_, k) => {
-              const a = (k / 20) * 2 * Math.PI * ARC
-              return <line key={k} x1={110 + (R - 14) * Math.cos(a)} y1={110 + (R - 14) * Math.sin(a)} x2={110 + (R - 18) * Math.cos(a)} y2={110 + (R - 18) * Math.sin(a)} className="stroke-t/15" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Bezel: every fifth tick is longer, like the marks on a plate or a stopwatch */}
+          <g className={page.tone}>
+            {Array.from({ length: TICKS }, (_, k) => {
+              const ang = (k / TICKS) * 2 * Math.PI - Math.PI / 2
+              const inner = k % 5 === 0 ? 97 : 100
+              const on = k < lit
+              return (
+                <line key={k} x1={110 + inner * Math.cos(ang)} y1={110 + inner * Math.sin(ang)} x2={110 + 106 * Math.cos(ang)} y2={110 + 106 * Math.sin(ang)}
+                  strokeWidth={k % 5 === 0 ? 2.4 : 1.6} strokeLinecap="round"
+                  className={on ? 'stroke-current' : 'stroke-t/15'}
+                  style={{ transition: 'stroke .2s ease-out', transitionDelay: `${(on ? k : TICKS - k) * 7}ms` }} />
+              )
             })}
-            <motion.circle key={page.id} cx="110" cy="110" r={R} fill="none" strokeWidth="16" strokeLinecap="round"
-              className={cn('stroke-current', page.tone)} strokeDasharray={`${C * ARC} ${C}`}
-              initial={{ strokeDashoffset: C * ARC }} animate={{ strokeDashoffset: C * ARC * (1 - fill) }}
-              transition={{ duration: 1, ease: EASE_OUT }} />
           </g>
-          <motion.g key={`h-${page.id}`} initial={{ x: 110 + R * Math.cos((130 * Math.PI) / 180), y: 110 + R * Math.sin((130 * Math.PI) / 180), opacity: 0 }}
-            animate={{ x: head.x, y: head.y, opacity: 1 }} transition={{ duration: 1, ease: EASE_OUT }}>
-            <circle r="13" className={cn('fill-current animate-glow', page.tone)} opacity={0.22} />
-            <circle r="4.5" className="fill-white" />
-          </motion.g>
+          {/* Inner ring: the plate itself */}
+          <circle cx="110" cy="110" r={R} fill="none" strokeWidth="11" className="stroke-t/10" />
+          <motion.circle key={page.id} cx="110" cy="110" r={R} fill="none" strokeWidth="11" strokeLinecap="round"
+            transform="rotate(-90 110 110)"
+            className={cn('stroke-current', page.tone)} strokeDasharray={C}
+            initial={{ strokeDashoffset: C }} animate={{ strokeDashoffset: C * (1 - fill) }}
+            transition={{ duration: 0.8, ease: EASE_OUT }} />
+          {/* Hub */}
+          <circle cx="110" cy="110" r={R - 14} className="fill-t/[.035]" />
         </svg>
 
         <AnimatePresence mode="popLayout" custom={dir} initial={false}>
@@ -178,26 +184,26 @@ export function HeroRings({ data, onLog, onGenerate }: { data: HeroData; onLog: 
             initial={{ opacity: 0, x: dir * 36, scale: 0.94 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: dir * -36, scale: 0.94 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
             className="absolute inset-0">
-            <div className="absolute left-1/2 top-[47%] -translate-x-1/2 -translate-y-1/2 w-[164px] flex flex-col items-center text-center">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[150px] flex flex-col items-center text-center">
               <motion.span initial={{ scale: 0.5, rotate: -12 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 16, delay: 0.05 }}
-                className="h-11 grid place-items-center animate-floaty">
-                <TileIcon tile={page} className={page.kind === 'recovery' && page.group !== 'motor' ? 'h-12 w-8' : 'size-10'} />
+                className="h-9 grid place-items-center">
+                <TileIcon tile={page} className={page.kind === 'recovery' && page.group !== 'motor' ? 'h-9 w-6' : 'size-8'} />
               </motion.span>
-              <div className={cn('font-bold tracking-tight max-w-full mt-1.5 leading-tight line-clamp-2 text-balance break-words', page.title.length > 18 ? 'text-[13px]' : 'text-base')}>{page.title}</div>
+              <div className={cn('font-bold tracking-tight max-w-full mt-1.5 leading-tight line-clamp-2 text-balance break-words', page.title.length > 16 ? 'text-xs' : 'text-[15px]')}>{page.title}</div>
               <div className={cn('font-display leading-none font-bold tracking-tight tabular-nums mt-1 whitespace-nowrap',
-                `${page.number}${page.suffix}`.length > 7 ? 'text-[32px]' : `${page.number}${page.suffix}`.length > 5 ? 'text-[38px]' : 'text-[44px]')}>
+                `${page.number}${page.suffix}`.length > 7 ? 'text-[28px]' : `${page.number}${page.suffix}`.length > 5 ? 'text-[34px]' : 'text-[42px]')}>
                 <AnimatedNumber value={page.number} decimals={page.number % 1 ? 1 : 0} />
                 <span className="text-xl text-mu font-semibold">{page.suffix}</span>
               </div>
               <div className={cn('text-[12px] font-semibold mt-1.5 leading-tight max-w-full text-balance', page.subTone)}>{page.sub}</div>
             </div>
-            {/* footnote in the opening at the bottom of the ring */}
-            <div className="absolute inset-x-12 -bottom-1 text-center text-mu text-[11px] leading-tight text-balance">{page.foot}</div>
+            {/* footnote under the dial */}
+            <div className="absolute inset-x-0 -bottom-7 text-center text-mu text-xs leading-tight text-balance">{page.foot}</div>
           </motion.div>
         </AnimatePresence>
       </motion.div>
 
-      <div className="flex justify-center gap-1.5 mt-6 mb-5" role="tablist" aria-label="Indicadores">
+      <div className="flex justify-center gap-1.5 mt-11 mb-5" role="tablist" aria-label="Indicadores">
         {shown.map((p, k) => (
           <button key={p.id} type="button" role="tab" aria-selected={k === i} aria-label={p.title}
             onClick={() => { setDir(k > i ? 1 : -1); setI(k) }}

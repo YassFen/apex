@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { AnimatePresence, motion } from 'motion/react'
+import { Reorder, motion } from 'motion/react'
 import {
   LayoutGrid, Flame, Timer, TrendingUp, Activity, Users, ArrowLeftRight, MoreHorizontal,
   Trophy, Calculator, BarChart3, Gear, History, ChevronRight, CalendarDays, Medal, BookOpenText, Flag,
@@ -94,7 +94,7 @@ export function MobileNav({ profile }: { profile: Profile }) {
           ))}
           <button type="button" onClick={() => { playSound('tap'); setMoreOpen(true) }} aria-haspopup="dialog" aria-expanded={moreOpen} aria-label="Más"
             className={cn('relative isolate flex-1 min-w-0 rounded-full flex flex-col items-center justify-center gap-0.5 transition-colors',
-              moreActive || moreOpen ? 'text-onac' : 'text-mu')}>
+              moreActive || moreOpen ? 'text-onac' : 'text-t/70')}>
             {(moreActive || moreOpen) && <motion.span layoutId="tab-pill" transition={SPRING} className="absolute inset-0 -z-10 rounded-full bg-ac shadow-e1" aria-hidden />}
             <MorphIcon icon={moreOpen ? 'cross' : 'more'} size={22} strokeWidth={moreOpen ? 1.6 : 2.4} />
             <span className="text-[10px] font-semibold leading-none">Más</span>
@@ -171,31 +171,31 @@ function TabBarEditor({ open, onClose, items, pinned, onChange, onReset }: {
 
   return (
     <Modal open={open} onClose={onClose} eyebrow="Barra de abajo" title={<>Elige tus <span className="text-ac">accesos</span></>}
-      subtitle="Toca un espacio de la barra y luego lo que quieres ahí.">
-      {/* Live preview of the bar */}
-      <div className="rounded-[24px] bg-p2 p-1.5 grid grid-cols-5 gap-1">
-        {pinned.map((href, k) => {
-          const it = byHref.get(href)
-          if (!it) return null
-          const on = k === slot
-          return (
-            <motion.button key={k} type="button" onClick={() => setSlot(k)} whileTap={{ scale: 0.92 }}
-              className={cn('relative isolate h-[64px] rounded-[18px] flex flex-col items-center justify-center gap-1 transition-colors', on ? 'text-onac' : 'text-t')}>
-              {on && <motion.span layoutId="slot-pill" transition={SPRING} className="absolute inset-0 -z-10 rounded-[18px] bg-ac" />}
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.span key={href} initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.4, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 26 }} className="flex flex-col items-center gap-1">
-                  <it.icon size={22} weight={on ? 'fill' : 'regular'} />
-                  <span className="text-[10px] font-bold leading-none whitespace-nowrap">{it.short}</span>
-                </motion.span>
-              </AnimatePresence>
-            </motion.button>
-          )
-        })}
-        <span className="h-[64px] rounded-[18px] flex flex-col items-center justify-center gap-1 text-mu opacity-60">
-          <MoreHorizontal size={22} /><span className="text-[10px] font-bold leading-none">Más</span>
+      subtitle="Toca un espacio y luego lo que quieres ahí.">
+      {/* Live preview of the bar: tap a slot to fill it, drag a slot to move it */}
+      <div className="rounded-full bg-p2 p-1.5 flex gap-1">
+        <Reorder.Group axis="x" values={pinned} onReorder={next => { onChange(next as string[]) }} className="flex flex-[4] gap-1 min-w-0">
+          {pinned.map((href, k) => {
+            const it = byHref.get(href)
+            if (!it) return null
+            const on = k === slot
+            return (
+              <Reorder.Item key={href} value={href} onTap={() => setSlot(k)} whileDrag={{ scale: 1.08, zIndex: 5 }}
+                onDragStart={() => playSound('tick')} onDragEnd={() => playSound('tap')}
+                className={cn('relative isolate flex-1 min-w-0 h-[56px] rounded-full flex flex-col items-center justify-center gap-0.5 cursor-grab active:cursor-grabbing select-none touch-none transition-colors',
+                  on ? 'text-onac' : 'text-t')}>
+                {on && <motion.span layoutId="slot-pill" transition={SPRING} className="absolute inset-0 -z-10 rounded-full bg-ac" />}
+                <it.icon size={22} weight={on ? 'fill' : 'regular'} />
+                <span className="text-[10px] font-semibold leading-none whitespace-nowrap">{it.short}</span>
+              </Reorder.Item>
+            )
+          })}
+        </Reorder.Group>
+        <span className="flex-1 h-[56px] rounded-full flex flex-col items-center justify-center gap-0.5 text-mu opacity-60">
+          <MoreHorizontal size={22} /><span className="text-[10px] font-semibold leading-none">Más</span>
         </span>
       </div>
+      <p className="text-center text-xs text-mu mt-2">Mantén y arrastra para cambiar el orden</p>
 
       <div className="grid grid-cols-2 gap-2 mt-5">
         {items.map(it => {
@@ -226,7 +226,7 @@ function TabLink({ item, active }: { item: Item; active: boolean }) {
   return (
     <Link href={item.href} aria-current={active ? 'page' : undefined} onClick={() => { if (!active) playSound('tap') }}
       className={cn('relative isolate flex-1 min-w-0 rounded-full flex flex-col items-center justify-center gap-0.5 transition-colors',
-        active ? 'text-onac' : 'text-mu')}>
+        active ? 'text-onac' : 'text-t/70')}>
       {active && <motion.span layoutId="tab-pill" transition={SPRING} className="absolute inset-0 -z-10 rounded-full bg-ac shadow-e1" aria-hidden />}
       <motion.span animate={{ scale: active ? 1.06 : 1, y: active ? -0.5 : 0 }} transition={SPRING} className="grid place-items-center">
         <Icon size={22} weight={active ? 'fill' : 'regular'} aria-hidden />
