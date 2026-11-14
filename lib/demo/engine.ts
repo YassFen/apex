@@ -3,6 +3,8 @@
 // select with embedded relations, eq/neq/in/gt/gte/lt/lte/is filters, order, limit,
 // single/maybeSingle, count, insert/update/upsert/delete and a couple of RPCs.
 
+import { demoAdminRpc } from './admin'
+
 export type Row = Record<string, any>
 export type Store = Record<string, Row[]>
 
@@ -100,7 +102,7 @@ export function runQuery(store: Store, spec: QuerySpec, userId: string): { data:
     const written: Row[] = []
     for (const v of vals) {
       const base: Row = { user_id: v.user_id ?? userId, created_at: new Date().toISOString(), recorded_at: new Date().toISOString(), ...v }
-      if (!('id' in base) && !['event_participants', 'event_results', 'wod_result_bumps', 'announcement_reads', 'member_files', 'platform_admins'].includes(spec.table)) base.id = newId()
+      if (!('id' in base) && !['event_participants', 'event_results', 'wod_result_bumps', 'announcement_reads', 'member_files', 'platform_admins', 'app_error_status'].includes(spec.table)) base.id = newId()
       const existing = spec.op === 'upsert' && keys ? rows.find(r => keys.every(k => String(r[k]) === String(base[k]))) : undefined
       if (existing) { Object.assign(existing, v); written.push(existing) } else { rows.push(base); written.push(base) }
       if (spec.table === 'pr_records') recalcPr(store, base)
@@ -145,6 +147,8 @@ function recalcPr(store: Store, row: Row) {
 }
 
 export function runRpc(store: Store, fn: string, args: Row): { data: any; error: any } {
+  const admin = demoAdminRpc(store, fn, args)
+  if (admin) return admin
   if (fn === 'box_wod_days') {
     const mine = new Set((store.box_members ?? []).filter(m => m.user_id === store.__me?.[0]?.id).map(m => m.box_id))
     const days = (store.daily_wods ?? []).filter(d => d.is_live && mine.has(d.box_id) && d.scheduled_for >= args.p_from && d.scheduled_for <= args.p_to)

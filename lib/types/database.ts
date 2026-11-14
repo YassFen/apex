@@ -9,7 +9,7 @@ export type BoxPlan = "free" | "pro" | "enterprise"
 export type Unit = "lb" | "kg"
 
 // Convenience aliases (no generics needed at alias level)
-export interface Profile { id: string; email: string; full_name: string; avatar_url: string | null; role: UserRole; preferred_unit: Unit; tracking_since: string | null; bio: string | null; city: string | null; favorite_movement: string | null; profile_public: boolean; show_prs_public: boolean; created_at: string; updated_at: string; sex?: 'm' | 'f' | null; dashboard_layout?: Json | null }
+export interface Profile { id: string; email: string; full_name: string; avatar_url: string | null; role: UserRole; preferred_unit: Unit; tracking_since: string | null; bio: string | null; city: string | null; favorite_movement: string | null; profile_public: boolean; show_prs_public: boolean; created_at: string; updated_at: string; sex?: 'm' | 'f' | null; dashboard_layout?: Json | null; birth_year?: number | null }
 export interface Box { id: string; name: string; slug: string; logo_url: string | null; city: string; country: string; owner_id: string; affiliate_code: string | null; invite_code: string; plan: BoxPlan; created_at: string; description?: string | null; website_url?: string | null; instagram?: string | null; whatsapp?: string | null; schedule?: string | null; disciplines?: string[] | null }
 export interface BoxMember { id: string; box_id: string; user_id: string; role: UserRole; joined_at: string; is_active: boolean }
 export interface Movement { id: string; name: string; category: MovementCategory; description: string | null; video_url: string | null; box_id?: string | null; created_by?: string | null; image_url?: string | null; cues?: string | null; muscles?: string[] | null }

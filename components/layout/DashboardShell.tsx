@@ -9,6 +9,7 @@ import type { Profile, Box } from '@/lib/types/database'
 import type { Notice } from '@/lib/utils/notifications'
 import { DEMO_USER_ID } from '@/lib/demo/client'
 import { DemoTour } from '@/components/demo/DemoTour'
+import { Telemetry } from '@/components/layout/Telemetry'
 import { AnnouncementCenter } from '@/components/announcements/AnnouncementCenter'
 import type { ShellAnnouncement } from '@/lib/utils/announcements'
 
@@ -18,6 +19,7 @@ export function DashboardShell({ profile, boxes, notices = [], adminBoxIds = [],
     <ShellProvider profile={profile} boxes={boxes} notices={notices} adminBoxIds={adminBoxIds} isPlatformAdmin={isPlatformAdmin} openSidebar={() => setSidebarOpen(true)}>
       <MotionConfig reducedMotion="user">
       <ToastProvider>
+        <Telemetry />
         <div className="flex min-h-dvh bg-bg">
           <Sidebar profile={profile} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           <main className="flex-1 min-w-0 flex flex-col lg:ml-[240px] min-h-dvh pb-[calc(96px+env(safe-area-inset-bottom))] lg:pb-0">

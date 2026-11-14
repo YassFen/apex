@@ -1,11 +1,13 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { roleLabel } from '@/lib/utils/cn'
 import { useRouter } from 'next/navigation'
 import { SECTION_TITLE, type SettingsSection } from '@/lib/constants/settings'
 import { Upload, Globe, Lock, Building2, LogOut, Copy, Check, Trophy } from '@/components/ui/icons'
 import { Segmented } from '@/components/ui/motion'
 import { Switch } from '@/components/ui/Switch'
+import { ChartBar } from '@/components/ui/icons'
+import { setUsageEnabled, usageEnabled } from '@/lib/utils/telemetry'
 import { NotificationSettings } from '@/components/settings/NotificationSettings'
 import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/Topbar'
@@ -39,6 +41,9 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
   const [unit, setUnit]   = useState<'kg' | 'lb'>(profile.preferred_unit)
   const [sex, setSex]     = useState<'' | 'm' | 'f'>(profile.sex ?? '')
   const [favMov, setFavMov] = useState(profile.favorite_movement ?? '')
+  const [birthYear, setBirthYear] = useState(profile.birth_year ? String(profile.birth_year) : '')
+  const [usage, setUsage] = useState(true)
+  useEffect(() => { setUsage(usageEnabled()) }, [])
   const [profilePublic, setProfilePublic]   = useState(profile.profile_public ?? false)
   const [showPrsPublic, setShowPrsPublic]   = useState(profile.show_prs_public ?? false)
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? '')
@@ -147,7 +152,9 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
       profile_public: profilePublic,
       show_prs_public: showPrsPublic,
     }
-    let { error } = await supabase.from('profiles').update({ ...base, sex: sex || null }).eq('id', profile.id)
+    let { error } = await supabase.from('profiles').update({ ...base, sex: sex || null, birth_year: /^(19|20)\d\d$/.test(birthYear) ? Number(birthYear) : null }).eq('id', profile.id)
+    // Before migration 010 there's no birth_year column.
+    if (error && isMissingColumn(error)) ({ error } = await supabase.from('profiles').update({ ...base, sex: sex || null }).eq('id', profile.id))
     // Before migration 007 there's no sex column.
     if (error && isMissingColumn(error)) ({ error } = await supabase.from('profiles').update(base).eq('id', profile.id))
     setSaving(false)
@@ -309,6 +316,12 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
               <Segmented id="set-sex" value={sex || 'none'} onChange={v => setSex(v === 'none' ? '' : v as 'm' | 'f')}
                 options={[['m', 'Masculino'], ['f', 'Femenino'], ['none', 'Sin definir']] as const} />
             </Card>
+            <Card>
+              <h2 className="font-semibold mb-1">Año de nacimiento</h2>
+              <p className="text-mu text-sm mb-3">Opcional. Sirve para divisiones por edad y para estadísticas generales; nadie ve tu año.</p>
+              <input type="number" inputMode="numeric" min={1920} max={2025} placeholder="1994" value={birthYear} onChange={e => setBirthYear(e.target.value)}
+                aria-label="Año de nacimiento" className="w-full h-12 px-4 rounded-xl bg-p2 text-t text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 placeholder:text-fa" />
+            </Card>
             {saveBtn}
           </form>
         )}
@@ -321,6 +334,11 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
                 checked={profilePublic} onChange={setProfilePublic} />
               <ToggleRow icon={<Trophy size={20} />} title="Mostrar mis RMs" body="Requiere perfil público. Verán tus máximos levantados."
                 checked={showPrsPublic} disabled={!profilePublic} onChange={setShowPrsPublic} />
+            </Card>
+            <Card padding={false}>
+              <ToggleRow icon={<ChartBar size={20} />} title="Compartir datos de uso"
+                body="Qué pantallas y botones usas, sin lo que escribes ni tus marcas. Nos ayuda a mejorar la app. Los errores se informan siempre para poder arreglarlos."
+                checked={usage} onChange={v => { setUsage(v); setUsageEnabled(v) }} />
             </Card>
             {profilePublic && (
               <div className="p-4 rounded-2xl bg-ac/10 text-sm">

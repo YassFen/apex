@@ -9,4 +9,5 @@
 // 0.5.0 — Themes, motion, calendar, events and readiness, RM calculator
 // 0.6.0 — Phosphor + Geist redesign, settings hub, class times, results, library, home widgets, demo
 // 0.7.0 — Coach home widgets, box challenges, exercise photo uploads
-export const APP_VERSION = '0.7.0'
+// 0.8.0 — Box administrator (people, plans, schedule, coaches, announcements), class bookings, platform panel, usage and error log
+export const APP_VERSION = '0.8.0'

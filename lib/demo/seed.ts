@@ -384,6 +384,8 @@ export function buildSeed(today: string): Store {
   announcement_reads.push({ announcement_id: 'ann-coaches', user_id: 'demo-ath-1', read_at: iso(today, '08:00') })
 
   return {
+    platform_admins: [{ user_id: DEMO_USER_ID, created_at: iso(today) }], app_error_status: [],
+    admin_audit_log: [{ id: 'audit-1', admin_id: DEMO_USER_ID, action: 'box_plan', target: 'Rocca Box Viña', detail: { from: 'pro', to: 'free' }, created_at: iso(addDaysISO(today, -6)) }],
     membership_plans, memberships, membership_events, member_files, class_slots, class_overrides, class_bookings, coach_issues, announcements, announcement_reads,
     challenges, challenge_participants, challenge_entries,
     profiles, boxes, box_members, movements, daily_wods, wod_results, wod_result_bumps: bumps, pr_records, benchmarks,
