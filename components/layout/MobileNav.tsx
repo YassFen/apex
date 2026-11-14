@@ -6,11 +6,12 @@ import { Reorder, motion } from 'motion/react'
 import {
   LayoutGrid, Flame, Timer, TrendingUp, Activity, Users, ArrowLeftRight, MoreHorizontal,
   Trophy, Calculator, BarChart3, Gear, History, ChevronRight, CalendarDays, Medal, BookOpenText, Flag,
-  SlidersHorizontal, ArrowCounterClockwise,
+  SlidersHorizontal, ArrowCounterClockwise, CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 import { SPRING } from '@/components/ui/motion'
-import { useShell, type ViewMode } from '@/lib/hooks/useShell'
+import { useShell, MODE_LABEL, type ViewMode } from '@/lib/hooks/useShell'
+import { useModeSwitch } from '@/lib/hooks/useModeSwitch'
 import { Modal } from '@/components/ui/Modal'
 import { MorphIcon } from '@/components/ui/MorphIcon'
 import { playSound } from '@/lib/utils/sound'
@@ -23,6 +24,8 @@ const ATHLETE_ITEMS: Item[] = [
   { href: '/dashboard',    label: 'Inicio',            short: 'Inicio',    icon: LayoutGrid,  desc: 'Tu estado y tus widgets' },
   { href: '/wod',          label: 'WOD del día',       short: 'WOD',       icon: Flame,       desc: 'El WOD de tu box y el ranking' },
   { href: '/calendar',     label: 'Calendario',        short: 'Agenda',    icon: CalendarDays, desc: 'WODs programados y competencias' },
+  { href: '/classes',      label: 'Clases',            short: 'Clases',    icon: CalendarCheck, desc: 'Reserva tu clase y mira tu plan' },
+  { href: '/announcements', label: 'Avisos',           short: 'Avisos',    icon: Megaphone,   desc: 'Comunicados de tu box' },
   { href: '/prs',          label: 'Récords',           short: 'RMs',       icon: TrendingUp,  desc: 'Tus RMs y su evolución' },
   { href: '/timer',        label: 'Timer',             short: 'Timer',     icon: Timer,       desc: 'For Time, AMRAP, EMOM, Tabata' },
   { href: '/calc',         label: 'Calculadora RM',    short: 'Calcular',  icon: Calculator,  desc: 'Porcentajes y discos' },
@@ -37,6 +40,8 @@ const COACH_ITEMS: Item[] = [
   { href: '/dashboard',         label: 'Inicio',              short: 'Inicio',    icon: LayoutGrid,   desc: 'Clases, actividad y tu box' },
   { href: '/coach/publish-wod', label: 'Publicar WOD',        short: 'WOD',       icon: Flame,        desc: 'Programa por día y por clase' },
   { href: '/calendar',          label: 'Calendario',          short: 'Agenda',    icon: CalendarDays, desc: 'WODs programados y eventos' },
+  { href: '/classes',           label: 'Mis clases',          short: 'Clases',    icon: CalendarCheck, desc: 'Tus horarios, lista y asistencia' },
+  { href: '/announcements',     label: 'Avisos',              short: 'Avisos',    icon: Megaphone,    desc: 'Comunicados y avisos a atletas' },
   { href: '/coach/athletes',    label: 'Atletas',             short: 'Atletas',   icon: Users,        desc: 'Tu roster e inactivos' },
   { href: '/coach/wod-live',    label: 'Seguimiento en vivo', short: 'En vivo',   icon: Activity,     desc: 'Quién ya registró el WOD' },
   { href: '/analytics',         label: 'Analytics',           short: 'Datos',     icon: BarChart3,    desc: 'Progreso del box' },
@@ -46,23 +51,34 @@ const COACH_ITEMS: Item[] = [
   { href: '/calc',              label: 'Calculadora RM',      short: 'Calcular',  icon: Calculator,   desc: 'Porcentajes y discos' },
   { href: '/settings',          label: 'Configuración',       short: 'Ajustes',   icon: Gear,         desc: 'Perfil, box, avisos y apariencia' },
 ]
+const ADMIN_ITEMS: Item[] = [
+  { href: '/manage',          label: 'Resumen',       short: 'Resumen',   icon: ChartPieSlice,     desc: 'Números y alertas del box' },
+  { href: '/manage/members',  label: 'Personas',      short: 'Personas',  icon: Users,             desc: 'Fichas, planes y asistencia' },
+  { href: '/manage/schedule', label: 'Horarios',      short: 'Horarios',  icon: CalendarDays,      desc: 'Grilla de clases y cupos' },
+  { href: '/manage/coaches',  label: 'Coaches',       short: 'Coaches',   icon: ChalkboardTeacher, desc: 'Horas, clases y reemplazos' },
+  { href: '/manage/plans',    label: 'Planes',        short: 'Planes',    icon: Ticket,            desc: 'Crea y edita los planes' },
+  { href: '/announcements',   label: 'Comunicados',   short: 'Avisos',    icon: Megaphone,         desc: 'Avisa a coaches y atletas' },
+  { href: '/settings',        label: 'Configuración', short: 'Ajustes',   icon: Gear,              desc: 'Perfil, box, avisos y apariencia' },
+]
 const DEFAULT_TABS: Record<ViewMode, string[]> = {
+  admin: ['/manage', '/manage/members', '/manage/schedule', '/manage/coaches'],
   athlete: ['/dashboard', '/wod', '/calendar', '/prs'],
   coach: ['/dashboard', '/coach/publish-wod', '/calendar', '/coach/athletes'],
 }
 const tabsKey = (m: ViewMode) => `apex.tabs.${m}`
 
 function isActive(pathname: string, href: string) {
-  return pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
+  return pathname === href || (href !== '/dashboard' && href !== '/manage' && pathname.startsWith(href + '/'))
 }
 
 export function MobileNav({ profile }: { profile: Profile }) {
   const pathname = usePathname()
-  const { viewMode, setViewMode, canSwitchMode } = useShell()
+  const { viewMode, canSwitchMode, modes, isPlatformAdmin } = useShell()
+  const { go } = useModeSwitch()
   const [moreOpen, setMoreOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const coach = viewMode === 'coach'
-  const items = coach ? COACH_ITEMS : ATHLETE_ITEMS
+  const items = viewMode === 'admin' ? ADMIN_ITEMS : coach ? COACH_ITEMS : ATHLETE_ITEMS
   const [pinned, setPinned] = useState<string[]>(DEFAULT_TABS[viewMode])
 
   useEffect(() => {
@@ -131,17 +147,27 @@ export function MobileNav({ profile }: { profile: Profile }) {
             </span>
           </button>
 
-          {canSwitchMode && (
-            <button type="button" onClick={() => { setViewMode(coach ? 'athlete' : 'coach'); setMoreOpen(false) }}
+          {canSwitchMode && modes.filter(m => m !== viewMode).map(m => (
+            <button key={m} type="button" onClick={() => { go(m); setMoreOpen(false) }}
               className="flex items-center gap-3.5 p-3 rounded-2xl bg-p2 hover:bg-p3 transition-colors text-left">
               <span className="size-10 rounded-xl grid place-items-center flex-shrink-0 bg-bl/15 text-bl">
                 <ArrowLeftRight size={20} aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-sm">Cambiar a modo {coach ? 'atleta' : 'coach'}</span>
-                <span className="block text-mu text-xs">{coach ? 'Tus RMs, WOD y timer personal' : 'Publicar WODs y ver tu box'}</span>
+                <span className="block font-semibold text-sm">Cambiar a modo {MODE_LABEL[m].toLowerCase()}</span>
+                <span className="block text-mu text-xs">{m === 'admin' ? 'Personas, planes, horarios y coaches' : m === 'coach' ? 'Publicar WODs y ver tu box' : 'Tus RMs, WOD y timer personal'}</span>
               </span>
             </button>
+          ))}
+
+          {isPlatformAdmin && (
+            <Link href="/admin" className="flex items-center gap-3.5 p-3 rounded-2xl bg-p2 hover:bg-p3 transition-colors">
+              <span className="size-10 rounded-xl grid place-items-center flex-shrink-0 bg-pu/15 text-pu"><ShieldCheck size={20} aria-hidden /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-sm">Panel de la aplicación</span>
+                <span className="block text-mu text-xs">Boxes, uso y errores</span>
+              </span>
+            </Link>
           )}
         </nav>
       </Modal>

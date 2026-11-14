@@ -24,7 +24,7 @@ export interface QuerySpec {
 
 // Many-to-one embeds: the column on the base row that points at the embedded table's id.
 const ONE: Record<string, string[]> = {
-  movements: ['movement_id'], boxes: ['box_id'], profiles: ['user_id', 'coach_id', 'created_by'],
+  movements: ['movement_id'], boxes: ['box_id'], profiles: ['user_id', 'coach_id', 'created_by', 'author_id'],
   daily_wods: ['daily_wod_id'], events: ['event_id'],
 }
 // One-to-many embeds: the column on the embedded table that points back at the base row.
@@ -100,7 +100,7 @@ export function runQuery(store: Store, spec: QuerySpec, userId: string): { data:
     const written: Row[] = []
     for (const v of vals) {
       const base: Row = { user_id: v.user_id ?? userId, created_at: new Date().toISOString(), recorded_at: new Date().toISOString(), ...v }
-      if (!('id' in base) && !['event_participants', 'event_results', 'wod_result_bumps'].includes(spec.table)) base.id = newId()
+      if (!('id' in base) && !['event_participants', 'event_results', 'wod_result_bumps', 'announcement_reads', 'member_files', 'platform_admins'].includes(spec.table)) base.id = newId()
       const existing = spec.op === 'upsert' && keys ? rows.find(r => keys.every(k => String(r[k]) === String(base[k]))) : undefined
       if (existing) { Object.assign(existing, v); written.push(existing) } else { rows.push(base); written.push(base) }
       if (spec.table === 'pr_records') recalcPr(store, base)
@@ -149,6 +149,57 @@ export function runRpc(store: Store, fn: string, args: Row): { data: any; error:
     const mine = new Set((store.box_members ?? []).filter(m => m.user_id === store.__me?.[0]?.id).map(m => m.box_id))
     const days = (store.daily_wods ?? []).filter(d => d.is_live && mine.has(d.box_id) && d.scheduled_for >= args.p_from && d.scheduled_for <= args.p_to)
     return { data: [...new Map(days.map(d => [`${d.box_id}|${d.scheduled_for}`, { box_id: d.box_id, scheduled_for: d.scheduled_for }])).values()], error: null }
+  }
+  const me: string = store.__me?.[0]?.id
+  const current = (box: string, user: string) => (store.memberships ?? []).filter(m => m.box_id === box && m.user_id === user && m.status !== 'cancelled').sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0]
+  const spendClass = (box: string, user: string, n: number) => { const m = current(box, user); if (m && m.kind === 'classes') m.classes_used = Math.max(0, m.classes_used + n) }
+  if (fn === 'book_class') {
+    const user = args.p_user ?? me
+    const slot = (store.class_slots ?? []).find(s => s.id === args.p_slot && s.is_active)
+    if (!slot) return { data: { ok: false, reason: 'no_class' }, error: null }
+    const ov = (store.class_overrides ?? []).find(o => o.slot_id === slot.id && o.class_date === args.p_date)
+    if (ov?.cancelled) return { data: { ok: false, reason: 'cancelled' }, error: null }
+    const list = (store.class_bookings ??= [])
+    const prev = list.find(b => b.slot_id === slot.id && b.class_date === args.p_date && b.user_id === user)
+    if (prev && prev.status !== 'cancelled') return { data: { ok: true, status: prev.status }, error: null }
+    const m = current(slot.box_id, user)
+    if (m) {
+      if (m.status === 'frozen') return { data: { ok: false, reason: 'frozen' }, error: null }
+      if (m.ends_on < args.p_date) return { data: { ok: false, reason: 'expired' }, error: null }
+      if (m.kind === 'classes' && m.classes_used >= (m.classes_total ?? 0)) return { data: { ok: false, reason: 'no_classes' }, error: null }
+    }
+    const taken = list.filter(b => b.slot_id === slot.id && b.class_date === args.p_date && (b.status === 'booked' || b.status === 'attended')).length
+    const status = taken >= (ov?.capacity ?? slot.capacity) ? 'waitlist' : 'booked'
+    if (prev) { prev.status = status; prev.created_at = new Date().toISOString() }
+    else list.push({ id: newId(), slot_id: slot.id, box_id: slot.box_id, class_date: args.p_date, user_id: user, status, created_at: new Date().toISOString() })
+    if (status === 'booked') spendClass(slot.box_id, user, 1)
+    return { data: { ok: true, status }, error: null }
+  }
+  if (fn === 'cancel_booking') {
+    const user = args.p_user ?? me
+    const list = store.class_bookings ?? []
+    const b = list.find(x => x.slot_id === args.p_slot && x.class_date === args.p_date && x.user_id === user)
+    if (!b) return { data: { ok: false, reason: 'no_booking' }, error: null }
+    const had = b.status === 'booked' || b.status === 'attended'
+    b.status = 'cancelled'
+    if (had) {
+      spendClass(b.box_id, user, -1)
+      const next = list.filter(x => x.slot_id === args.p_slot && x.class_date === args.p_date && x.status === 'waitlist').sort((x, y) => (x.created_at < y.created_at ? -1 : 1))[0]
+      if (next) { next.status = 'booked'; spendClass(next.box_id, next.user_id, 1) }
+    }
+    return { data: { ok: true }, error: null }
+  }
+  if (fn === 'mark_attendance') {
+    const b = (store.class_bookings ?? []).find(x => x.id === args.p_booking)
+    if (b) b.status = args.p_status
+    return { data: { ok: !!b }, error: null }
+  }
+  if (fn === 'set_member_role') {
+    const bm = (store.box_members ?? []).find(m => m.box_id === args.p_box && m.user_id === args.p_user)
+    if (bm) bm.role = args.p_role
+    const pr = (store.profiles ?? []).find(p => p.id === args.p_user)
+    if (pr && args.p_role !== 'athlete' && pr.role === 'athlete') pr.role = 'coach'
+    return { data: { ok: true }, error: null }
   }
   if (fn === 'join_box_by_code') return { data: null, error: { message: 'En la demo no puedes unirte a otros boxes.' } }
   return { data: null, error: { message: `rpc ${fn} no disponible en la demo` } }

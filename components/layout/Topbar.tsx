@@ -20,7 +20,7 @@ interface TopbarProps {
  */
 function parentOf(pathname: string): string | null {
   const parts = pathname.split('/').filter(Boolean)
-  const depth = parts[0] === 'coach' ? parts.length - 1 : parts.length
+  const depth = parts[0] === 'coach' || parts[0] === 'manage' ? parts.length - 1 : parts.length
   if (depth <= 1) return null
   if (parts[0] === 'calendar' && parts[1] === 'event') {
     return parts.length > 3 ? `/${parts.slice(0, 3).join('/')}` : '/calendar'

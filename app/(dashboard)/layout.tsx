@@ -4,7 +4,8 @@ import { getUser, getProfile } from '@/lib/supabase/session'
 import { DashboardShell } from '@/components/layout/DashboardShell'
 import { addDaysISO, todayISO } from '@/lib/utils/dates'
 import { buildNotices, type Notice } from '@/lib/utils/notifications'
-import type { Box } from '@/lib/types/database'
+import { isLive, matchesBooking, targetLabel, visibleTo, type ShellAnnouncement } from '@/lib/utils/announcements'
+import type { Announcement, Box, ClassSlot } from '@/lib/types/database'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -18,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // Load all boxes this user belongs to (as owner or member)
   const [{ data: owned }, { data: memberships }] = await Promise.all([
     supabase.from('boxes').select('*').eq('owner_id', user.id),
-    supabase.from('box_members').select('box_id, boxes(*)').eq('user_id', user.id).eq('is_active', true),
+    supabase.from('box_members').select('box_id, role, boxes(*)').eq('user_id', user.id).eq('is_active', true),
   ])
 
   const boxMap = new Map<string, Box>()
@@ -28,10 +29,46 @@ export default async function DashboardLayout({ children }: { children: React.Re
     if (b?.id) boxMap.set(b.id, b as Box)
   })
   const boxes = Array.from(boxMap.values())
+  const adminBoxIds = [...new Set([
+    ...((owned ?? []) as any[]).map(b => b.id as string),
+    ...((memberships ?? []) as any[]).filter(m => m.role === 'admin').map(m => m.box_id as string),
+  ])]
+  // Platform administrators (011). The table may not exist yet.
+  const { data: pa, error: paErr } = await supabase.from('platform_admins').select('user_id').eq('user_id', user.id).maybeSingle()
+  const isPlatformAdmin = !paErr && !!pa
 
-  const notices = await loadNotices(supabase, user.id, boxes)
+  const staffBoxIds = new Set([...adminBoxIds, ...((memberships ?? []) as any[]).filter(m => m.role !== 'athlete').map(m => m.box_id as string)])
+  const [notices, announcements] = await Promise.all([
+    loadNotices(supabase, user.id, boxes),
+    loadAnnouncements(supabase, user.id, boxes, staffBoxIds),
+  ])
 
-  return <DashboardShell profile={profile as any} boxes={boxes} notices={notices}>{children}</DashboardShell>
+  return <DashboardShell profile={profile as any} boxes={boxes} notices={notices} adminBoxIds={adminBoxIds} isPlatformAdmin={isPlatformAdmin} announcements={announcements}>{children}</DashboardShell>
+}
+
+/** Live announcements of the person's boxes (010). Returns nothing until the migration runs. */
+async function loadAnnouncements(supabase: any, userId: string, boxes: Box[], staffBoxIds: Set<string>): Promise<ShellAnnouncement[]> {
+  const boxIds = boxes.map(b => b.id)
+  if (!boxIds.length) return []
+  const today = todayISO()
+  const { data, error } = await supabase.from('announcements').select('*').in('box_id', boxIds).lte('starts_on', today).order('created_at', { ascending: false }).limit(40)
+  if (error) return []
+  const live = ((data ?? []) as Announcement[]).filter(a => isLive(a, today) && visibleTo(a, staffBoxIds.has(a.box_id), userId))
+  if (!live.length) return []
+  const targeted = live.some(a => a.slot_id || a.weekday !== null)
+  const [{ data: reads }, { data: slots }, { data: bookings }] = await Promise.all([
+    supabase.from('announcement_reads').select('announcement_id').eq('user_id', userId),
+    targeted ? supabase.from('class_slots').select('id, weekday, start_time, name').in('box_id', boxIds) : Promise.resolve({ data: [] }),
+    targeted ? supabase.from('class_bookings').select('slot_id, class_date, status').eq('user_id', userId).gte('class_date', today) : Promise.resolve({ data: [] }),
+  ])
+  const read = new Set(((reads ?? []) as any[]).map(r => r.announcement_id))
+  const mine = ((bookings ?? []) as any[]).filter(b => b.status !== 'cancelled')
+  return live.map(a => ({
+    id: a.id, boxId: a.box_id, boxName: boxes.find(b => b.id === a.box_id)?.name ?? 'Tu box', title: a.title, body: a.body, urgent: a.urgent,
+    audience: a.audience, target: targetLabel(a, (slots ?? []) as ClassSlot[]), startsOn: a.starts_on, endsOn: a.ends_on,
+    mine: a.author_id === userId, read: read.has(a.id),
+    popup: a.urgent || staffBoxIds.has(a.box_id) || matchesBooking(a, mine),
+  }))
 }
 
 /** Data for the notification bell. Every query tolerates missing migrations (006/007). */

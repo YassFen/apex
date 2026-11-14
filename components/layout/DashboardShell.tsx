@@ -9,11 +9,13 @@ import type { Profile, Box } from '@/lib/types/database'
 import type { Notice } from '@/lib/utils/notifications'
 import { DEMO_USER_ID } from '@/lib/demo/client'
 import { DemoTour } from '@/components/demo/DemoTour'
+import { AnnouncementCenter } from '@/components/announcements/AnnouncementCenter'
+import type { ShellAnnouncement } from '@/lib/utils/announcements'
 
-export function DashboardShell({ profile, boxes, notices = [], children }: { profile: Profile; boxes: Box[]; notices?: Notice[]; children: React.ReactNode }) {
+export function DashboardShell({ profile, boxes, notices = [], adminBoxIds = [], isPlatformAdmin = false, announcements = [], children }: { announcements?: ShellAnnouncement[]; profile: Profile; boxes: Box[]; notices?: Notice[]; adminBoxIds?: string[]; isPlatformAdmin?: boolean; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   return (
-    <ShellProvider profile={profile} boxes={boxes} notices={notices} openSidebar={() => setSidebarOpen(true)}>
+    <ShellProvider profile={profile} boxes={boxes} notices={notices} adminBoxIds={adminBoxIds} isPlatformAdmin={isPlatformAdmin} openSidebar={() => setSidebarOpen(true)}>
       <MotionConfig reducedMotion="user">
       <ToastProvider>
         <div className="flex min-h-dvh bg-bg">
@@ -21,6 +23,7 @@ export function DashboardShell({ profile, boxes, notices = [], children }: { pro
           <main className="flex-1 min-w-0 flex flex-col lg:ml-[240px] min-h-dvh pb-[calc(96px+env(safe-area-inset-bottom))] lg:pb-0">
             {/* DEMO MODE: mode switch, guided tour, exit */}
             {profile.id === DEMO_USER_ID && <DemoTour />}
+            <AnnouncementCenter items={announcements} userId={profile.id} />
             {children}
           </main>
           <MobileNav profile={profile} />

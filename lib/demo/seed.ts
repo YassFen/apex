@@ -279,7 +279,112 @@ export function buildSeed(today: string): Store {
     }
   }
 
+  /* ── Box administration (010): staff, plans, memberships, class grid, bookings, notices ── */
+  // Two athletes also coach; two people left the box.
+  for (const [id, role] of [['demo-ath-1', 'coach'], ['demo-ath-4', 'coach']] as const) {
+    const bm = box_members.find(m => m.user_id === id); if (bm) bm.role = role
+    const pr = profiles.find(x => x.id === id); if (pr) pr.role = 'coach'
+  }
+  for (const [id, ago] of [['demo-ath-16', 12], ['demo-ath-17', 40]] as const) {
+    const bm = box_members.find(m => m.user_id === id); if (bm) { bm.is_active = false; bm.left_at = iso(addDaysISO(today, -ago)) }
+  }
+  box_members.forEach(m => { if (!('left_at' in m)) m.left_at = null })
+  const dowOf = (d: string) => new Date(`${d}T12:00:00Z`).getUTCDay()
+
+  const membership_plans: Row[] = [
+    { id: 'plan-full', box_id: BOX, name: 'Mensual ilimitado', kind: 'unlimited', classes_count: null, duration_days: 30, price: 55000, currency: 'CLP', is_active: true, created_at: iso(addDaysISO(today, -400)) },
+    { id: 'plan-12', box_id: BOX, name: '12 clases al mes', kind: 'classes', classes_count: 12, duration_days: 30, price: 42000, currency: 'CLP', is_active: true, created_at: iso(addDaysISO(today, -399)) },
+    { id: 'plan-q', box_id: BOX, name: 'Trimestral ilimitado', kind: 'unlimited', classes_count: null, duration_days: 90, price: 145000, currency: 'CLP', is_active: true, created_at: iso(addDaysISO(today, -398)) },
+    { id: 'plan-old', box_id: BOX, name: 'Plan estudiante 2025', kind: 'classes', classes_count: 8, duration_days: 30, price: 30000, currency: 'CLP', is_active: false, created_at: iso(addDaysISO(today, -397)) },
+  ]
+  const memberships: Row[] = []
+  const membership_events: Row[] = []
+  const mEvent = (m: Row, type: string, ago: number, extra: Row = {}) => membership_events.push({
+    id: `mev-${membership_events.length}`, membership_id: m.id, box_id: BOX, user_id: m.user_id, type, happened_on: addDaysISO(today, -ago), reason: null, days: null,
+    created_by: DEMO_USER_ID, created_at: iso(addDaysISO(today, -ago), '11:00'), ...extra })
+  athletes.forEach((a, i) => {
+    if (i === 1 || i === 4 || i === 15) return // the two coaches, and one athlete without a plan
+    const plan = membership_plans[i % 5 === 0 ? 2 : i % 3 === 0 ? 1 : 0]
+    // Ends: most in the coming weeks, a few this week, a couple already expired.
+    const endsIn = i === 2 || i === 9 ? -3 - i : i === 6 || i === 11 || i === 13 ? 2 + (i % 4) : 9 + ((i * 7) % (plan.duration_days - 10))
+    const start = addDaysISO(today, endsIn - plan.duration_days + 1)
+    if (i % 4 === 0) { // someone who has been around: an earlier period, then a renewal
+      const old: Row = { id: `ms-${i}-old`, box_id: BOX, user_id: a.id, plan_id: plan.id, plan_name: plan.name, kind: plan.kind, starts_on: addDaysISO(start, -plan.duration_days), ends_on: addDaysISO(start, -1),
+        classes_total: plan.classes_count, classes_used: plan.classes_count ?? 0, status: 'active', frozen_on: null, created_by: DEMO_USER_ID, created_at: iso(addDaysISO(start, -plan.duration_days), '10:00') }
+      memberships.push(old); mEvent(old, 'assigned', daysSince(old.starts_on, today), { reason: plan.name })
+    }
+    const m: Row = { id: `ms-${i}`, box_id: BOX, user_id: a.id, plan_id: plan.id, plan_name: plan.name, kind: plan.kind, starts_on: start, ends_on: addDaysISO(today, endsIn),
+      classes_total: plan.classes_count, classes_used: plan.kind === 'classes' ? (i === 3 ? 12 : 3 + (i % 7)) : 0, status: 'active', frozen_on: null, created_by: DEMO_USER_ID, created_at: iso(start, '10:00') }
+    memberships.push(m); mEvent(m, i % 4 === 0 ? 'renewed' : 'assigned', Math.max(0, daysSince(start, today)), { reason: plan.name })
+    if (i === 7) { m.status = 'frozen'; m.frozen_on = addDaysISO(today, -9); mEvent(m, 'frozen', 9, { reason: 'Viaje de trabajo a Antofagasta' }) }
+    if (i === 14) { m.status = 'frozen'; m.frozen_on = addDaysISO(today, -4); mEvent(m, 'frozen', 4, { reason: 'Lesión de hombro, vuelve con alta médica' }) }
+    if (i === 10) { mEvent(m, 'frozen', 24, { reason: 'Vacaciones' }); mEvent(m, 'reactivated', 14, { days: 10 }) }
+  })
+
+  const member_files: Row[] = athletes.slice(0, 8).map((a, i) => ({
+    box_id: BOX, user_id: a.id, phone: `+56 9 ${5000 + i * 137} ${1000 + i * 411}`, emergency_contact: i % 2 ? 'Mamá · +56 9 7777 0000' : null,
+    birth_date: `${1985 + ((i * 5) % 18)}-0${1 + (i % 9)}-1${i % 9}`, notes: i === 7 ? 'Paga por transferencia los días 5.' : i === 2 ? 'Rodilla derecha operada en 2024: sin saltos altos.' : null, updated_at: iso(today),
+  }))
+
+  // Weekly grid: Mon–Fri five classes, Saturday one. The 13:00 has no coach yet.
+  const class_slots: Row[] = []
+  const coachAt: Record<string, string | null> = { '07:00': 'demo-ath-1', '08:00': 'demo-ath-1', '13:00': null, '19:00': DEMO_USER_ID, '20:00': 'demo-ath-4' }
+  for (let wd = 1; wd <= 5; wd++) for (const t of ['07:00', '08:00', '13:00', '19:00', '20:00']) {
+    class_slots.push({ id: `slot-${wd}-${t.slice(0, 2)}`, box_id: BOX, weekday: wd, start_time: `${t}:00`, duration_min: 60, name: t === '13:00' ? 'Open Box' : wd === 3 && t === '20:00' ? 'Halterofilia' : 'CrossFit',
+      capacity: t === '19:00' ? 12 : 14, coach_id: wd === 5 && t === '20:00' ? DEMO_USER_ID : coachAt[t], is_active: true, created_at: iso(addDaysISO(today, -300)) })
+  }
+  class_slots.push({ id: 'slot-6-10', box_id: BOX, weekday: 6, start_time: '10:00:00', duration_min: 90, name: 'Partner WOD', capacity: 20, coach_id: DEMO_USER_ID, is_active: true, created_at: iso(addDaysISO(today, -300)) })
+
+  const class_bookings: Row[] = []
+  const stay = athletes.filter((_, i) => i !== 16 && i !== 17 && i !== 1 && i !== 4)
+  for (let d = -62; d <= 6; d++) {
+    const day = addDaysISO(today, d)
+    const daySlots = class_slots.filter(s => s.weekday === dowOf(day))
+    if (!daySlots.length) continue
+    const taken = new Map<string, number>()
+    stay.forEach((a, i) => {
+      if (['demo-ath-18', 'demo-ath-19', 'demo-ath-20'].includes(a.id) && d > -16) return
+      if (r() > a.attendance * (d > 0 ? 0.9 : 0.8)) return
+      // Evenings are the busy ones; each person has a usual time.
+      const pick = daySlots.length === 1 ? daySlots[0] : daySlots[[3, 3, 4, 0, 3, 1, 4, 3, 2, 3][(i + (r() < 0.2 ? 1 : 0)) % 10]]
+      const n = taken.get(pick.id) ?? 0
+      taken.set(pick.id, n + 1)
+      class_bookings.push({ id: `bk-${day}-${a.id}`, slot_id: pick.id, box_id: BOX, class_date: day, user_id: a.id,
+        status: n >= pick.capacity ? (d >= 0 ? 'waitlist' : 'cancelled') : d < 0 ? (r() < 0.93 ? 'attended' : 'no_show') : 'booked', created_at: iso(addDaysISO(day, -1), `1${n % 10}:0${n % 6}`) })
+    })
+  }
+  // The demo coach also trains: booked for tomorrow morning.
+  const tomorrow = addDaysISO(today, 1)
+  const tmSlot = class_slots.find(s => s.weekday === dowOf(tomorrow) && s.start_time.startsWith('07'))
+  if (tmSlot) class_bookings.push({ id: 'bk-me-tm', slot_id: tmSlot.id, box_id: BOX, class_date: tomorrow, user_id: DEMO_USER_ID, status: 'booked', created_at: iso(today, '09:00') })
+
+  // One class already covered by a replacement, one cancelled, and a coach who can't make it.
+  const nextOn = (wd: number, from = 1) => { for (let k = from; k < from + 7; k++) if (dowOf(addDaysISO(today, k)) === wd) return addDaysISO(today, k); return today }
+  const issueDay = dowOf(addDaysISO(today, 2)) === 0 || dowOf(addDaysISO(today, 2)) === 6 ? nextOn(1) : addDaysISO(today, 2)
+  const class_overrides: Row[] = [
+    { id: 'ov-1', slot_id: `slot-${dowOf(nextOn(5, -7)) }-20`, box_id: BOX, class_date: nextOn(5, -7), coach_id: 'demo-ath-4', cancelled: false, cancel_reason: null, capacity: null, created_at: iso(today) },
+    { id: 'ov-2', slot_id: `slot-${dowOf(nextOn(3))}-13`, box_id: BOX, class_date: nextOn(3), coach_id: null, cancelled: true, cancel_reason: 'Mantención del piso', capacity: null, created_at: iso(today) },
+  ]
+  const coach_issues: Row[] = [
+    { id: 'issue-1', box_id: BOX, coach_id: 'demo-ath-1', slot_id: `slot-${dowOf(issueDay)}-07`, class_date: issueDay, reason: 'Tengo control médico temprano, llego recién a las 9.', status: 'open', replacement_id: null, created_at: iso(today, '08:15'), resolved_at: null },
+    { id: 'issue-0', box_id: BOX, coach_id: DEMO_USER_ID, slot_id: `slot-${dowOf(nextOn(5, -7))}-20`, class_date: nextOn(5, -7), reason: 'Competencia fuera de Santiago', status: 'resolved', replacement_id: 'demo-ath-4', created_at: iso(addDaysISO(today, -9)), resolved_at: iso(addDaysISO(today, -8)) },
+  ]
+
+  const announcements: Row[] = [
+    { id: 'ann-urgent', box_id: BOX, author_id: 'demo-ath-1', audience: 'all', title: 'Sábado sin clases por mantención', body: 'Este sábado se cambia el piso de la zona de levantamiento.\nNo hay Partner WOD. El lunes volvemos con el horario normal.', urgent: true,
+      starts_on: addDaysISO(today, -1), ends_on: addDaysISO(today, 4), weekday: null, slot_id: null, parent_id: null, created_at: iso(addDaysISO(today, -1), '18:00') },
+    { id: 'ann-coaches', box_id: BOX, author_id: DEMO_USER_ID, audience: 'coaches', title: 'Reunión de coaches el jueves 21:00', body: 'Revisamos la programación del próximo ciclo y los turnos de diciembre. Traigan sus disponibilidades.', urgent: false,
+      starts_on: addDaysISO(today, -2), ends_on: addDaysISO(today, 5), weekday: null, slot_id: null, parent_id: null, created_at: iso(addDaysISO(today, -2), '12:00') },
+    { id: 'ann-19', box_id: BOX, author_id: 'demo-ath-4', audience: 'athletes', title: 'Lleven cuerda propia', body: 'La próxima semana hay double-unders todos los días en la clase de las 19:00.', urgent: false,
+      starts_on: today, ends_on: addDaysISO(today, 7), weekday: null, slot_id: 'slot-1-19', parent_id: null, created_at: iso(today, '09:30') },
+    { id: 'ann-old', box_id: BOX, author_id: DEMO_USER_ID, audience: 'all', title: 'Feriado: horario reducido', body: 'El viernes solo hubo clases de 10:00 y 11:00.', urgent: false,
+      starts_on: addDaysISO(today, -20), ends_on: addDaysISO(today, -14), weekday: null, slot_id: null, parent_id: null, created_at: iso(addDaysISO(today, -20), '10:00') },
+  ]
+  const announcement_reads: Row[] = athletes.slice(0, 9).map(a => ({ announcement_id: 'ann-urgent', user_id: a.id, read_at: iso(today, '08:00') }))
+  announcement_reads.push({ announcement_id: 'ann-coaches', user_id: 'demo-ath-1', read_at: iso(today, '08:00') })
+
   return {
+    membership_plans, memberships, membership_events, member_files, class_slots, class_overrides, class_bookings, coach_issues, announcements, announcement_reads,
     challenges, challenge_participants, challenge_entries,
     profiles, boxes, box_members, movements, daily_wods, wod_results, wod_result_bumps: bumps, pr_records, benchmarks,
     events, event_workouts, event_participants, event_results, personal_logs, goals, wod_templates: [],

@@ -8,7 +8,8 @@ import {
 } from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { useShell } from '@/lib/hooks/useShell'
+import { useModeSwitch } from '@/lib/hooks/useModeSwitch'
+import { MODE_LABEL, useShell } from '@/lib/hooks/useShell'
 import { createClient } from '@/lib/supabase/client'
 import { roleLabel } from '@/lib/utils/cn'
 import { APP_VERSION } from '@/lib/constants/version'
@@ -19,7 +20,8 @@ type Row = { href?: string; onClick?: () => void; icon: typeof Bell; tone: strin
 /** iOS-style grouped settings list. Each row opens its own screen (/settings/[section]). */
 export function SettingsHub({ profile, ownsBox }: { profile: Profile; ownsBox: boolean }) {
   const router = useRouter()
-  const { canSwitchMode, viewMode, setViewMode } = useShell()
+  const { canSwitchMode, viewMode } = useShell()
+  const { go, next } = useModeSwitch()
   const [confirmOut, setConfirmOut] = useState(false)
   const [busy, setBusy] = useState(false)
   const initials = profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
@@ -40,7 +42,7 @@ export function SettingsHub({ profile, ownsBox }: { profile: Profile; ownsBox: b
     { title: 'Box', rows: [
       ...(ownsBox ? [{ href: '/settings/box', icon: Buildings, tone: 'bg-bl', label: 'Datos de mi box' }] : []),
       { href: '/settings/boxes', icon: UsersThree, tone: 'bg-ac', label: 'Mis boxes', hint: 'Unirme a otro' },
-      ...(canSwitchMode ? [{ onClick: () => setViewMode(viewMode === 'coach' ? 'athlete' : 'coach'), icon: ArrowsLeftRight, tone: 'bg-mu', label: `Cambiar a modo ${viewMode === 'coach' ? 'atleta' : 'coach'}` }] : []),
+      ...(canSwitchMode ? [{ onClick: () => go(next), icon: ArrowsLeftRight, tone: 'bg-mu', label: `Cambiar a modo ${MODE_LABEL[next].toLowerCase()}` }] : []),
     ]},
     { title: 'App', rows: [
       { href: '/dashboard?edit=1', icon: SquaresFour, tone: 'bg-ac', label: 'Personalizar Inicio', hint: 'Orden y widgets' },

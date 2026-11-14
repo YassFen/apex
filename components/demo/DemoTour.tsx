@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
 import { ArrowLeft, ArrowRight, Compass, X, SignOut, ArrowsLeftRight } from '@/components/ui/icons'
 import { useShell, type ViewMode } from '@/lib/hooks/useShell'
+import { useModeSwitch } from '@/lib/hooks/useModeSwitch'
 import { cn } from '@/lib/utils/cn'
 
 interface Step { path: string; mode: ViewMode; target?: string; title: string; body: string }
@@ -53,18 +54,19 @@ function load(): TourState {
 
 /** Sticky orange bar: mode switch, tour and exit. */
 export function DemoBar({ onTour }: { onTour: () => void }) {
-  const { viewMode, setViewMode } = useShell()
+  const { viewMode } = useShell()
+  const { go } = useModeSwitch()
   return (
     <div className="relative z-30 bg-or text-white pt-[env(safe-area-inset-top)]">
       <div className="h-11 px-3 flex items-center gap-2 text-xs font-semibold">
         <span className="hidden sm:inline">Demo con datos de ejemplo</span>
         <span className="sm:hidden">Demo</span>
-        <div data-tour="demo-mode" className="ml-auto grid grid-cols-2 p-0.5 rounded-full bg-white/20">
-          {(['athlete', 'coach'] as const).map(m => (
-            <button key={m} type="button" onClick={() => setViewMode(m)} aria-pressed={viewMode === m}
+        <div data-tour="demo-mode" className="ml-auto grid grid-cols-3 p-0.5 rounded-full bg-white/20">
+          {(['athlete', 'coach', 'admin'] as const).map(m => (
+            <button key={m} type="button" onClick={() => go(m)} aria-pressed={viewMode === m}
               className={cn('relative isolate h-8 px-3 rounded-full flex items-center gap-1', viewMode === m ? 'text-or' : 'text-white')}>
               {viewMode === m && <motion.span layoutId="demo-mode-pill" className="absolute inset-0 -z-10 rounded-full bg-white" transition={{ type: 'spring', stiffness: 500, damping: 34 }} />}
-              {m === 'athlete' ? 'Atleta' : 'Coach'}
+              {m === 'athlete' ? 'Atleta' : m === 'coach' ? 'Coach' : 'Admin'}
             </button>
           ))}
         </div>

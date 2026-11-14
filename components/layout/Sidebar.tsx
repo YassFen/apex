@@ -6,9 +6,11 @@ import {
   LayoutGrid, TrendingUp, Timer, Flame, Activity,
   BarChart3, Calculator, Users, User, Trophy, Dumbbell,
   ArrowLeftRight, ChevronDown, History, CalendarDays, Medal, BookOpenText, Gear, Flag,
+  CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
-import { useShell } from '@/lib/hooks/useShell'
+import { useShell, MODE_LABEL } from '@/lib/hooks/useShell'
+import { useModeSwitch } from '@/lib/hooks/useModeSwitch'
 import { APP_VERSION } from '@/lib/constants/version'
 import type { Profile } from '@/lib/types/database'
 
@@ -17,6 +19,7 @@ const ATHLETE_NAV = [
   { label: 'Entrenar', items: [
     { href: '/dashboard',    icon: LayoutGrid, label: 'Inicio' },
     { href: '/wod',          icon: Flame,      label: 'WOD del día', dot: true },
+    { href: '/classes',      icon: CalendarCheck, label: 'Clases' },
     { href: '/calendar',     icon: CalendarDays, label: 'Calendario' },
     { href: '/wod/history',  icon: History,    label: 'Historial de WODs' },
     { href: '/timer',        icon: Timer,      label: 'Timer' },
@@ -26,6 +29,7 @@ const ATHLETE_NAV = [
     { href: '/benchmarks',   icon: Trophy,     label: 'Benchmarks' },
     { href: '/competitions', icon: Medal,      label: 'Competencias' },
     { href: '/challenges',   icon: Flag,       label: 'Retos' },
+    { href: '/announcements', icon: Megaphone, label: 'Avisos' },
   ]},
   { label: 'Herramientas', items: [
     { href: '/calc',         icon: Calculator, label: 'Calculadora RM' },
@@ -41,10 +45,12 @@ const COACH_NAV = [
     { href: '/dashboard',           icon: LayoutGrid, label: 'Inicio' },
     { href: '/coach/publish-wod',   icon: Flame,      label: 'WOD' },
     { href: '/calendar',            icon: CalendarDays, label: 'Calendario' },
+    { href: '/classes',             icon: CalendarCheck, label: 'Mis clases' },
     { href: '/coach/wod-live',      icon: Activity,   label: 'Seguimiento WOD', dot: true },
     { href: '/coach/athletes',      icon: Users,      label: 'Atletas' },
     { href: '/analytics',           icon: BarChart3,  label: 'Analytics' },
     { href: '/challenges',          icon: Flag,       label: 'Retos' },
+    { href: '/announcements',       icon: Megaphone,  label: 'Avisos' },
   ]},
   { label: 'Herramientas', items: [
     { href: '/calc',                icon: Calculator, label: 'Calculadora RM' },
@@ -56,10 +62,25 @@ const COACH_NAV = [
   ]},
 ]
 
+const ADMIN_NAV = [
+  { label: 'Administración', items: [
+    { href: '/manage',               icon: ChartPieSlice,     label: 'Resumen' },
+    { href: '/manage/members',       icon: Users,             label: 'Personas' },
+    { href: '/manage/plans',         icon: Ticket,            label: 'Planes' },
+    { href: '/manage/schedule',      icon: CalendarDays,      label: 'Horarios' },
+    { href: '/manage/coaches',       icon: ChalkboardTeacher, label: 'Coaches' },
+    { href: '/announcements',        icon: Megaphone,         label: 'Comunicados' },
+  ]},
+  { label: 'Cuenta', items: [
+    { href: '/settings',             icon: Gear,              label: 'Configuración' },
+  ]},
+]
+
 export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen: boolean; onClose: () => void }) {
   const pathname = usePathname()
-  const { viewMode, setViewMode, canSwitchMode, boxes, activeBoxId, setActiveBoxId } = useShell()
-  const nav = viewMode === 'coach' ? COACH_NAV : ATHLETE_NAV
+  const { viewMode, canSwitchMode, boxes, activeBoxId, setActiveBoxId, isPlatformAdmin } = useShell()
+  const { go, next } = useModeSwitch()
+  const nav = viewMode === 'admin' ? ADMIN_NAV : viewMode === 'coach' ? COACH_NAV : ATHLETE_NAV
   const initials = profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
 
   const activeBox = boxes.find(b => b.id === activeBoxId) ?? boxes[0]
@@ -94,12 +115,12 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
             )}
             {canSwitchMode && (
               <button
-                onClick={() => setViewMode(viewMode === 'coach' ? 'athlete' : 'coach')}
+                onClick={() => go(next)}
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-p2 text-mu hover:bg-p3 hover:text-t"
                 aria-label="Cambiar modo"
               >
                 <ArrowLeftRight size={13} />
-                Modo {viewMode === 'coach' ? 'Coach' : 'Atleta'}
+                Modo {MODE_LABEL[viewMode]}
                 <span className="ml-auto text-[10px] font-normal opacity-60">cambiar</span>
               </button>
             )}
@@ -111,7 +132,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
             <div key={group.label}>
               <div className="px-2.5 pt-3 pb-1.5 text-xs text-mu font-semibold">{group.label}</div>
               {group.items.map(item => {
-                const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href + '/') && !nav.some(g => g.items.some(i => i.href !== item.href && pathname.startsWith(i.href) && i.href.length > item.href.length)))
+                const active = pathname === item.href || (item.href !== '/dashboard' && item.href !== '/manage' && pathname.startsWith(item.href + '/') && !nav.some(g => g.items.some(i => i.href !== item.href && pathname.startsWith(i.href) && i.href.length > item.href.length)))
                 const Icon = item.icon
                 return (
                   <Link
@@ -133,6 +154,11 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
               })}
             </div>
           ))}
+          {isPlatformAdmin && (
+            <Link href="/admin" className="mt-2 flex items-center gap-3 px-3 py-[11px] rounded-xl text-[13px] font-medium text-mu hover:bg-p2 hover:text-t transition-colors">
+              <ShieldCheck size={17} /> Panel de la aplicación
+            </Link>
+          )}
         </nav>
 
         <Link
@@ -149,7 +175,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
           <div className="min-w-0 flex-1">
             <div className="font-semibold text-sm leading-tight truncate">{profile.full_name.split(' ')[0]}</div>
             <div className="text-mu text-[11px] truncate">
-              {viewMode === 'coach' ? 'Coach' : 'Atleta'}
+              {MODE_LABEL[viewMode]}
               {activeBox ? ` · ${activeBox.name}` : profile.city ? ` · ${profile.city}` : ''}
             </div>
           </div>
