@@ -373,7 +373,7 @@ input[type="range"].range { -webkit-appearance: none; appearance: none; height: 
 }
 :root[data-surface="glass"] .bg-p2, :root[data-surface="glass"] .hover\:bg-p2:hover { background-color: rgb(var(--c-t) / .08); }
 :root[data-surface="glass"] .bg-p3, :root[data-surface="glass"] .hover\:bg-p3:hover { background-color: rgb(var(--c-t) / .13); }
-:root[data-surface="glass"] :where(input, textarea) { background-color: rgb(var(--c-t) / .08); }
+:where(:root[data-surface="glass"] input, :root[data-surface="glass"] textarea) { background-color: rgb(var(--c-t) / .08); }
 
 /* Sheets and the bar sit over content, so they blur what is behind and stay dark enough to read. */
 :root[data-surface="glass"] .glass-sheet {
