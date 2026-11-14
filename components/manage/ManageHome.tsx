@@ -83,7 +83,7 @@ export function ManageHome({ profile, box, boxes, s, missing }: { profile: Profi
           <Panel title="Asistencia acumulada" sub={<>Este mes contra el anterior, día a día. Mes anterior completo: {s.attPrevFull}.</>}>
             <LineChart labels={s.cumLabels.map(d => `Día ${d}`)} series={s.cumNow} compare={s.cumPrev} nowLabel="Este mes" beforeLabel="Mes anterior" />
           </Panel>
-          <Panel title="Días de mayor asistencia" sub="Asistencias por día de la semana.">
+          <Panel title="Días de mayor asistencia" sub="Asistencias por día de la semana, a la misma fecha de cada mes.">
             <CompareBars data={s.byDow} nowLabel="Este mes" beforeLabel="Mes anterior" />
           </Panel>
           <Panel title="Horarios más concurridos" sub="Promedio de inscritos por clase en cada horario.">

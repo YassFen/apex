@@ -67,7 +67,7 @@ export default async function ManagePage({ searchParams }: { searchParams: Promi
     if (isNow) attNow++
     else if (d.startsWith(prevKey)) { attPrevFull++; if (d <= prevSameDay) attPrev++ }
     const w = byDow.get(weekdayOf(d)) ?? { now: 0, before: 0 }
-    if (isNow) w.now++; else if (d.startsWith(prevKey)) w.before++
+    if (isNow) w.now++; else if (d.startsWith(prevKey) && d <= prevSameDay) w.before++
     byDow.set(weekdayOf(d), w)
     const i = Number(d.slice(8)) - 1
     if (i < dayN) { if (isNow) cumNow[i]++; else if (d.startsWith(prevKey)) cumPrev[i]++ }

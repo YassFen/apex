@@ -331,9 +331,9 @@ export function buildSeed(today: string): Store {
   const coachAt: Record<string, string | null> = { '07:00': 'demo-ath-1', '08:00': 'demo-ath-1', '13:00': null, '19:00': DEMO_USER_ID, '20:00': 'demo-ath-4' }
   for (let wd = 1; wd <= 5; wd++) for (const t of ['07:00', '08:00', '13:00', '19:00', '20:00']) {
     class_slots.push({ id: `slot-${wd}-${t.slice(0, 2)}`, box_id: BOX, weekday: wd, start_time: `${t}:00`, duration_min: 60, name: t === '13:00' ? 'Open Box' : wd === 3 && t === '20:00' ? 'Halterofilia' : 'CrossFit',
-      capacity: t === '19:00' ? 12 : 14, coach_id: wd === 5 && t === '20:00' ? DEMO_USER_ID : coachAt[t], is_active: true, created_at: iso(addDaysISO(today, -300)) })
+      capacity: t === '19:00' ? 8 : t === '13:00' ? 6 : 10, coach_id: wd === 5 && t === '20:00' ? DEMO_USER_ID : coachAt[t], is_active: true, created_at: iso(addDaysISO(today, -300)) })
   }
-  class_slots.push({ id: 'slot-6-10', box_id: BOX, weekday: 6, start_time: '10:00:00', duration_min: 90, name: 'Partner WOD', capacity: 20, coach_id: DEMO_USER_ID, is_active: true, created_at: iso(addDaysISO(today, -300)) })
+  class_slots.push({ id: 'slot-6-10', box_id: BOX, weekday: 6, start_time: '10:00:00', duration_min: 90, name: 'Partner WOD', capacity: 14, coach_id: DEMO_USER_ID, is_active: true, created_at: iso(addDaysISO(today, -300)) })
 
   const class_bookings: Row[] = []
   const stay = athletes.filter((_, i) => i !== 16 && i !== 17 && i !== 1 && i !== 4)
@@ -344,7 +344,7 @@ export function buildSeed(today: string): Store {
     const taken = new Map<string, number>()
     stay.forEach((a, i) => {
       if (['demo-ath-18', 'demo-ath-19', 'demo-ath-20'].includes(a.id) && d > -16) return
-      if (r() > a.attendance * (d > 0 ? 0.9 : 0.8)) return
+      if (r() > Math.min(0.96, a.attendance * 1.45)) return
       // Evenings are the busy ones; each person has a usual time.
       const pick = daySlots.length === 1 ? daySlots[0] : daySlots[[3, 3, 4, 0, 3, 1, 4, 3, 2, 3][(i + (r() < 0.2 ? 1 : 0)) % 10]]
       const n = taken.get(pick.id) ?? 0

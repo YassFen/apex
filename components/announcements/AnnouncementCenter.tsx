@@ -11,11 +11,21 @@ import { formatDateOnly } from '@/lib/utils/dates'
 import { playSound } from '@/lib/utils/sound'
 import type { ShellAnnouncement } from '@/lib/utils/announcements'
 
+const SEEN_KEY = 'apex.annSeen'
+
 export function AnnouncementCenter({ items, userId }: { items: ShellAnnouncement[]; userId: string }) {
   const [read, setRead] = useState<Set<string>>(() => new Set(items.filter(a => a.read).map(a => a.id)))
+  const [ready, setReady] = useState(false)
+  // Also remembered on this device, so a notice never pops up twice even if saving the read failed.
+  useEffect(() => {
+    try { const seen = JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]'); if (Array.isArray(seen) && seen.length) setRead(prev => new Set([...prev, ...seen])) } catch {}
+    setReady(true)
+  }, [])
   const [open, setOpen] = useState<ShellAnnouncement | null>(null)
   const urgent = items.filter(a => a.urgent && !a.mine)
-  const pending = items.find(a => a.popup && !a.mine && !read.has(a.id)) ?? null
+  // Urgent ones first.
+  const queue = items.filter(a => a.popup && !a.mine && !read.has(a.id))
+  const pending = !ready ? null : queue.find(a => a.urgent) ?? queue[0] ?? null
 
   // Open the next unread one a moment after the screen settles.
   useEffect(() => {
@@ -27,7 +37,9 @@ export function AnnouncementCenter({ items, userId }: { items: ShellAnnouncement
   function acknowledge(a: ShellAnnouncement) {
     setOpen(null)
     if (read.has(a.id)) return
-    setRead(prev => new Set(prev).add(a.id))
+    const next = new Set(read).add(a.id)
+    setRead(next)
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify([...next].slice(-80))) } catch {}
     void createClient().from('announcement_reads').upsert({ announcement_id: a.id, user_id: userId }, { onConflict: 'announcement_id,user_id' }).then(() => {})
   }
 
