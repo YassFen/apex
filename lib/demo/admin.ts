@@ -16,7 +16,8 @@ export function demoAdminRpc(store: Store, fn: string, args: Row): { data: any; 
     const at = (h: number) => new Date(Date.now() - h * 3600_000).toISOString()
     const groups = [
       { fingerprint: 'e1x9', kind: 'render', message: "TypeError: Cannot read properties of undefined (reading 'movements')", count: 14, users: 6, first_seen: at(70), last_seen: at(2), paths: ['/wod'], versions: ['0.8.0'], devices: ['mobile'],
-        stack: "TypeError: Cannot read properties of undefined (reading 'movements')\n    at WodCard (components/wod/WodView.tsx)\n    at renderWithHooks (react-dom)\n    at WodView (components/wod/WodView.tsx)" },
+        stack: "TypeError: Cannot read properties of undefined (reading 'movements')\n    at WodCard (components/wod/WodView.tsx)\n    at renderWithHooks (react-dom)\n    at WodView (components/wod/WodView.tsx)",
+        trail: [{ t: '07:58:40', kind: 'view', label: '/dashboard' }, { t: '07:58:44', kind: 'click', label: 'WOD' }, { t: '07:58:45', kind: 'view', label: '/wod' }, { t: '07:58:47', kind: 'click', label: '# AM' }, { t: '07:58:47', kind: 'error', label: "Cannot read properties of undefined (reading 'movements')" }] },
       { fingerprint: 'a7k2', kind: 'api', message: 'HTTP 503 en /rest/v1/wod_results', count: 9, users: 8, first_seen: at(26), last_seen: at(25), paths: ['/wod', '/dashboard'], versions: ['0.8.0', '0.7.0'], devices: ['mobile', 'desktop'], stack: null },
       { fingerprint: 'p3m5', kind: 'promise', message: 'No se pudo guardar el récord: value_lb fuera de rango', count: 3, users: 2, first_seen: at(120), last_seen: at(30), paths: ['/prs'], versions: ['0.8.0'], devices: ['mobile'],
         stack: 'Error: No se pudo guardar el récord\n    at save (components/athlete/PRModal.tsx)' },

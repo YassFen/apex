@@ -85,10 +85,11 @@ function computeStreakDays(days: Set<string>): number {
   return streak
 }
 
-export function AthleteDashboard({ profile, prs, movements = [], today = null, hasBox = false, resultDates = [], nextEvent = null, hits = [], goals = [], logDates = [], goalsMissing = false, challenges = null }: {
+export function AthleteDashboard({ profile, prs, movements = [], today = null, hasBox = false, resultDates = [], nextEvent = null, hits = [], goals = [], logDates = [], goalsMissing = false, challenges = null, banners = null }: {
   profile: Profile; prs: PR[]; movements?: Movement[]; today?: TodayWod | null; hasBox?: boolean; resultDates?: string[]
   nextEvent?: NextEvent | null; hits?: Hit[]; goals?: GoalProgress[]; logDates?: string[]; goalsMissing?: boolean
   challenges?: ChallengeSummary[] | null
+  banners?: React.ReactNode
 }) {
   const router = useRouter()
   const { fire } = useToast()
@@ -364,6 +365,7 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
           <Plus size={20} weight="bold" />
         </motion.button>
       } />
+      {banners}
 
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-5xl w-full mx-auto">
         <WidgetBoard scope="athlete" profile={profile}

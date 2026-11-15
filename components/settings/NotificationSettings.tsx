@@ -6,12 +6,14 @@ import { Switch } from '@/components/ui/Switch'
 import { useToast } from '@/components/ui/Toast'
 import { DEFAULT_NOTICE_PREFS, NOTICE_PREFS_KEY, readNoticePrefs, type NoticePrefs } from '@/components/layout/NotificationBell'
 import type { NoticeKind } from '@/lib/utils/notifications'
+import { Lifebuoy } from '@/components/ui/icons'
 
 const KINDS: { kind: NoticeKind; Icon: typeof Bell; title: string; body: string }[] = [
   { kind: 'event',     Icon: Trophy,       title: 'Cuenta regresiva de competencias', body: 'A 7, 3 y 1 día, y el mismo día.' },
   { kind: 'wod',       Icon: Fire,         title: 'WOD de mañana',                    body: 'Con la hora de tu clase, si el coach la definió.' },
   { kind: 'log',       Icon: CheckCircle,  title: 'Registrar resultado',              body: 'Si hoy hay WOD y aún no anotas tu marca.' },
   { kind: 'box_event', Icon: CalendarDots, title: 'Eventos nuevos del box',           body: 'Cuando tu coach publica una competencia.' },
+  { kind: 'support',   Icon: Lifebuoy,     title: 'Respuestas de soporte',            body: 'Cuando respondemos un problema que nos enviaste.' },
 ]
 
 export function NotificationSettings() {

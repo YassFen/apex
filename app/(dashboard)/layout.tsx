@@ -82,7 +82,7 @@ async function loadNotices(supabase: any, userId: string, boxes: Box[]): Promise
     .select(`id, box_id, scheduled_for, title${withTime ? ', class_time' : ''}`)
     .in('box_id', boxIds).eq('is_live', true).gte('scheduled_for', today).lte('scheduled_for', tomorrow)
 
-  const [wodsRes, daysRes, goingRes, boxEvRes] = await Promise.all([
+  const [wodsRes, daysRes, goingRes, boxEvRes, repliesRes] = await Promise.all([
     boxIds.length ? wodSelect(true) : Promise.resolve({ data: [], error: null }),
     boxIds.length ? supabase.rpc('box_wod_days', { p_from: tomorrow, p_to: tomorrow }) : Promise.resolve({ data: [], error: null }),
     supabase.from('event_participants').select('events(id, name, starts_on)').eq('user_id', userId),
@@ -90,6 +90,7 @@ async function loadNotices(supabase: any, userId: string, boxes: Box[]): Promise
       ? supabase.from('events').select('id, name, starts_on, created_at, box_id, created_by').in('box_id', boxIds)
           .neq('created_by', userId).gte('created_at', new Date(Date.now() - 5 * 86_400_000).toISOString())
       : Promise.resolve({ data: [], error: null }),
+    supabase.from('support_tickets').select('id, replied_at').eq('user_id', userId).eq('status', 'answered').eq('seen_reply', false),
   ])
 
   let wods = (wodsRes.data ?? []) as any[]
@@ -108,6 +109,7 @@ async function loadNotices(supabase: any, userId: string, boxes: Box[]): Promise
 
   return buildNotices({
     today,
+    replies: ((repliesRes.error ? [] : repliesRes.data ?? []) as any[]).map(r => ({ id: r.id, date: String(r.replied_at ?? today).slice(0, 10) })),
     myEvents: ((goingRes.error ? [] : goingRes.data ?? []) as any[])
       .map(p => p.events).filter(Boolean)
       .map((e: any) => ({ id: e.id, name: e.name, startsOn: e.starts_on })),

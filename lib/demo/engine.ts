@@ -89,6 +89,15 @@ function matches(row: Row, f: Filter): boolean {
   }
 }
 
+// Column defaults the real tables have, so rows written in the demo look complete.
+const TABLE_DEFAULTS: Record<string, Row> = {
+  support_tickets: { status: 'open', reply: null, replied_at: null, seen_reply: false, context: null },
+  banners: { views: 0, clicks: 0, is_active: true, dismissible: true, position: 0, audience: 'all', tone: 'accent', icon: 'megaphone' },
+  announcements: { urgent: false, weekday: null, slot_id: null, parent_id: null, ends_on: null },
+  class_overrides: { coach_id: null, cancelled: false, cancel_reason: null, capacity: null },
+  memberships: { classes_used: 0, status: 'active', frozen_on: null },
+}
+
 let seq = 0
 export const newId = () => `demo-${Date.now().toString(36)}-${(seq++).toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 
@@ -101,7 +110,7 @@ export function runQuery(store: Store, spec: QuerySpec, userId: string): { data:
     const keys = spec.onConflict?.split(',').map(s => s.trim())
     const written: Row[] = []
     for (const v of vals) {
-      const base: Row = { user_id: v.user_id ?? userId, created_at: new Date().toISOString(), recorded_at: new Date().toISOString(), ...v }
+      const base: Row = { user_id: v.user_id ?? userId, created_at: new Date().toISOString(), recorded_at: new Date().toISOString(), ...(TABLE_DEFAULTS[spec.table] ?? {}), ...v }
       if (!('id' in base) && !['event_participants', 'event_results', 'wod_result_bumps', 'announcement_reads', 'member_files', 'platform_admins', 'app_error_status'].includes(spec.table)) base.id = newId()
       const existing = spec.op === 'upsert' && keys ? rows.find(r => keys.every(k => String(r[k]) === String(base[k]))) : undefined
       if (existing) { Object.assign(existing, v); written.push(existing) } else { rows.push(base); written.push(base) }
@@ -204,6 +213,16 @@ export function runRpc(store: Store, fn: string, args: Row): { data: any; error:
     const pr = (store.profiles ?? []).find(p => p.id === args.p_user)
     if (pr && args.p_role !== 'athlete' && pr.role === 'athlete') pr.role = 'coach'
     return { data: { ok: true }, error: null }
+  }
+  if (fn === 'banner_hit') {
+    const b = (store.banners ?? []).find(x => x.id === args.p_id)
+    if (b) { if (args.p_kind === 'click') b.clicks = (b.clicks ?? 0) + 1; else b.views = (b.views ?? 0) + 1 }
+    return { data: null, error: null }
+  }
+  if (fn === 'ticket_seen') {
+    const t = (store.support_tickets ?? []).find(x => x.id === args.p_id && x.user_id === me)
+    if (t) t.seen_reply = true
+    return { data: null, error: null }
   }
   if (fn === 'join_box_by_code') return { data: null, error: { message: 'En la demo no puedes unirte a otros boxes.' } }
   return { data: null, error: { message: `rpc ${fn} no disponible en la demo` } }

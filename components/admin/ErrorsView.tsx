@@ -83,12 +83,20 @@ export function ErrorsView({ groups, me }: { groups: ErrorGroup[]; me: string })
                 {' · '}{(g.devices ?? []).filter(Boolean).map(d => (d === 'mobile' ? 'teléfono' : d === 'tablet' ? 'tablet' : 'computador')).join(', ')}
                 {' · '}{(g.versions ?? []).filter(Boolean).map(v => `v${v}`).join(', ')}
               </div>
-              {g.stack && (
+              {(g.stack || g.trail?.length) && (
                 <>
                   <button type="button" onClick={() => setOpen(expanded ? null : g.fingerprint)} aria-expanded={expanded} className="self-start h-9 text-xs font-semibold text-mu flex items-center gap-1.5">
-                    <MorphIcon icon={expanded ? 'chevron-up' : 'chevron-down'} size={12} /> Detalle técnico
+                    <MorphIcon icon={expanded ? 'chevron-up' : 'chevron-down'} size={12} /> Qué hizo la persona y detalle técnico
                   </button>
-                  {expanded && <pre className="text-[11px] leading-relaxed text-mu bg-p2 rounded-xl p-3 overflow-x-auto max-h-60 whitespace-pre-wrap break-words">{g.stack}</pre>}
+                  {expanded && !!g.trail?.length && (
+                    <ol className="rounded-xl bg-p2 p-3 flex flex-col gap-0.5 text-[12px]" aria-label="Pasos antes del error">
+                      {g.trail.map((s, i) => (
+                        <li key={i} className="flex gap-2"><span className="text-fa tabular-nums">{s.t}</span>
+                          <span className={s.kind === 'error' ? 'text-rd' : s.kind === 'view' ? 'text-t' : 'text-mu'}>{s.kind === 'view' ? `Abrió ${screenName(s.label)}` : s.kind === 'error' ? `Error: ${s.label}` : s.kind === 'rage' ? `Tocó varias veces: ${s.label}` : `Tocó ${s.label}`}</span></li>
+                      ))}
+                    </ol>
+                  )}
+                  {expanded && g.stack && <pre className="text-[11px] leading-relaxed text-mu bg-p2 rounded-xl p-3 overflow-x-auto max-h-60 whitespace-pre-wrap break-words">{g.stack}</pre>}
                 </>
               )}
               <div className="flex gap-2 flex-wrap">

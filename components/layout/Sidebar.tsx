@@ -6,7 +6,7 @@ import {
   LayoutGrid, TrendingUp, Timer, Flame, Activity,
   BarChart3, Calculator, Users, User, Trophy, Dumbbell,
   ArrowLeftRight, ChevronDown, History, CalendarDays, Medal, BookOpenText, Gear, Flag,
-  CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck,
+  CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 import { useShell, MODE_LABEL } from '@/lib/hooks/useShell'
@@ -36,6 +36,7 @@ const ATHLETE_NAV = [
     { href: '/movements',    icon: BookOpenText, label: 'Ejercicios' },
   ]},
   { label: 'Cuenta', items: [
+    { href: '/support',      icon: Lifebuoy,   label: 'Ayuda' },
     { href: '/settings',     icon: Gear,       label: 'Configuración' },
   ]},
 ]
@@ -58,6 +59,7 @@ const COACH_NAV = [
     { href: '/timer',               icon: Timer,      label: 'Timer' },
   ]},
   { label: 'Cuenta', items: [
+    { href: '/support',             icon: Lifebuoy,   label: 'Ayuda' },
     { href: '/settings',            icon: Gear,       label: 'Configuración' },
   ]},
 ]
@@ -70,8 +72,10 @@ const ADMIN_NAV = [
     { href: '/manage/schedule',      icon: CalendarDays,      label: 'Horarios' },
     { href: '/manage/coaches',       icon: ChalkboardTeacher, label: 'Coaches' },
     { href: '/announcements',        icon: Megaphone,         label: 'Comunicados' },
+    { href: '/manage/banners',       icon: RectangleDashed,   label: 'Banners' },
   ]},
   { label: 'Cuenta', items: [
+    { href: '/support',              icon: Lifebuoy,          label: 'Ayuda' },
     { href: '/settings',             icon: Gear,              label: 'Configuración' },
   ]},
 ]

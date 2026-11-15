@@ -7,13 +7,14 @@ import { Modal } from '@/components/ui/Modal'
 import { useShell } from '@/lib/hooks/useShell'
 import { cn } from '@/lib/utils/cn'
 import type { Notice, NoticeKind } from '@/lib/utils/notifications'
+import { Lifebuoy } from '@/components/ui/icons'
 
 const READ_KEY = 'apex.noticesRead'
 const PUSHED_KEY = 'apex.noticesPushed'
 export const NOTICE_PREFS_KEY = 'apex.noticePrefs'
 
 export interface NoticePrefs { system: boolean; kinds: Record<NoticeKind, boolean> }
-export const DEFAULT_NOTICE_PREFS: NoticePrefs = { system: false, kinds: { event: true, wod: true, log: true, box_event: true } }
+export const DEFAULT_NOTICE_PREFS: NoticePrefs = { system: false, kinds: { event: true, wod: true, log: true, box_event: true, support: true } }
 
 export function readNoticePrefs(): NoticePrefs {
   try {
@@ -36,6 +37,7 @@ const KIND_ICON: Record<NoticeKind, { Icon: typeof Bell; tone: string }> = {
   box_event: { Icon: CalendarDots, tone: 'bg-pu/15 text-pu' },
   wod:       { Icon: Fire,         tone: 'bg-or/15 text-or' },
   log:       { Icon: CheckCircle,  tone: 'bg-ac/15 text-ac' },
+  support:   { Icon: Lifebuoy,     tone: 'bg-bl/15 text-bl' },
 }
 
 export function NotificationBell() {

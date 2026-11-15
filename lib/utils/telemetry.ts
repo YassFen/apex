@@ -16,6 +16,10 @@ let errors: Record<string, unknown>[] = []
 let timer: ReturnType<typeof setTimeout> | null = null
 let sessionId = ''
 let disabledTables = false
+let noTrailColumn = false
+// The last steps of this visit (screens and presses), attached to errors and support requests.
+const trail: { t: string; kind: string; label: string }[] = []
+const recentErrors: string[] = []
 const seenErrors = new Map<string, number>()
 
 export function usageEnabled(): boolean {
@@ -65,17 +69,39 @@ export async function flush() {
     ])
     // Migration 011 not applied yet: stop trying for this visit.
     const missing = (e: { code?: string } | null) => !!e && (e.code === '42P01' || e.code === 'PGRST205')
+    // Migration 012 adds the trail column; without it, send the errors again without it.
+    if (b.error && (b.error as { code?: string }).code === 'PGRST204' && er.length) {
+      noTrailColumn = true
+      await supabase.from('app_errors').insert(er.map(({ trail: _t, ...rest }) => rest))
+    }
     if (missing(a.error) || missing(b.error)) disabledTables = true
   } catch { /* telemetry must never break the app */ }
 }
 
 export function track(kind: Kind, label?: string | null, path: string = location.pathname) {
+  remember(kind, kind === 'view' ? cleanPath(path) : label ?? '')
   if (!ctx || disabledTables || !usageEnabled()) return
   events.push({
     user_id: ctx.userId, session_id: session(), kind, path: cleanPath(path), label: label ? label.slice(0, 60) : null,
     mode: ctx.mode, box_id: ctx.boxId, device: device(), installed: installed(), version: APP_VERSION,
   })
   if (events.length >= 25) void flush(); else schedule()
+}
+
+function remember(kind: string, label: string) {
+  trail.push({ t: new Date().toISOString().slice(11, 19), kind, label: label.slice(0, 60) })
+  if (trail.length > 15) trail.shift()
+}
+
+/** What the app knew when the person asked for help. No typed values, no page content. */
+export function supportContext(): Record<string, unknown> {
+  const w = typeof window !== 'undefined' ? window : null
+  return {
+    version: APP_VERSION, path: w ? cleanPath(location.pathname) : null, mode: ctx?.mode ?? null,
+    device: w ? device() : null, installed: w ? installed() : null, screen: w ? `${w.innerWidth}x${w.innerHeight}` : null,
+    online: w ? navigator.onLine : null, user_agent: w ? navigator.userAgent.slice(0, 300) : null,
+    errors: recentErrors.slice(-5), trail: trail.slice(-12),
+  }
 }
 
 function hash(s: string): string {
@@ -95,9 +121,12 @@ export function reportError(kind: 'error' | 'promise' | 'render' | 'api', messag
   const n = seenErrors.get(fingerprint) ?? 0
   if (n >= 3) return
   seenErrors.set(fingerprint, n + 1)
+  recentErrors.push(msg.slice(0, 160)); if (recentErrors.length > 10) recentErrors.shift()
+  remember('error', msg)
   errors.push({
     user_id: ctx.userId, fingerprint, kind, message: msg, stack: stack ? stack.slice(0, 4000) : null, path: cleanPath(location.pathname),
     mode: ctx.mode, device: device(), user_agent: navigator.userAgent.slice(0, 300), version: APP_VERSION,
+    ...(noTrailColumn ? {} : { trail: trail.slice(-10) }),
   })
   schedule()
 }

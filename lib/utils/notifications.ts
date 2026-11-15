@@ -3,7 +3,7 @@
 // Ids change at each threshold (7/3/1/0 days) so the same event can notify again.
 import { addDaysISO, daysBetween } from '@/lib/utils/dates'
 
-export type NoticeKind = 'event' | 'wod' | 'log' | 'box_event'
+export type NoticeKind = 'event' | 'wod' | 'log' | 'box_event' | 'support'
 
 export interface Notice {
   id: string
@@ -22,10 +22,16 @@ export interface NoticeInput {
   myEvents: { id: string; name: string; startsOn: string }[]
   newBoxEvents: { id: string; name: string; startsOn: string; createdAt: string; boxName: string }[]
   wods: { id: string; date: string; title: string; classTime: string | null; boxName: string; visible: boolean; myResult: boolean }[]
+  /** Support answers not read yet. */
+  replies?: { id: string; date: string }[]
 }
 
-export function buildNotices({ today, myEvents, newBoxEvents, wods }: NoticeInput): Notice[] {
+export function buildNotices({ today, myEvents, newBoxEvents, wods, replies = [] }: NoticeInput): Notice[] {
   const out: Notice[] = []
+
+  for (const r of replies) {
+    out.push({ id: `support-${r.id}`, kind: 'support', date: r.date, href: '/support', title: 'Soporte respondió tu mensaje', body: 'Toca para leer la respuesta.' })
+  }
 
   for (const e of myEvents) {
     const days = daysBetween(today, e.startsOn)

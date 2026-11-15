@@ -42,7 +42,7 @@ export function Telemetry() {
         const res = await original(...args)
         if (res.status >= 500) {
           const url = String(typeof args[0] === 'string' ? args[0] : (args[0] as Request).url ?? args[0])
-          if (!url.includes('app_errors') && !url.includes('app_events')) reportError('api', `HTTP ${res.status} en ${new URL(url, location.origin).pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, ':id')}`)
+          if (!/app_errors|app_events|support_tickets/.test(url)) reportError('api', `HTTP ${res.status} en ${new URL(url, location.origin).pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi, ':id')}`)
         }
         return res
       } catch (err) {

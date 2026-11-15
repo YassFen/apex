@@ -6,7 +6,7 @@ import { Reorder, motion } from 'motion/react'
 import {
   LayoutGrid, Flame, Timer, TrendingUp, Activity, Users, ArrowLeftRight, MoreHorizontal,
   Trophy, Calculator, BarChart3, Gear, History, ChevronRight, CalendarDays, Medal, BookOpenText, Flag,
-  SlidersHorizontal, ArrowCounterClockwise, CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck,
+  SlidersHorizontal, ArrowCounterClockwise, CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 import { SPRING } from '@/components/ui/motion'
@@ -34,6 +34,7 @@ const ATHLETE_ITEMS: Item[] = [
   { href: '/movements',    label: 'Ejercicios',        short: 'Ejercicios', icon: BookOpenText, desc: 'Cómo se hace cada uno' },
   { href: '/wod/history',  label: 'Historial de WODs', short: 'Historial', icon: History,     desc: 'Tus resultados día a día' },
   { href: '/benchmarks',   label: 'Benchmarks',        short: 'Bench',     icon: Trophy,      desc: 'Fran, Grace, Murph…' },
+  { href: '/support',      label: 'Ayuda',             short: 'Ayuda',     icon: Lifebuoy,    desc: 'Reporta un problema o escríbenos' },
   { href: '/settings',     label: 'Configuración',     short: 'Ajustes',   icon: Gear,        desc: 'Perfil, box, avisos y apariencia' },
 ]
 const COACH_ITEMS: Item[] = [
@@ -49,6 +50,7 @@ const COACH_ITEMS: Item[] = [
   { href: '/movements',         label: 'Ejercicios',          short: 'Ejercicios', icon: BookOpenText, desc: 'Crea los de tu box' },
   { href: '/timer',             label: 'Timer',               short: 'Timer',     icon: Timer,        desc: 'For Time, AMRAP, EMOM, Tabata' },
   { href: '/calc',              label: 'Calculadora RM',      short: 'Calcular',  icon: Calculator,   desc: 'Porcentajes y discos' },
+  { href: '/support',           label: 'Ayuda',               short: 'Ayuda',     icon: Lifebuoy,     desc: 'Reporta un problema o escríbenos' },
   { href: '/settings',          label: 'Configuración',       short: 'Ajustes',   icon: Gear,         desc: 'Perfil, box, avisos y apariencia' },
 ]
 const ADMIN_ITEMS: Item[] = [
@@ -58,6 +60,8 @@ const ADMIN_ITEMS: Item[] = [
   { href: '/manage/coaches',  label: 'Coaches',       short: 'Coaches',   icon: ChalkboardTeacher, desc: 'Horas, clases y reemplazos' },
   { href: '/manage/plans',    label: 'Planes',        short: 'Planes',    icon: Ticket,            desc: 'Crea y edita los planes' },
   { href: '/announcements',   label: 'Comunicados',   short: 'Avisos',    icon: Megaphone,         desc: 'Avisa a coaches y atletas' },
+  { href: '/manage/banners',  label: 'Banners',       short: 'Banners',   icon: RectangleDashed,   desc: 'Tarjetas destacadas del inicio' },
+  { href: '/support',         label: 'Ayuda',         short: 'Ayuda',     icon: Lifebuoy,          desc: 'Reporta un problema o escríbenos' },
   { href: '/settings',        label: 'Configuración', short: 'Ajustes',   icon: Gear,              desc: 'Perfil, box, avisos y apariencia' },
 ]
 const DEFAULT_TABS: Record<ViewMode, string[]> = {

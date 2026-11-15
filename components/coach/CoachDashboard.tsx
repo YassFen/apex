@@ -36,6 +36,7 @@ interface Props {
   nextEvent?: NextEvent | null
   activity?: CoachActivity
   challenges?: ChallengeSummary[] | null
+  banners?: React.ReactNode
 }
 
 const TOOLS = [
@@ -44,7 +45,7 @@ const TOOLS = [
   { href: '/calc',      icon: Calculator, label: 'Calculadora' },
 ]
 
-export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResults, recentMembers, nextEvent = null, activity = { days: [], inactive: [], classes: [] }, challenges = null }: Props) {
+export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResults, recentMembers, nextEvent = null, activity = { days: [], inactive: [], classes: [] }, challenges = null, banners = null }: Props) {
   const { setViewMode } = useShell()
   const { fire } = useToast()
   const [copied, setCopied] = useState(false)
@@ -87,6 +88,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
           </Link>
         }
       />
+      {banners}
 
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-3xl w-full mx-auto">
         {!box ? (

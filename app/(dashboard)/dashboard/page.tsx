@@ -9,6 +9,7 @@ import type { CoachActivity } from '@/components/coach/CoachDashboard'
 import { loadChallenges } from '@/lib/utils/challenges'
 import { redirect } from 'next/navigation'
 import { DashboardDispatcher } from '@/components/layout/DashboardDispatcher'
+import type { Banner } from '@/lib/utils/banners'
 import type { Profile, Box, Movement } from '@/lib/types/database'
 
 export default async function DashboardPage() {
@@ -187,6 +188,11 @@ export default async function DashboardPage() {
 
   // All movements — used by AthleteDashboard for KPI customization picker
   // so the user can choose any movement, not just ones they've already PR'd.
+  // Home banners of the person's boxes plus the app-wide ones (012). Hidden until the table exists.
+  const bannersRes = await supabase.from('banners').select('*').eq('is_active', true).lte('starts_on', todayISO()).order('position')
+  const banners = ((bannersRes.error ? [] : bannersRes.data ?? []) as Banner[])
+    .filter(b => (!b.ends_on || b.ends_on >= todayISO()) && (b.box_id === null || myBoxIds.includes(b.box_id) || b.box_id === coachBox?.id))
+
   const { data: rawMovs } = await supabase
     .from('movements')
     .select('*')
@@ -214,6 +220,7 @@ export default async function DashboardPage() {
       goals={goals}
       logDates={logs.map(l => l.logged_on as string)}
       goalsMissing={!!goalsRes.error}
+      banners={banners}
     />
   )
 }

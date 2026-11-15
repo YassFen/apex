@@ -383,7 +383,30 @@ export function buildSeed(today: string): Store {
   const announcement_reads: Row[] = athletes.slice(0, 9).map(a => ({ announcement_id: 'ann-urgent', user_id: a.id, read_at: iso(today, '08:00') }))
   announcement_reads.push({ announcement_id: 'ann-coaches', user_id: 'demo-ath-1', read_at: iso(today, '08:00') })
 
+  const banners: Row[] = [
+    { id: 'bn-challenge', box_id: BOX, created_by: DEMO_USER_ID, title: 'Reto de noviembre: 500 burpees', body: 'Súmate y sube en el ranking del box.', cta_label: 'Unirme', href: '/challenges',
+      tone: 'accent', icon: 'flame', image_url: null, audience: 'all', starts_on: addDaysISO(today, -5), ends_on: addDaysISO(today, 16), position: 0, dismissible: true, is_active: true, views: 214, clicks: 61, created_at: iso(addDaysISO(today, -5)) },
+    { id: 'bn-open', box_id: BOX, created_by: DEMO_USER_ID, title: 'Open 26.1: inscripciones abiertas', body: 'Lo hacemos juntos en el box el viernes.', cta_label: 'Ver competencia', href: '/competitions',
+      tone: 'purple', icon: 'trophy', image_url: null, audience: 'athletes', starts_on: addDaysISO(today, -2), ends_on: null, position: 1, dismissible: true, is_active: true, views: 98, clicks: 17, created_at: iso(addDaysISO(today, -2)) },
+    { id: 'bn-shop', box_id: BOX, created_by: DEMO_USER_ID, title: 'Poleras del box', body: 'Nueva temporada en recepción y online.', cta_label: 'Comprar', href: 'https://www.instagram.com/',
+      tone: 'dark', icon: 'shop', image_url: null, audience: 'all', starts_on: addDaysISO(today, -30), ends_on: addDaysISO(today, -3), position: 2, dismissible: true, is_active: true, views: 402, clicks: 33, created_at: iso(addDaysISO(today, -30)) },
+    { id: 'bn-app', box_id: null, created_by: DEMO_USER_ID, title: 'Nuevo: reserva tu clase', body: 'Elige horario y asegura tu cupo desde la app.', cta_label: 'Reservar', href: '/classes',
+      tone: 'blue', icon: 'calendar', image_url: null, audience: 'all', starts_on: addDaysISO(today, -1), ends_on: addDaysISO(today, 20), position: 0, dismissible: true, is_active: true, views: 1240, clicks: 388, created_at: iso(addDaysISO(today, -1)) },
+  ]
+  const support_tickets: Row[] = [
+    { id: 'tk-1', user_id: 'demo-ath-3', box_id: BOX, kind: 'bug', message: 'Cuando registro mi resultado del WOD de las 7:00 me dice que ya lo registré, pero fui a la de las 19:00 también.', path: '/wod',
+      context: { version: '0.8.0', device: 'mobile', installed: true, mode: 'athlete', screen: '390x844', online: true, errors: [], trail: [
+        { t: '19:58:02', kind: 'view', label: '/dashboard' }, { t: '19:58:09', kind: 'view', label: '/wod' }, { t: '19:58:15', kind: 'click', label: '# PM' }, { t: '19:58:31', kind: 'click', label: 'Registrar resultado' }, { t: '19:58:52', kind: 'rage', label: 'Guardar' }] },
+      status: 'open', reply: null, replied_by: null, replied_at: null, seen_reply: false, created_at: iso(today, '09:40') },
+    { id: 'tk-2', user_id: 'demo-ath-8', box_id: BOX, kind: 'idea', message: 'Sería bueno poder ver el WOD de mañana en el widget del inicio.', path: '/dashboard',
+      context: { version: '0.8.0', device: 'mobile' }, status: 'open', reply: null, replied_by: null, replied_at: null, seen_reply: false, created_at: iso(addDaysISO(today, -1), '21:10') },
+    { id: 'tk-3', user_id: DEMO_USER_ID, box_id: BOX, kind: 'question', message: '¿Se puede cambiar el correo de mi cuenta?', path: '/settings/security',
+      context: { version: '0.8.0', device: 'desktop' }, status: 'answered', reply: 'Sí. Escríbenos el correo nuevo desde tu correo actual a soporte y lo cambiamos en el día.', replied_by: DEMO_USER_ID,
+      replied_at: iso(addDaysISO(today, -1), '11:00'), seen_reply: false, created_at: iso(addDaysISO(today, -2), '18:00') },
+  ]
+
   return {
+    banners, support_tickets,
     platform_admins: [{ user_id: DEMO_USER_ID, created_at: iso(today) }], app_error_status: [],
     admin_audit_log: [{ id: 'audit-1', admin_id: DEMO_USER_ID, action: 'box_plan', target: 'Rocca Box Viña', detail: { from: 'pro', to: 'free' }, created_at: iso(addDaysISO(today, -6)) }],
     membership_plans, memberships, membership_events, member_files, class_slots, class_overrides, class_bookings, coach_issues, announcements, announcement_reads,

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { MotionConfig } from 'motion/react'
 import { LogoMark } from '@/components/ui/Logo'
 import { ToastProvider } from '@/components/ui/Toast'
-import { ChartPieSlice, Buildings, Users, CursorClick, Bug, ClockCounterClockwise, ArrowLeft } from '@/components/ui/icons'
+import { ChartPieSlice, Buildings, Users, CursorClick, Bug, ClockCounterClockwise, ArrowLeft, Lifebuoy, RectangleDashed } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 
 const NAV = [
@@ -14,10 +14,13 @@ const NAV = [
   { href: '/admin/users', label: 'Usuarios', icon: Users },
   { href: '/admin/usage', label: 'Uso', icon: CursorClick },
   { href: '/admin/errors', label: 'Errores', icon: Bug },
+  { href: '/admin/support', label: 'Soporte', icon: Lifebuoy },
+  { href: '/admin/banners', label: 'Banners', icon: RectangleDashed },
   { href: '/admin/audit', label: 'Auditoría', icon: ClockCounterClockwise },
 ]
 
-export function AdminChrome({ name, openErrors, children }: { name: string; openErrors: number; children: React.ReactNode }) {
+export function AdminChrome({ name, openErrors, openTickets = 0, children }: { name: string; openErrors: number; openTickets?: number; children: React.ReactNode }) {
+  const badge = (href: string) => (href === '/admin/errors' ? openErrors : href === '/admin/support' ? openTickets : 0)
   const pathname = usePathname()
   const isOn = (href: string) => (href === '/admin' ? pathname === '/admin' : pathname.startsWith(href))
   return (
@@ -36,7 +39,7 @@ export function AdminChrome({ name, openErrors, children }: { name: string; open
                   className={cn('flex items-center gap-3 px-3 py-[11px] rounded-xl text-[13px] font-medium transition-colors', isOn(n.href) ? 'bg-p2 text-t font-semibold' : 'text-mu hover:bg-p2 hover:text-t')}>
                   <n.icon size={17} className={isOn(n.href) ? 'text-ac' : ''} weight={isOn(n.href) ? 'fill' : 'regular'} />
                   {n.label}
-                  {n.href === '/admin/errors' && openErrors > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-rd text-white text-[11px] font-bold grid place-items-center tabular-nums">{openErrors}</span>}
+                  {badge(n.href) > 0 && <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-rd text-white text-[11px] font-bold grid place-items-center tabular-nums">{badge(n.href)}</span>}
                 </Link>
               ))}
             </nav>
@@ -57,7 +60,7 @@ export function AdminChrome({ name, openErrors, children }: { name: string; open
                   <Link key={n.href} href={n.href} aria-current={isOn(n.href) ? 'page' : undefined}
                     className={cn('flex-shrink-0 h-10 px-4 rounded-full text-sm font-semibold flex items-center gap-1.5', isOn(n.href) ? 'bg-t text-bg' : 'bg-p text-mu')}>
                     {n.label}
-                    {n.href === '/admin/errors' && openErrors > 0 && <span className="min-w-5 h-5 px-1 rounded-full bg-rd text-white text-[11px] font-bold grid place-items-center">{openErrors}</span>}
+                    {badge(n.href) > 0 && <span className="min-w-5 h-5 px-1 rounded-full bg-rd text-white text-[11px] font-bold grid place-items-center">{badge(n.href)}</span>}
                   </Link>
                 ))}
               </nav>

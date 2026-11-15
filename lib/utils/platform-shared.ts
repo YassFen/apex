@@ -20,6 +20,7 @@ export interface ErrorGroup {
   fingerprint: string; message: string; stack: string | null; kind: string; count: number; users: number
   first_seen: string; last_seen: string; paths: (string | null)[] | null; versions: (string | null)[] | null; devices: (string | null)[] | null
   status: 'open' | 'resolved' | 'ignored'; note: string | null; status_at: string | null
+  trail?: { t: string; kind: string; label: string }[] | null
 }
 
 /** A resolved error that showed up again after it was closed counts as open. */

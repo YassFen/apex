@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Lifebuoy } from '@/components/ui/icons'
 import { useModeSwitch } from '@/lib/hooks/useModeSwitch'
 import { MODE_LABEL, useShell } from '@/lib/hooks/useShell'
 import { createClient } from '@/lib/supabase/client'
@@ -52,6 +53,7 @@ export function SettingsHub({ profile, ownsBox }: { profile: Profile; ownsBox: b
     { title: 'Cuenta', rows: [
       { href: '/settings/privacy', icon: Lock, tone: 'bg-bl', label: 'Privacidad', hint: profile.profile_public ? 'Perfil público' : 'Perfil privado' },
       { href: '/settings/security', icon: ShieldCheck, tone: 'bg-gr', label: 'Contraseña y sesión' },
+      { href: '/support', icon: Lifebuoy, tone: 'bg-bl', label: 'Ayuda y soporte', hint: 'Reportar un problema' },
     ]},
   ]
 
