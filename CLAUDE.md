@@ -74,7 +74,10 @@ app/
     ├── calendar/event/[id]/page.tsx        # Event: countdown, sign-up (category/division), readiness per movement
     ├── calendar/event/[id]/edit/page.tsx   # Edit event + its workouts
     ├── benchmarks/page.tsx         # Athlete: benchmark results
-    ├── coach/publish-wod/page.tsx  # Coach: publish or program WODs up to 13 days ahead (?date=), one per class time (?wod=<id>|new)
+    ├── coach/publish-wod/page.tsx  # Coach: ONE WOD per box per day for every class (?date= yesterday..+13, ?from=<wodId> reuses one, ?box=)
+    ├── coach/library/[id]?         # Coach/admin: every WOD the box published (?q= ?t= ?p=), detail with leaderboard + "Usar de nuevo"
+    ├── coach/competitions/[id]?    # Coach/admin: box events, general ranking and per-workout results
+    ├── league/page.tsx             # Athlete: league, XP, streak, squads (duplas/cuartetos), app challenges, rankings
     ├── challenges/page.tsx         # Box challenges: join, log amounts, ranking; anyone in the box creates one (?open=<id>)
     ├── competitions/page.tsx       # Athlete: past/upcoming competitions, final places and progress chart
     ├── movements/page.tsx          # Exercise library (how-to, muscles, video, your records); coaches add box movements
@@ -279,7 +282,7 @@ Telemetry (011): `lib/utils/telemetry.ts` + `components/layout/Telemetry.tsx` re
 - Support (`support_tickets`, 012): users write from `/support` (Ayuda; also from `app/(dashboard)/error.tsx` with `?from=`), `SupportSheet` attaches `supportContext()` (version, device, last steps, recent errors; never typed values). The panel answers in `/admin/support`; answers show as a bell notice until read (`ticket_seen`).
 - 013 closes the audit: admins can only change `is_active/left_at` on `box_members` (column grant; roles via `set_member_role`, members only), class overrides/issues/announcements must reference a slot of the same box (composite FKs), authors can't move announcements to other boxes, removed members can't rejoin with the code, update policies with `with check` on events/challenges/templates. Bookings: `membership_on(box, user, date)` is the plan in force on that date (a renewal that hasn't started doesn't count; `currentMembership(rows, today)` mirrors it), `booking_block()` explains why someone can't book, `book_class`/`cancel_booking` lock the slot, athletes can't book or cancel after the class starts, a cancelled class or a removed slot cancels its bookings and gives classes back (triggers), the waiting list skips people without a valid plan. Slots and memberships can't be deleted from the app (only switched off). Telemetry tables have an hourly ceiling per person and size limits. Box plan changes are logged by a trigger.
 - Coach screens resolve the box with `pickCoachBox()` (`lib/utils/coach-boxes.ts`): any box where the person is owner, coach or admin; `?box=` or the box picked in the app (cookie `apex_box`, set by `setActiveBoxId` in `useShell`, which also refreshes the page). Coach mode is available when the person is staff of some box (`coachAllowed` from the layout).
-- Today's WOD with several classes: `pickTodayWod()` (`lib/utils/wod-pick.ts`) picks the one I logged, else the class I booked, else the last that started. Notices group by box and day.
+- A box has ONE WOD per day, the same for every class (015 adds the unique index `daily_wods_box_day`; `class_time` is no longer used). Notices group by box and day.
 - Users never see migration numbers: missing-table messages say the feature "todavía no está disponible". "Away" is 14 days everywhere.
 
 ### Joining a box
@@ -395,3 +398,12 @@ All Supabase queries, TypeScript types, and business logic live in `lib/` and pa
 - **`router.refresh()`** after mutations that change server-rendered data (e.g., after logging a WOD result).
 - **`window.location.reload()`** is used in `WodResultModal.onSaved` as a pragmatic full refresh — acceptable for now.
 - **Middleware** in `middleware.ts` protects all routes except `/`, `/auth/*`, and static assets.
+
+### Progress, one WOD a day and fixes (014–017)
+
+- **014 progress**: `xp_events` ledger (written only by triggers through `award_xp`, never by clients), leagues from total XP (`lib/utils/progress.ts`: Bronce 0 → Plata 600 → Oro 1800 → Platino 4000 → Diamante 8000 → Élite 15000), streaks (one rest day allowed), `squads`/`squad_members`/`squad_days` (dupla 2 / cuarteto 4, invite code, everyone trained that day → +15 each), `app_challenges` (created by the platform admin in `/admin/challenges`, auto-awarded). Reads: `my_progress()` (one round trip), `xp_ranking(scope, id, period)`, `public_xp(user)` (public profile badge). `profiles.league_public` hides someone from rankings. Demo mirror: `lib/demo/progress.ts`.
+- **015**: one WOD per box per day (merges duplicates, unique index). Publish uses upsert on `(box_id, scheduled_for)`.
+- **016 admin fixes**: `box_attendance()` and `unfreeze_membership()` RPCs, `class_slots.removed_at`, triggers for slot day/capacity changes, removed members and cancelled plans (free and refund future bookings, promote the waiting list), staff walk-ins skip the plan check, started classes can't be cancelled. TS: `selectAll()` pages past the 1000-row API cap.
+- **017 security**: movement names unique per box, staff can enter box-event results, `event_results` must match its workout's event, `wod_results` edit guard, clients can't set `is_pr`, XP only for activity logged within 7 days, podium XP only when staff set the place, global ranking needs `profile_public`. Don't re-run 003/004 after 017.
+- Every heavy screen has a `loading.tsx` (taps feel instant); server pages run independent queries with `Promise.all`. `requirePlatformAdmin` is `cache()`d. The demo client supports `range`, `ilike` and `embed(count)`.
+- Supabase files to paste: `supabase/ACTUALIZAR_1_de_2.sql` (014+015) and `ACTUALIZAR_2_de_2.sql` (016+017).
