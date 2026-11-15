@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { joinBoxByCode } from '@/lib/utils/join-box'
+import { joinBoxByCode, joinErrorMessage } from '@/lib/utils/join-box'
 import { NextResponse } from 'next/server'
 import type { EmailOtpType } from '@supabase/supabase-js'
 
@@ -37,7 +37,8 @@ export async function GET(request: Request) {
     if (isRecovery) return NextResponse.redirect(`${origin}${RESET_PATH}?expired=1`)
     // Typical case: the confirmation link was opened in another browser or app
     // (e.g. the phone's mail app). Supabase already confirmed the email before
-    // redirecting here, so the person only needs to sign in.
+    // redirecting here, so the person only needs to sign in. The invite code stays
+    // in user_metadata and is applied on their first sign-in (LoginForm).
     return NextResponse.redirect(`${origin}/auth/login?confirmed=1`)
   }
 
@@ -46,8 +47,14 @@ export async function GET(request: Request) {
   // Invite code typed at sign-up is applied once the account is confirmed.
   const pendingCode = data.user.user_metadata?.invite_code as string | undefined
   if (pendingCode) {
-    await joinBoxByCode(supabase, pendingCode, data.user.id)
-    await supabase.auth.updateUser({ data: { invite_code: null } })
+    const res = await joinBoxByCode(supabase, pendingCode, data.user.id)
+    // Keep the code in the profile data only when it was a temporary failure, so it can be retried.
+    if (res.ok || res.reason !== 'error') await supabase.auth.updateUser({ data: { invite_code: null } })
+    if (!res.ok && res.reason !== 'already_member') {
+      const msg = joinErrorMessage(res, m => m || 'No pudimos unirte al box. Inténtalo desde Mis boxes.')
+      return NextResponse.redirect(`${origin}/settings/boxes?joinError=${encodeURIComponent(msg)}`)
+    }
+    if (res.ok) return NextResponse.redirect(`${origin}/settings/boxes?joined=${encodeURIComponent(res.boxName)}`)
   }
 
   // When the redirect URL isn't allow-listed, Supabase drops `next` and lands on

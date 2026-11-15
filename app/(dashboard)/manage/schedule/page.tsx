@@ -1,4 +1,4 @@
-import { requireAdminBox, loadPeople } from '@/lib/utils/admin-box'
+import { requireAdminBox, loadPeople, selectAll } from '@/lib/utils/admin-box'
 import { ScheduleView } from '@/components/manage/ScheduleView'
 import { addDaysISO, todayISO } from '@/lib/utils/dates'
 import { weekStart } from '@/lib/utils/schedule'
@@ -16,7 +16,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
     loadPeople(supabase, box),
     supabase.from('class_slots').select('*').eq('box_id', box.id).order('start_time'),
     supabase.from('class_overrides').select('*').eq('box_id', box.id).gte('class_date', from).lte('class_date', to),
-    supabase.from('class_bookings').select('id, slot_id, class_date, user_id, status, created_at').eq('box_id', box.id).gte('class_date', from).lte('class_date', to),
+    selectAll(() => supabase.from('class_bookings').select('id, slot_id, class_date, user_id, status, created_at').eq('box_id', box.id).gte('class_date', from).lte('class_date', to).order('id')),
     supabase.from('coach_issues').select('*').eq('box_id', box.id).eq('status', 'open').gte('class_date', today),
   ])
 
@@ -26,7 +26,7 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
       people={people.filter(p => p.isActive).map(p => ({ id: p.id, name: p.name, avatar: p.avatar, role: p.role }))}
       slots={(slotsRes.data ?? []) as ClassSlot[]}
       overrides={(ovRes.data ?? []) as ClassOverride[]}
-      bookings={(bkRes.data ?? []) as ClassBooking[]}
+      bookings={bkRes.data as ClassBooking[]}
       issues={(isRes.data ?? []) as CoachIssue[]}
       missing={isMissingTable(slotsRes.error)}
     />

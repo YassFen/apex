@@ -65,7 +65,15 @@ export function ShellProvider({
   useEffect(() => {
     try {
       const stored = localStorage.getItem(ACTIVE_BOX_KEY)
-      if (stored && boxes.some(b => b.id === stored)) setActiveBoxIdState(stored)
+      if (stored && boxes.some(b => b.id === stored)) {
+        setActiveBoxIdState(stored)
+        // Server pages read the box from the cookie: keep it in step with what the screen shows.
+        const current = document.cookie.split('; ').find(c => c.startsWith(`${ACTIVE_BOX_COOKIE}=`))?.split('=')[1]
+        if (current !== stored) {
+          document.cookie = `${ACTIVE_BOX_COOKIE}=${stored}; path=/; max-age=31536000; samesite=lax`
+          router.refresh()
+        }
+      }
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])  // only on mount — boxes array ref changes on every render

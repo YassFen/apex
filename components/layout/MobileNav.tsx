@@ -6,7 +6,7 @@ import { Reorder, motion } from 'motion/react'
 import {
   LayoutGrid, Flame, Timer, TrendingUp, Activity, Users, ArrowLeftRight, MoreHorizontal,
   Trophy, Calculator, BarChart3, Gear, History, ChevronRight, CalendarDays, Medal, BookOpenText, Flag,
-  SlidersHorizontal, ArrowCounterClockwise, CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed, ShieldStar,
+  SlidersHorizontal, ArrowCounterClockwise, CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed, ShieldStar, Books,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 import { SPRING } from '@/components/ui/motion'
@@ -40,7 +40,9 @@ const ATHLETE_ITEMS: Item[] = [
 ]
 const COACH_ITEMS: Item[] = [
   { href: '/dashboard',         label: 'Inicio',              short: 'Inicio',    icon: LayoutGrid,   desc: 'Clases, actividad y tu box' },
-  { href: '/coach/publish-wod', label: 'Publicar WOD',        short: 'WOD',       icon: Flame,        desc: 'Programa por día y por clase' },
+  { href: '/coach/publish-wod', label: 'Publicar WOD',        short: 'WOD',       icon: Flame,        desc: 'El WOD del día para todas las clases' },
+  { href: '/coach/library',     label: 'Biblioteca de WODs',  short: 'Biblioteca', icon: Books,       desc: 'Todos los WODs enviados, para reutilizar' },
+  { href: '/coach/competitions', label: 'Competencias del box', short: 'Torneos', icon: Medal,       desc: 'Eventos del box y ranking de cada atleta' },
   { href: '/calendar',          label: 'Calendario',          short: 'Agenda',    icon: CalendarDays, desc: 'WODs programados y eventos' },
   { href: '/classes',           label: 'Mis clases',          short: 'Clases',    icon: CalendarCheck, desc: 'Tus horarios, lista y asistencia' },
   { href: '/announcements',     label: 'Comunicados',         short: 'Avisos',    icon: Megaphone,    desc: 'Comunicados y avisos a atletas' },
@@ -62,6 +64,8 @@ const ADMIN_ITEMS: Item[] = [
   { href: '/manage/plans',    label: 'Planes',        short: 'Planes',    icon: Ticket,            desc: 'Crea y edita los planes' },
   { href: '/announcements',   label: 'Comunicados',   short: 'Avisos',    icon: Megaphone,         desc: 'Avisa a coaches y atletas' },
   { href: '/manage/banners',  label: 'Banners',       short: 'Banners',   icon: RectangleDashed,   desc: 'Tarjetas destacadas del inicio' },
+  { href: '/coach/library',   label: 'Biblioteca de WODs', short: 'Biblioteca', icon: Books,      desc: 'Todos los WODs enviados' },
+  { href: '/coach/competitions', label: 'Competencias', short: 'Torneos',  icon: Medal,             desc: 'Eventos del box y su ranking' },
   { href: '/support',         label: 'Ayuda',         short: 'Ayuda',     icon: Lifebuoy,          desc: 'Reporta un problema o escríbenos' },
   { href: '/settings',        label: 'Configuración', short: 'Ajustes',   icon: Gear,              desc: 'Perfil, box, avisos y apariencia' },
 ]

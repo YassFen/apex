@@ -17,7 +17,7 @@ import { AthleteRadar } from '@/components/athlete/AthleteRadar'
 import { AppearancePicker } from '@/components/ui/AppearancePicker'
 import { PasswordField, Alert } from '@/components/ui/Field'
 import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
-import { joinBoxByCode } from '@/lib/utils/join-box'
+import { joinBoxByCode, joinErrorMessage } from '@/lib/utils/join-box'
 import type { Profile, Movement, Box } from '@/lib/types/database'
 
 interface Props {
@@ -44,6 +44,13 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
   const [birthYear, setBirthYear] = useState(profile.birth_year ? String(profile.birth_year) : '')
   const [usage, setUsage] = useState(true)
   useEffect(() => { setUsage(usageEnabled()) }, [])
+  // Message left by sign-in / email confirmation about the invite code (?joinError=…, ?joined=…).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    const err = q.get('joinError'), ok = q.get('joined')
+    if (err) setJoinErr(err.slice(0, 200))
+    if (ok) setJoinMsg(`Te uniste a ${ok.slice(0, 80)}.`)
+  }, [])
   const [profilePublic, setProfilePublic]   = useState(profile.profile_public ?? false)
   const [showPrsPublic, setShowPrsPublic]   = useState(profile.show_prs_public ?? false)
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? '')
@@ -196,11 +203,7 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
     const res = await joinBoxByCode(supabase, inviteCode, profile.id)
     setJoining(false)
     if (!res.ok) {
-      setJoinErr(
-        res.reason === 'invalid_code' ? 'Código de invitación inválido. Revisa que esté escrito correctamente.'
-        : res.reason === 'already_member' ? `Ya eres miembro de ${res.boxName}.`
-        : friendlyError(res.message)
-      )
+      setJoinErr(joinErrorMessage(res, friendlyError))
       return
     }
     setJoinMsg(`Te uniste a ${res.boxName}.`)

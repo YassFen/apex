@@ -1,5 +1,5 @@
 // In-app notices, computed from data on each page load (no table): event countdowns,
-// tomorrow's WOD with its class time, today's WOD still to log, new box events.
+// tomorrow's WOD, today's WOD still to log, new box events.
 // Ids change at each threshold (7/3/1/0 days) so the same event can notify again.
 import { addDaysISO, daysBetween } from '@/lib/utils/dates'
 
@@ -15,13 +15,11 @@ export interface Notice {
   date: string
 }
 
-export const formatClassTime = (t: string | null | undefined) => (t ? t.slice(0, 5) : null)
-
 export interface NoticeInput {
   today: string
   myEvents: { id: string; name: string; startsOn: string }[]
   newBoxEvents: { id: string; name: string; startsOn: string; createdAt: string; boxName: string }[]
-  wods: { id: string; date: string; title: string; classTime: string | null; boxName: string; visible: boolean; myResult: boolean }[]
+  wods: { id: string; date: string; title: string; boxName: string; visible: boolean; myResult: boolean }[]
   /** Support answers not read yet. */
   replies?: { id: string; date: string; at: string }[]
 }
@@ -52,26 +50,16 @@ export function buildNotices({ today, myEvents, newBoxEvents, wods, replies = []
   }
 
   const tomorrow = addDaysISO(today, 1)
-  // One notice per box and day, even when the box runs several classes.
-  const byBox = (list: typeof wods) => {
-    const m = new Map<string, typeof wods>()
-    for (const w of list) m.set(w.boxName, [...(m.get(w.boxName) ?? []), w])
-    return [...m.values()]
-  }
-
-  for (const group of byBox(wods.filter(w => w.date === tomorrow))) {
-    const w = group[0]
-    const times = group.map(x => formatClassTime(x.classTime)).filter(Boolean).sort()
+  // One WOD per box and day.
+  for (const w of wods.filter(w => w.date === tomorrow)) {
     out.push({
       id: `wod-${w.id}`, kind: 'wod', date: w.date, href: '/calendar',
-      title: `Mañana hay WOD${times.length ? ` · ${times.join(', ')}` : ''}`,
+      title: 'Mañana hay WOD',
       body: w.visible ? `${w.title} · ${w.boxName}` : `${w.boxName} lo revela mañana.`,
     })
   }
 
-  for (const group of byBox(wods.filter(w => w.date === today && w.visible))) {
-    if (group.some(w => w.myResult)) continue
-    const w = group[0]
+  for (const w of wods.filter(w => w.date === today && w.visible && !w.myResult)) {
     out.push({
       id: `log-${w.id}`, kind: 'log', date: w.date, href: '/wod',
       title: `WOD de hoy: ${w.title}`,

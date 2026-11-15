@@ -18,6 +18,14 @@ import type { Profile, Box, MembershipPlan, MembershipKind } from '@/lib/types/d
 const DURATIONS: [number, string][] = [[7, '1 semana'], [30, '1 mes'], [90, '3 meses'], [180, '6 meses'], [365, '1 año']]
 const durationLabel = (d: number) => DURATIONS.find(x => x[0] === d)?.[1] ?? `${d} días`
 
+/** "45.000" → 45000, "45.000,50" → 45000.5 (dots group thousands, a comma marks cents). Empty → null. */
+function parsePrice(raw: string): number | null {
+  const clean = raw.replace(/[\s.]/g, '').replace(',', '.').replace(/,/g, '')
+  if (!clean) return null
+  const n = Number(clean)
+  return Number.isFinite(n) ? Math.max(0, Math.round(n * 100) / 100) : null
+}
+
 export function PlansView({ profile, box, boxes, plans, counts, missing }: { profile: Profile; box: Box; boxes: Box[]; plans: MembershipPlan[]; counts: Record<string, number>; missing: boolean }) {
   const [editing, setEditing] = useState<MembershipPlan | 'new' | null>(null)
   const total = Object.values(counts).reduce((a, b) => a + b, 0)
@@ -88,7 +96,8 @@ function PlanSheet({ box, plan, onClose }: { box: Box; plan: MembershipPlan | nu
   const [kind, setKind] = useState<MembershipKind>(plan?.kind ?? 'unlimited')
   const [classes, setClasses] = useState(String(plan?.classes_count ?? 12))
   const [duration, setDuration] = useState(plan?.duration_days ?? 30)
-  const [price, setPrice] = useState(plan?.price != null ? String(plan.price) : '')
+  const [price, setPrice] = useState(plan?.price != null ? String(Number(plan.price)).replace('.', ',') : '')
+  const priceValue = parsePrice(price)
   const [currency, setCurrency] = useState(plan?.currency ?? 'CLP')
   const [active, setActive] = useState(plan?.is_active ?? true)
   const [busy, setBusy] = useState(false)
@@ -98,7 +107,7 @@ function PlanSheet({ box, plan, onClose }: { box: Box; plan: MembershipPlan | nu
     setBusy(true)
     const row = {
       box_id: box.id, name: name.trim(), kind, classes_count: kind === 'classes' ? Math.max(1, Number(classes) || 1) : null,
-      duration_days: duration, price: price === '' ? null : Math.max(0, Number(price) || 0), currency, is_active: active,
+      duration_days: duration, price: priceValue, currency, is_active: active,
     }
     const supabase = createClient()
     const { error } = plan ? await supabase.from('membership_plans').update(row).eq('id', plan.id) : await supabase.from('membership_plans').insert(row)
@@ -124,7 +133,9 @@ function PlanSheet({ box, plan, onClose }: { box: Box; plan: MembershipPlan | nu
           </select>
         </div>
         <div className="grid grid-cols-[1fr_110px] gap-3">
-          <Field label="Precio (opcional)" type="number" inputMode="decimal" min={0} value={price} onChange={e => setPrice(e.target.value)} placeholder="45000" />
+          <Field label="Precio (opcional)" type="text" inputMode={currency === 'CLP' ? 'numeric' : 'decimal'} autoComplete="off" maxLength={16}
+            value={price} onChange={e => setPrice(e.target.value.replace(/[^\d.,\s]/g, ''))} placeholder="45.000"
+            hint={priceValue !== null ? `Se guarda como ${money(priceValue, currency)}` : undefined} />
           <div>
             <label className={labelCls} htmlFor="currency">Moneda</label>
             <select id="currency" className={selectCls} value={currency} onChange={e => setCurrency(e.target.value)}>

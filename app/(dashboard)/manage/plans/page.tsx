@@ -1,4 +1,4 @@
-import { requireAdminBox } from '@/lib/utils/admin-box'
+import { requireAdminBox, loadPeople, selectAll } from '@/lib/utils/admin-box'
 import { PlansView } from '@/components/manage/PlansView'
 import { todayISO } from '@/lib/utils/dates'
 import { currentMembership, planState } from '@/lib/utils/membership'
@@ -9,13 +9,17 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams
   const { supabase, profile, box, boxes } = await requireAdminBox(sp.box)
   const today = todayISO()
-  const [plansRes, msRes] = await Promise.all([
+  const [plansRes, msRes, people] = await Promise.all([
     supabase.from('membership_plans').select('*').eq('box_id', box.id).order('created_at'),
-    supabase.from('memberships').select('*').eq('box_id', box.id),
+    selectAll(() => supabase.from('memberships').select('*').eq('box_id', box.id).order('id')),
+    loadPeople(supabase, box),
   ])
-  // People per plan: only memberships in force today.
+  // People per plan: only memberships in force today, of people still in the box.
+  const active = new Set(people.filter(p => p.isActive).map(p => p.id))
   const byUser = new Map<string, Membership[]>()
-  for (const m of ((msRes.data ?? []) as Membership[])) byUser.set(m.user_id, [...(byUser.get(m.user_id) ?? []), m])
+  for (const m of (msRes.data as Membership[])) {
+    if (active.has(m.user_id)) byUser.set(m.user_id, [...(byUser.get(m.user_id) ?? []), m])
+  }
   const counts: Record<string, number> = {}
   for (const rows of byUser.values()) {
     const m = currentMembership(rows, today)

@@ -211,7 +211,7 @@ function Loaded({ profile, progress, box, ranking, today }: {
                   <span className="font-semibold tabular-nums flex-shrink-0 text-ac">{r.points}</span>
                 </li>
               ))}
-              <li className="text-xs text-fa text-pretty pt-1">La constancia es lo que más suma: las rachas largas dan los bonus más grandes. Los récords cuentan hasta 3 por día.</li>
+              <li className="text-xs text-fa text-pretty pt-1">La constancia es lo que más suma: las rachas largas dan los bonus más grandes. Los récords cuentan hasta 3 por día, y lo que registres con más de 7 días de atraso no suma.</li>
             </ul>
           )}
         </Card>
@@ -381,8 +381,8 @@ function SquadSheet({ mode, onClose, onDone }: { mode: null | 'create' | 'join';
         ) : (
           <div>
             <label htmlFor="sq-code" className="block text-[13px] text-mu font-medium mb-1.5 px-1">Código del equipo</label>
-            <input id="sq-code" value={code} onChange={e => setCode(e.target.value.toUpperCase())} maxLength={6} required autoCapitalize="characters" autoComplete="off"
-              className={cn(inputCls, 'font-display tracking-widest text-center text-lg')} placeholder="ABC123" />
+            <input id="sq-code" value={code} onChange={e => setCode(e.target.value.toUpperCase())} maxLength={8} required autoCapitalize="characters" autoComplete="off"
+              className={cn(inputCls, 'font-display tracking-widest text-center text-lg')} placeholder="ABCD1234" />
           </div>
         )}
         <button type="submit" disabled={busy} className="h-12 rounded-full bg-ac text-onac font-bold disabled:opacity-50">

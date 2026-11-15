@@ -22,6 +22,8 @@ export function friendlyError(raw: string | undefined | null): string {
     return 'Demasiados intentos seguidos. Espera unos minutos e inténtalo de nuevo.'
   if (/invalid email|unable to validate email/i.test(msg))
     return 'Ese email no parece válido. Revísalo.'
+  if (/movements_(box|global)_name_uq|movements_name_key/.test(msg))
+    return 'Ya existe un ejercicio con ese nombre. Usa otro nombre o busca el que ya está.'
   if (msg.includes('pr_records_metric_check'))
     return 'Ese tipo de récord todavía no está disponible. Inténtalo más tarde.'
   if (/column .* does not exist|could not find the .* column/i.test(msg))

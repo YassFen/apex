@@ -1,13 +1,11 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { CalendarClock, Users, Timer, Pencil, History, Dumbbell, Clock, Info } from '@/components/ui/icons'
+import { CalendarClock, Users, Timer, Pencil, History, Dumbbell, Info } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
 import { rankResults } from '@/lib/utils/wod-ranking'
 import { todayISO } from '@/lib/utils/dates'
-import { ActivePill } from '@/components/ui/motion'
-import { cn } from '@/lib/utils/cn'
 import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 
 import { Topbar } from '@/components/layout/Topbar'
@@ -28,7 +26,7 @@ interface Props {
   memberships: any[]
   maxes?: { name: string; valueLb: number }[]
   bumps?: Bump[] | null
-  todayWods?: { id: string; label: string }[]
+  prefill?: { time?: string; rounds?: string }
   library?: Movement[]
 }
 
@@ -37,19 +35,22 @@ type Bump = { result_id: string; user_id: string }
 
 const MAX_EDITS = 2
 
-export function WodView({ profile, wod: initialWod, results: initialResults, memberships, maxes = [], bumps: initialBumps = [], todayWods = [], library = [] }: Props) {
+export function WodView({ profile, wod: initialWod, results: initialResults, memberships, maxes = [], bumps: initialBumps = [], prefill, library = [] }: Props) {
   const [info, setInfo] = useState<Movement | null>(null)
   const router = useRouter()
   const [supabase] = useState(() => createClient())
   const [wod, setWod]           = useState(initialWod)
   const [results, setResults]   = useState<any[]>(initialResults)
-  const [resultModalOpen, setResultModalOpen] = useState(false)
+  const [resultModalOpen, setResultModalOpen] = useState(() => !!(prefill?.time || prefill?.rounds) && !initialResults.some(r => r.user_id === profile.id))
   const [justPublished, setJustPublished]     = useState(false)
   const [bumps, setBumps] = useState<Bump[] | null>(initialBumps)
   const { fire } = useToast()
 
-  const ranked = useMemo(() => rankResults(results), [results])
+  const ranked = useMemo(() => rankResults(results, wod?.type), [results, wod?.type])
   const myResult = results.find(r => r.user_id === profile.id) ?? null
+  // Ids of the results on screen, so the realtime handler can ignore other WODs' reactions.
+  const resultIds = useRef<Set<string>>(new Set())
+  resultIds.current = new Set(results.map(r => r.id as string))
 
   async function reloadResults(wodId: string) {
     const { data } = await supabase
@@ -58,7 +59,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
       .eq('daily_wod_id', wodId)
     setResults(data ?? [])
     const ids = (data ?? []).map((r: any) => r.id)
-    if (ids.length === 0) return
+    if (ids.length === 0) { setBumps(prev => (prev === null ? null : [])); return }
     const { data: b, error } = await supabase.from('wod_result_bumps').select('result_id, user_id').in('result_id', ids)
     setBumps(error ? null : ((b ?? []) as Bump[]))
   }
@@ -87,8 +88,14 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
       event: '*', schema: 'public', table: 'daily_wods',
       filter: `box_id=in.(${boxIds.join(',')})`,
     }, payload => {
-      if (payload.eventType !== 'INSERT' && payload.eventType !== 'UPDATE') return
+      if (payload.eventType === 'DELETE') {
+        // The coach removed the WOD that is on screen.
+        if (wod?.id && (payload.old as any)?.id === wod.id) { setWod(null); setResults([]); router.refresh() }
+        return
+      }
       const next = payload.new as DailyWod
+      // The coach hid the WOD that is on screen.
+      if (wod?.id && next.id === wod.id && !next.is_live) { setWod(null); setResults([]); router.refresh(); return }
       // Ignore WODs programmed for other days and other boxes' WODs when one is already shown.
       if (!next.is_live || next.scheduled_for !== todayISO()) return
       if (wod?.id && next.id !== wod.id) return
@@ -105,7 +112,11 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
       }, () => reloadResults(wod.id))
       channel.on('postgres_changes', {
         event: '*', schema: 'public', table: 'wod_result_bumps',
-      }, () => reloadResults(wod.id))
+      }, payload => {
+        const rid = ((payload.new as any)?.result_id ?? (payload.old as any)?.result_id) as string | undefined
+        if (rid && !resultIds.current.has(rid)) return
+        reloadResults(wod.id)
+      })
     }
 
     channel.subscribe()
@@ -138,21 +149,6 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
       )}
 
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full">
-        {todayWods.length > 1 && (
-          <nav aria-label="WODs de hoy" className="-mx-4 px-4 lg:mx-0 lg:px-0 flex gap-1.5 overflow-x-auto scrollbar-none">
-            {todayWods.map(t => {
-              const active = t.id === wod?.id
-              return (
-                <Link key={t.id} href={`/wod?wod=${t.id}`} ref={el => { if (active) el?.scrollIntoView({ inline: 'center', block: 'nearest' }) }} scroll={false} aria-current={active ? 'page' : undefined}
-                  className={cn('relative isolate flex-shrink-0 h-9 px-4 rounded-full text-sm font-bold grid place-items-center transition-colors max-w-[200px] truncate',
-                    active ? 'text-onac' : 'bg-p text-mu hover:text-t')}>
-                  {active && <ActivePill layoutId="wod-box" className="rounded-full bg-ac" />}
-                  {t.label}
-                </Link>
-              )
-            })}
-          </nav>
-        )}
         {!wod ? (
           <Card className="text-center py-14 flex flex-col items-center gap-3">
             <div className="size-14 rounded-2xl bg-p2 grid place-items-center text-mu">
@@ -186,7 +182,6 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
                       {meta.label}
                     </span>
                   )}
-                  {wod.class_time && <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-p2 text-[11px] font-bold tabular-nums"><Clock size={12} weight="bold" aria-hidden />{String(wod.class_time).slice(0, 5)}</span>}
                   {wod.duration_mins && <span className="text-mu text-xs tabular-nums">{wod.duration_mins} min</span>}
                   {wod.boxes?.name && <span className="text-mu text-xs truncate">· {wod.boxes.name}</span>}
                 </div>
@@ -266,6 +261,7 @@ export function WodView({ profile, wod: initialWod, results: initialResults, mem
           wod={wod}
           profile={profile}
           existingResult={myResult ?? undefined}
+          prefill={prefill}
           onClose={() => setResultModalOpen(false)}
           onSaved={() => {
             setResultModalOpen(false); reloadResults(wod.id); router.refresh()

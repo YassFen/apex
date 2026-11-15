@@ -70,19 +70,19 @@ async function loadAnnouncements(supabase: any, userId: string, boxes: Box[], st
   }))
 }
 
-/** Data for the notification bell. Every query tolerates missing migrations (006/007). */
+/** Data for the notification bell. Every query tolerates missing migrations. */
 async function loadNotices(supabase: any, userId: string, boxes: Box[]): Promise<Notice[]> {
   const today = todayISO()
   const tomorrow = addDaysISO(today, 1)
   const boxIds = boxes.map(b => b.id)
   const boxName = (id: string) => boxes.find(b => b.id === id)?.name ?? 'Tu box'
 
-  const wodSelect = (withTime: boolean) => supabase.from('daily_wods')
-    .select(`id, box_id, scheduled_for, title${withTime ? ', class_time' : ''}`)
+  const wodSelect = () => supabase.from('daily_wods')
+    .select('id, box_id, scheduled_for, title')
     .in('box_id', boxIds).eq('is_live', true).gte('scheduled_for', today).lte('scheduled_for', tomorrow)
 
   const [wodsRes, daysRes, goingRes, boxEvRes, repliesRes] = await Promise.all([
-    boxIds.length ? wodSelect(true) : Promise.resolve({ data: [], error: null }),
+    boxIds.length ? wodSelect() : Promise.resolve({ data: [], error: null }),
     boxIds.length ? supabase.rpc('box_wod_days', { p_from: tomorrow, p_to: tomorrow }) : Promise.resolve({ data: [], error: null }),
     supabase.from('event_participants').select('events(id, name, starts_on)').eq('user_id', userId),
     boxIds.length
@@ -92,8 +92,7 @@ async function loadNotices(supabase: any, userId: string, boxes: Box[]): Promise
     supabase.from('support_tickets').select('id, replied_at').eq('user_id', userId).in('status', ['answered', 'closed']).not('reply', 'is', null).eq('seen_reply', false),
   ])
 
-  let wods = (wodsRes.data ?? []) as any[]
-  if (wodsRes.error && boxIds.length) wods = ((await wodSelect(false)).data ?? []) as any[]
+  const wods = (wodsRes.data ?? []) as any[]
 
   const ids = wods.map(w => w.id)
   const { data: mine } = ids.length
@@ -104,7 +103,7 @@ async function loadNotices(supabase: any, userId: string, boxes: Box[]): Promise
   const visibleKeys = new Set(wods.map(w => `${w.box_id}|${w.scheduled_for}`))
   const hidden = ((daysRes.error ? [] : daysRes.data ?? []) as any[])
     .filter(d => !visibleKeys.has(`${d.box_id}|${d.scheduled_for}`))
-    .map(d => ({ id: `${d.box_id}-${d.scheduled_for}`, date: d.scheduled_for, title: '', classTime: null, boxName: boxName(d.box_id), visible: false, myResult: false }))
+    .map(d => ({ id: `${d.box_id}-${d.scheduled_for}`, date: d.scheduled_for, title: '', boxName: boxName(d.box_id), visible: false, myResult: false }))
 
   return buildNotices({
     today,
@@ -116,7 +115,7 @@ async function loadNotices(supabase: any, userId: string, boxes: Box[]): Promise
       .map(e => ({ id: e.id, name: e.name, startsOn: e.starts_on, createdAt: e.created_at, boxName: boxName(e.box_id) })),
     wods: [
       ...wods.map(w => ({
-        id: w.id, date: w.scheduled_for, title: w.title, classTime: w.class_time ?? null,
+        id: w.id, date: w.scheduled_for, title: w.title,
         boxName: boxName(w.box_id), visible: true, myResult: logged.has(w.id),
       })),
       ...hidden,

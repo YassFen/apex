@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
 import type { Profile } from '@/lib/types/database'
-import { formatDateOnly } from '@/lib/utils/dates'
+import { formatDateOnly, todayISO, addDaysISO } from '@/lib/utils/dates'
 
 const CAT_LABELS: Record<string, string> = {
   weightlifting: 'Halterofilia', olympic: 'Olímpicos',
@@ -24,7 +24,8 @@ export default async function AnalyticsPage() {
 
   // ── Coach analytics ─────────────────────────────────────────────────────────
   const { box: coachBox } = await pickCoachBox(supabase, user.id)
-  if (profile.role !== 'athlete') {
+  // Staff = owner of a box or coach/admin member of one (not the profile's own role).
+  if (coachBox || profile.role === 'coach') {
     const box = coachBox
 
     if (!box) {
@@ -40,19 +41,28 @@ export default async function AnalyticsPage() {
       )
     }
 
-    const [{ data: members }, { data: wods }, { data: results }] = await Promise.all([
+    // Published WODs from the last 90 days (no future ones), and the results logged on them.
+    const today = todayISO()
+    const [{ data: members }, { data: wods }] = await Promise.all([
       supabase.from('box_members').select('id, joined_at, role').eq('box_id', box.id).eq('is_active', true),
-      supabase.from('daily_wods').select('id, scheduled_for, type, title').eq('box_id', box.id).order('scheduled_for', { ascending: false }).limit(30),
-      supabase.from('wod_results').select('id, daily_wod_id, rx_level').in(
-        'daily_wod_id',
-        ((await supabase.from('daily_wods').select('id').eq('box_id', box.id)).data ?? []).map((w: any) => w.id)
-      ),
+      supabase.from('daily_wods').select('id, scheduled_for, type, title')
+        .eq('box_id', box.id).eq('is_live', true)
+        .gte('scheduled_for', addDaysISO(today, -90)).lte('scheduled_for', today)
+        .order('scheduled_for', { ascending: false }).limit(200),
     ])
+    // Long id lists in .in() overflow the request URL: ask in chunks.
+    const wodIds = ((wods ?? []) as any[]).map(w => w.id as string)
+    const chunks: string[][] = []
+    for (let i = 0; i < wodIds.length; i += 80) chunks.push(wodIds.slice(i, i + 80))
+    const results = (await Promise.all(chunks.map(async ids => {
+      const { data } = await supabase.from('wod_results').select('id, daily_wod_id, rx_level').in('daily_wod_id', ids)
+      return (data ?? []) as any[]
+    }))).flat()
 
     const athletes = (members ?? []).filter((m: any) => m.role === 'athlete').length
     const totalWods = (wods ?? []).length
     const totalResults = (results ?? []).length
-    const rxCount = (results ?? []).filter((r: any) => r.rx_level === 'rx').length
+    const rxCount = (results ?? []).filter((r: any) => r.rx_level === 'rx' || r.rx_level === 'rx+').length
     const rxPct = totalResults > 0 ? Math.round((rxCount / totalResults) * 100) : 0
 
     const wodsByType: Record<string, number> = {}
@@ -68,7 +78,7 @@ export default async function AnalyticsPage() {
               <div className="font-display text-[50px] font-bold leading-none text-ac tracking-tight">{athletes}</div>
             </Card>
             <Card>
-              <div className="text-xs text-mu font-semibold mb-2">WODs publicados</div>
+              <div className="text-xs text-mu font-semibold mb-2">WODs publicados (90 días)</div>
               <div className="font-display text-[50px] font-bold leading-none tracking-tight">{totalWods}</div>
             </Card>
             <Card>

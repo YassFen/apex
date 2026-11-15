@@ -1,8 +1,8 @@
-import { requireAdminBox, loadPeople, loadAttendance } from '@/lib/utils/admin-box'
+import { requireAdminBox, loadPeople, loadAttendance, selectAll } from '@/lib/utils/admin-box'
 import { ManageHome, type ManageSummary } from '@/components/manage/ManageHome'
 import { addDaysISO, daysBetween, formatDateOnly, todayISO, toDateInput } from '@/lib/utils/dates'
 import { currentMembership, planState } from '@/lib/utils/membership'
-import { WEEKDAYS_SHORT, WEEK_ORDER, attended, buildSessions, isOverbooked, monthStart, occupancy, weekdayOf, hhmm } from '@/lib/utils/schedule'
+import { WEEKDAYS_SHORT, WEEK_ORDER, attended, buildSessions, hasStarted, isOverbooked, monthStart, nowHM, occupancy, weekdayOf, hhmm } from '@/lib/utils/schedule'
 import { isMissingTable } from '@/lib/utils/errors'
 import type { ClassBooking, ClassOverride, ClassSlot, CoachIssue, Membership } from '@/lib/types/database'
 
@@ -21,10 +21,10 @@ export default async function ManagePage({ searchParams }: { searchParams: Promi
   const [people, days, msRes, slotsRes, ovRes, bkRes, isRes] = await Promise.all([
     loadPeople(supabase, box),
     loadAttendance(supabase, box.id, addDaysISO(today, -365), today),
-    supabase.from('memberships').select('*').eq('box_id', box.id),
+    selectAll(() => supabase.from('memberships').select('*').eq('box_id', box.id).order('id')),
     supabase.from('class_slots').select('*').eq('box_id', box.id),
-    supabase.from('class_overrides').select('*').eq('box_id', box.id).gte('class_date', prevStart).lte('class_date', addDaysISO(today, 7)),
-    supabase.from('class_bookings').select('slot_id, class_date, user_id, status').eq('box_id', box.id).gte('class_date', prevStart).lte('class_date', addDaysISO(today, 7)),
+    selectAll(() => supabase.from('class_overrides').select('*').eq('box_id', box.id).gte('class_date', prevStart).lte('class_date', addDaysISO(today, 7)).order('id')),
+    selectAll(() => supabase.from('class_bookings').select('id, slot_id, class_date, user_id, status').eq('box_id', box.id).gte('class_date', prevStart).lte('class_date', addDaysISO(today, 7)).neq('status', 'cancelled').order('id')),
     supabase.from('coach_issues').select('*').eq('box_id', box.id).eq('status', 'open').gte('class_date', today),
   ])
   const slots = (slotsRes.data ?? []) as ClassSlot[]
@@ -75,15 +75,16 @@ export default async function ManagePage({ searchParams }: { searchParams: Promi
   for (let i = 1; i < dayN; i++) { cumNow[i] += cumNow[i - 1]; cumPrev[i] += cumPrev[i - 1] }
 
   /* ── Classes: busiest times, occupancy, waiting lists, per coach ── */
-  const sessions = buildSessions(slots, (ovRes.data ?? []) as ClassOverride[], bookings, prevStart, addDaysISO(today, 7), today)
-  const given = sessions.filter(s => !s.cancelled && s.date >= thisStart && s.date <= today)
+  const now = nowHM()
+  const sessions = buildSessions(slots, (ovRes.data ?? []) as ClassOverride[], bookings, prevStart, addDaysISO(today, 7), today, now)
+  const given = sessions.filter(s => !s.cancelled && s.date >= thisStart && hasStarted(s, today, now))
   const byHour = new Map<string, { sum: number; n: number }>()
-  for (const s of sessions.filter(x => !x.cancelled && x.date <= today)) {
+  for (const s of sessions.filter(x => !x.cancelled && hasStarted(x, today, now))) {
     const h = byHour.get(s.time) ?? { sum: 0, n: 0 }
     h.sum += s.booked; h.n++; byHour.set(s.time, h)
   }
   const occ = given.length ? Math.round((given.reduce((a, s) => a + Math.min(1, occupancy(s)), 0) / given.length) * 100) : null
-  const upcoming = sessions.filter(s => !s.cancelled && s.date >= today)
+  const upcoming = sessions.filter(s => !s.cancelled && !hasStarted(s, today, now))
   const waitlisted = upcoming.filter(isOverbooked)
   const noCoach = upcoming.filter(s => !s.coachId)
   // Low demand: weekly slots that averaged under 30% over what has been given since last month.

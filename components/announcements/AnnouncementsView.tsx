@@ -23,9 +23,12 @@ import type { Profile, Announcement, ClassSlot } from '@/lib/types/database'
 type BoxRole = { id: string; name: string; role: 'athlete' | 'coach' | 'admin' }
 type Draft = { boxId: string; title: string; body: string; parentId: string | null; audience?: Announcement['audience'] }
 
-export function AnnouncementsView({ profile, me, today, boxes, items, slots, reads, myReads, size, missing }: {
+export function AnnouncementsView({ profile, me, today, boxes, items, slots, reads, myReads, size, relayedBy, missing }: {
   profile: Profile; me: string; today: string; boxes: BoxRole[]; items: Announcement[]; slots: ClassSlot[]
-  reads: Record<string, number>; myReads: string[]; size: Record<string, { coaches: number; all: number }>; missing: boolean
+  /** Reads by people of each announcement's audience, and that audience's size (author excluded). */
+  reads: Record<string, number>; myReads: string[]; size: Record<string, number>
+  /** First names of who already passed each notice on to the athletes ("ti" = me). */
+  relayedBy: Record<string, string[]>; missing: boolean
 }) {
   const router = useRouter()
   const { fire } = useToast()
@@ -52,9 +55,13 @@ export function AnnouncementsView({ profile, me, today, boxes, items, slots, rea
     const mine = a.author_id === me
     const canDelete = mine || role === 'admin'
     // A coach passes an administration notice on to the athletes.
-    const canRelay = role !== 'athlete' && a.audience === 'coaches' && isLive(a, today)
+    const relayed = relayedBy[a.id] ?? []
+    const canRelay = role !== 'athlete' && a.audience === 'coaches' && isLive(a, today) && relayed.length === 0
     const target = targetLabel(a, slots)
-    const audienceSize = a.audience === 'coaches' ? size[a.box_id]?.coaches : size[a.box_id]?.all
+    const audienceSize = size[a.id] ?? 0
+    const relayedLabel = relayed.length === 0 ? null
+      : relayed.length === 1 && relayed[0] === 'ti' ? 'Ya se lo avisaste a los atletas'
+      : `Ya avisado a los atletas por ${[...new Set(relayed)].join(', ')}`
     return (
       <li key={a.id} className={cn('p-4 rounded-[20px] bg-p flex flex-col gap-2.5', a.urgent && isLive(a, today) && 'ring-1 ring-inset ring-rd/50')}>
         <div className="flex items-center gap-2 flex-wrap">
@@ -69,8 +76,9 @@ export function AnnouncementsView({ profile, me, today, boxes, items, slots, rea
         <div className="text-xs text-fa">
           {boxes.length > 1 ? `${boxes.find(b => b.id === a.box_id)?.name} · ` : ''}
           {a.ends_on ? `Hasta el ${formatDateOnly(a.ends_on, { day: 'numeric', month: 'long' })}` : 'Sin fecha de término'}
-          {(mine || role === 'admin') && audienceSize ? ` · Leído por ${reads[a.id] ?? 0} de ${Math.max(0, audienceSize - 1)}` : ''}
+          {(mine || role === 'admin') && audienceSize ? ` · Leído por ${Math.min(reads[a.id] ?? 0, audienceSize)} de ${audienceSize}` : ''}
         </div>
+        {relayedLabel && role !== 'athlete' && <div className="text-xs text-gr">{relayedLabel}</div>}
         {(canRelay || canDelete) && (
           <div className="flex gap-2 flex-wrap">
             {canRelay && <Button size="sm" onClick={() => setDraft({ boxId: a.box_id, title: a.title, body: a.body ?? '', parentId: a.id, audience: 'athletes' })}><ShareFat size={15} /> Avisar a los atletas</Button>}

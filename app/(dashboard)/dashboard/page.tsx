@@ -1,4 +1,3 @@
-import { bookedTimesToday, nowHmSantiago, pickTodayWod } from '@/lib/utils/wod-pick'
 import { createClient } from '@/lib/supabase/server'
 import { getUser, getProfile } from '@/lib/supabase/session'
 import { addDaysISO, daysBetween, todayISO } from '@/lib/utils/dates'
@@ -29,7 +28,7 @@ export default async function DashboardPage() {
   let todayWod: { id: string; title: string; type: string } | null = null
   let todayResults = 0
   let recentMembers: { id: string; name: string; avatar: string | null; joinedAt: string }[] = []
-  let coachActivity: CoachActivity = { days: [], inactive: [], classes: [] }
+  let coachActivity: CoachActivity = { days: [], inactive: [] }
 
   if (profile.role !== 'athlete') {
     coachBox = (await pickCoachBox(supabase, user.id)).box
@@ -44,13 +43,12 @@ export default async function DashboardPage() {
         .neq('user_id', user.id) // the coach is a member of their own box; don't count them
       athleteCount = count ?? 0
 
-      // Today's classes, the roster, and the last 30 days of results for activity + retention.
+      // Today's WOD, the roster, and the last 30 days of results for activity + retention.
       const today = todayISO()
       const since30 = addDaysISO(today, -30)
-      const wodQ = (cols: string) => supabase.from('daily_wods').select(cols)
-        .eq('box_id', (coachBox as Box).id).eq('is_live', true).gte('scheduled_for', since30).lte('scheduled_for', today)
       const [wodsRes, { data: members }] = await Promise.all([
-        wodQ('id, title, type, scheduled_for, class_time'),
+        supabase.from('daily_wods').select('id, title, type, scheduled_for')
+          .eq('box_id', coachBox.id).eq('is_live', true).gte('scheduled_for', since30).lte('scheduled_for', today),
         supabase.from('box_members').select('user_id, joined_at, profiles(full_name, avatar_url)')
           .eq('box_id', coachBox.id).eq('is_active', true).neq('user_id', user.id).order('joined_at', { ascending: false }),
       ])
@@ -58,8 +56,7 @@ export default async function DashboardPage() {
         id: m.user_id as string, name: (m.profiles?.full_name as string) ?? 'Atleta', avatar: (m.profiles?.avatar_url as string) ?? null, joinedAt: m.joined_at as string,
       }))
       recentMembers = allMembers.slice(0, 5)
-      // Before migration 007 there's no class_time column.
-      const wodList = ((wodsRes.error ? (await wodQ('id, title, type, scheduled_for')).data : wodsRes.data) ?? []) as any[]
+      const wodList = (wodsRes.data ?? []) as any[]
       const ids = wodList.map(w => w.id)
       const { data: res } = ids.length
         ? await supabase.from('wod_results').select('user_id, daily_wod_id, recorded_at').in('daily_wod_id', ids)
@@ -67,22 +64,16 @@ export default async function DashboardPage() {
       const results = (res ?? []) as any[]
       const dayOf = new Map(wodList.map(w => [w.id, w.scheduled_for as string]))
 
-      const todays = wodList.filter(w => w.scheduled_for === today)
-        .sort((a, b) => String(a.class_time ?? '').localeCompare(String(b.class_time ?? '')))
-      const first = todays[0]
+      const first = wodList.find(w => w.scheduled_for === today)
       todayWod = first ? { id: first.id, title: first.title, type: first.type } : null
-      todayResults = new Set(results.filter(r => todays.some(t => t.id === r.daily_wod_id)).map(r => r.user_id)).size
-      coachActivity.classes = todays.map(t => ({
-        id: t.id, title: t.title, time: t.class_time ? String(t.class_time).slice(0, 5) : null,
-        count: results.filter(r => r.daily_wod_id === t.id).length,
-      }))
+      todayResults = first ? new Set(results.filter(r => r.daily_wod_id === first.id).map(r => r.user_id)).size : 0
 
       // Athletes per day, last 14 days.
       coachActivity.days = Array.from({ length: 14 }, (_, k) => {
         const d = addDaysISO(today, k - 13)
         return { date: d, athletes: new Set(results.filter(r => dayOf.get(r.daily_wod_id) === d).map(r => r.user_id)).size }
       })
-      // Athletes who haven't logged a WOD in 7+ days (or ever, if they joined over a week ago).
+      // Athletes who haven't logged a WOD in 14+ days (or ever, if they joined over two weeks ago).
       const last = new Map<string, string>()
       for (const r of results) { const d = dayOf.get(r.daily_wod_id) ?? ''; if (d > (last.get(r.user_id) ?? '')) last.set(r.user_id, d) }
       coachActivity.inactive = allMembers
@@ -107,23 +98,19 @@ export default async function DashboardPage() {
   const myBoxIds = ((myBoxes ?? []) as any[]).map(m => m.box_id as string)
   let athleteToday: TodayWod | null = null
   if (myBoxIds.length > 0) {
-    const q = (cols: string) => supabase.from('daily_wods').select(cols)
-      .in('box_id', myBoxIds).eq('scheduled_for', todayISO()).eq('is_live', true)
-    let { data: ws, error: wErr } = await q('id, box_id, title, type, duration_mins, class_time')
-    if (wErr) ({ data: ws } = await q('id, box_id, title, type, duration_mins'))
-    // Several classes today: the one I logged, else the one I booked, else the last that started.
-    const list = ((ws ?? []) as any[]).sort((a, b) => String(a.class_time ?? '').localeCompare(String(b.class_time ?? '')))
-    const [{ data: mineToday }, bookedTimes] = await Promise.all([
-      list.length ? supabase.from('wod_results').select('daily_wod_id').eq('user_id', user.id).in('daily_wod_id', list.map(x => x.id)) : Promise.resolve({ data: [] }),
-      bookedTimesToday(supabase, user.id, todayISO()),
-    ])
-    const w = pickTodayWod(list, { logged: new Set(((mineToday ?? []) as any[]).map(r => r.daily_wod_id as string)), bookedTimes, nowHm: nowHmSantiago() })
+    // One WOD per box and day. With several boxes, the one I already logged wins, else the first.
+    const { data: ws } = await supabase.from('daily_wods').select('id, box_id, title, type, duration_mins')
+      .in('box_id', myBoxIds).eq('scheduled_for', todayISO()).eq('is_live', true).limit(20)
+    const list = (ws ?? []) as any[]
+    const { data: mineToday } = list.length
+      ? await supabase.from('wod_results').select('daily_wod_id, result_value').eq('user_id', user.id).in('daily_wod_id', list.map(x => x.id))
+      : { data: [] as any[] }
+    const mine = (mineToday ?? []) as any[]
+    const w = list.find(x => mine.some(r => r.daily_wod_id === x.id)) ?? list[0]
     if (w) {
-      const { data: r } = await supabase
-        .from('wod_results').select('result_value').eq('daily_wod_id', w.id).eq('user_id', user.id).maybeSingle()
       athleteToday = {
-        title: w.title, type: w.type, durationMins: w.duration_mins, myResult: (r as any)?.result_value ?? null,
-        classTime: w.class_time ? String(w.class_time).slice(0, 5) : null, count: list.length,
+        title: w.title, type: w.type, durationMins: w.duration_mins,
+        myResult: mine.find(r => r.daily_wod_id === w.id)?.result_value ?? null, boxId: w.box_id,
       }
     }
   }

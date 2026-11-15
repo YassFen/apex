@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { parseWeightToLb } from '@/lib/utils/units'
+import { parseWeightToLb, lbToKg } from '@/lib/utils/units'
 import { todayISO, toDateInput, dateInputToTimestamp } from '@/lib/utils/dates'
 import { friendlyError } from '@/lib/utils/errors'
 import type { Profile, Movement, MovementCategory } from '@/lib/types/database'
@@ -56,7 +56,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
   const initialWeight = (() => {
     if (!editingPr || !['1rm', '2rm', '3rm'].includes(editingPr.metric)) return ''
     const raw = editingPr.value_lb ?? 0
-    return profile.preferred_unit === 'kg' ? String(Math.round(raw * 0.453592 * 10) / 10) : String(raw)
+    return profile.preferred_unit === 'kg' ? String(lbToKg(raw)) : String(Math.round(raw * 10) / 10)
   })()
   const initialReps = editingPr?.metric === 'max_reps' ? String(Math.round(editingPr.value_lb ?? 0)) : ''
   const initialCals = editingPr?.metric === 'calories' ? String(Math.round(editingPr.value_lb ?? 0)) : ''
@@ -142,6 +142,8 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
       valueLb = num
     } else if (isTime) {
       if (!time.includes(':')) { setError('Formato: mm:ss — ejemplo 3:45'); setSaving(false); return }
+      const secPart = parseInt(time.split(':')[1] || '0', 10)
+      if (secPart > 59) { setError('Los segundos van de 0 a 59.'); setSaving(false); return }
       valueLb = timeToSecs(time)
       if (valueLb <= 0) { setError('Tiempo inválido'); setSaving(false); return }
     }
@@ -187,7 +189,7 @@ export function PRModal({ profile, onClose, onSaved, editingPr }: Props) {
 
     const fmt = (v: number) => {
       if (isWeight) {
-        const n = unit === 'kg' ? Math.round(v * 0.453592 * 10) / 10 : Math.round(v * 10) / 10
+        const n = unit === 'kg' ? lbToKg(v) : Math.round(v * 10) / 10
         return `${n} ${unit}`
       }
       if (isTime) return `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, '0')}`

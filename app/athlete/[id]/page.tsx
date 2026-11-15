@@ -1,9 +1,11 @@
 import { Logo } from '@/components/ui/Logo'
 import { notFound } from 'next/navigation'
-import { roleLabel } from '@/lib/utils/cn'
+import { roleLabel, cn } from '@/lib/utils/cn'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { AthleteRadar } from '@/components/athlete/AthleteRadar'
+import { lbToKg } from '@/lib/utils/units'
+import { leagueFor } from '@/lib/utils/progress'
 import type { Profile } from '@/lib/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -22,8 +24,8 @@ function fmtValue(pr: any, preferredUnit: 'kg' | 'lb' = 'kg'): { v: string; u: s
     return { v: String(Math.round(raw)), u: 'cal' }
   }
   if (metric === 'max_reps') return { v: String(Math.round(raw)), u: 'reps' }
-  if (preferredUnit === 'kg') return { v: String(Math.round(raw * 0.453592)), u: 'kg' }
-  return { v: String(Math.round(raw)), u: 'lb' }
+  if (preferredUnit === 'kg') return { v: String(lbToKg(raw)), u: 'kg' }
+  return { v: String(Math.round(raw * 10) / 10), u: 'lb' }
 }
 
 export default async function PublicAthletePage({ params }: { params: Promise<{ id: string }> }) {
@@ -36,6 +38,10 @@ export default async function PublicAthletePage({ params }: { params: Promise<{ 
 
   const initials = profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
   const unit = (profile.preferred_unit ?? 'kg') as 'kg' | 'lb'
+
+  // League, only when the athlete left it public (public_xp returns null otherwise, or before 014).
+  const { data: xp } = await supabase.rpc('public_xp', { p_user: id })
+  const league = typeof xp === 'number' || typeof xp === 'string' ? leagueFor(Number(xp)) : null
 
   let prs: any[] = []
   if (profile.show_prs_public) {
@@ -71,6 +77,11 @@ export default async function PublicAthletePage({ params }: { params: Promise<{ 
             <div className="text-mu text-sm">{roleLabel(profile.role)}{profile.city ? ` · ${profile.city}` : ''}</div>
             {profile.favorite_movement && (
               <div className="text-ac text-xs mt-1.5 font-semibold">Movimiento favorito: {profile.favorite_movement}</div>
+            )}
+            {league && (
+              <div className={cn('inline-flex items-center gap-1.5 mt-2 px-2.5 h-7 rounded-full text-xs font-bold', league.league.ring, league.league.tone)}>
+                Liga {league.league.name} · {Number(xp).toLocaleString('es-CL')} XP
+              </div>
             )}
           </div>
         </div>

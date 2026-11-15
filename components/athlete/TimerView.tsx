@@ -231,6 +231,12 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
     : mode === 'emom' ? `${emomTotalRounds} rondas EMOM`
     : `${cfg.rounds} rondas Tabata`
 
+  // Prefill for the WOD result: your time (only if you finished before the cap) or your counted rounds.
+  const wodHref =
+    mode === 'fortime' && elapsed > 0 && elapsed < totalMs ? `/wod?time=${fmt(elapsed)}`
+    : mode === 'amrap' && amrapRounds > 0 ? `/wod?rounds=${amrapRounds}`
+    : '/wod'
+
   return (
     <>
       <Topbar title="Timer" profile={profile} />
@@ -363,7 +369,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
               {running ? 'Pausa' : state === 'paused' ? 'Continuar' : 'Iniciar'}
             </button>
           )}
-          {mode === 'fortime' && running && (
+          {mode === 'fortime' && (running || state === 'paused') && (
             <button onClick={finishNow}
               className="h-14 px-7 rounded-full bg-gr/15 text-gr font-display text-lg font-bold active:scale-[0.96] transition-transform flex items-center gap-2 tracking-tight">
               <Flag size={18} aria-hidden />
@@ -388,7 +394,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
             <div className="font-display text-4xl font-bold text-gr leading-none tracking-tight">¡Tiempo!</div>
             <div className="text-t mt-2 text-lg font-semibold tabular-nums">{resultLine}</div>
             {(mode === 'fortime' || mode === 'amrap') && (
-              <Link href="/wod" className="mt-5 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-ac text-onac font-bold active:scale-[0.96] transition-transform">
+              <Link href={wodHref} className="mt-5 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-ac text-onac font-bold active:scale-[0.96] transition-transform">
                 <ClipboardCheck size={18} aria-hidden />
                 Registrar en el WOD del día
               </Link>

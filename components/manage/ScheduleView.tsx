@@ -12,7 +12,7 @@ import { Avatar, BoxTabs, Empty, MigrationNotice, Stat, selectCls } from '@/comp
 import { Plus, CaretLeft, CaretRight, CalendarDays, Warning, UserSwitch, PencilSimple } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
 import { addDaysISO, formatDateOnly } from '@/lib/utils/dates'
-import { WEEKDAYS, WEEKDAYS_SHORT, WEEK_ORDER, buildSessions, hhmm, hoursLabel, isLowDemand, isOverbooked, occupancy, weekdayOf, type Session } from '@/lib/utils/schedule'
+import { WEEKDAYS, WEEKDAYS_SHORT, WEEK_ORDER, buildSessions, hasStarted, hhmm, hoursLabel, isLowDemand, isOverbooked, nowHM, occupancy, weekdayOf, type Session } from '@/lib/utils/schedule'
 import { friendlyError } from '@/lib/utils/errors'
 import { cn } from '@/lib/utils/cn'
 import type { Profile, Box, ClassSlot, ClassOverride, ClassBooking, CoachIssue } from '@/lib/types/database'
@@ -33,15 +33,18 @@ export function ScheduleView({ profile, box, boxes, today, from, people, slots, 
   const [slotEdit, setSlotEdit] = useState<ClassSlot | 'new' | null>(null)
   const openSession = sessions.find(s => s.key === open) ?? null
 
+  const now = nowHM()
   const live = sessions.filter(s => !s.cancelled)
   const hours = live.reduce((a, s) => a + s.durationMin / 60, 0)
-  const past = live.filter(s => s.date <= today)
+  // Only classes that already happened count for occupancy and demand.
+  const past = live.filter(s => hasStarted(s, today, now))
   const avgOcc = past.length ? Math.round((past.reduce((a, s) => a + Math.min(1, occupancy(s)), 0) / past.length) * 100) : null
-  const noCoach = live.filter(s => !s.coachId && s.date >= today)
-  const over = live.filter(s => isOverbooked(s) && s.date >= today)
+  const noCoach = live.filter(s => !s.coachId && !hasStarted(s, today, now))
+  const over = live.filter(s => isOverbooked(s) && !hasStarted(s, today, now))
   const low = past.filter(isLowDemand)
   const issueKeys = new Set(issues.map(i => `${i.slot_id}|${i.class_date}`))
   const href = (w: string) => `/manage/schedule?w=${w}${boxes.length > 1 ? `&box=${box.id}` : ''}`
+  const boxQ = boxes.length > 1 ? `?box=${box.id}` : ''
 
   return (
     <>
@@ -82,7 +85,7 @@ export function ScheduleView({ profile, box, boxes, today, from, people, slots, 
             {(over.length > 0 || low.length > 0 || issues.length > 0) && (
               <ul className="flex flex-col gap-2">
                 {issues.length > 0 && (
-                  <li><Link href="/manage/coaches" className="flex gap-2.5 p-3.5 rounded-2xl bg-rd/10 text-rd text-sm"><Warning size={18} className="flex-shrink-0 mt-px" />
+                  <li><Link href={`/manage/coaches${boxQ}`} className="flex gap-2.5 p-3.5 rounded-2xl bg-rd/10 text-rd text-sm"><Warning size={18} className="flex-shrink-0 mt-px" />
                     <span>{issues.length === 1 ? 'Un coach avisó que no puede dar una clase.' : `${issues.length} avisos de coaches que no pueden dar clase.`} Asigna reemplazo.</span></Link></li>
                 )}
                 {over.length > 0 && <li className="flex gap-2.5 p-3.5 rounded-2xl bg-or/10 text-or text-sm"><Warning size={18} className="flex-shrink-0 mt-px" />
@@ -118,7 +121,7 @@ export function ScheduleView({ profile, box, boxes, today, from, people, slots, 
                       {WEEKDAYS_SHORT[weekdayOf(d)]} {Number(d.slice(8))}
                     </h3>
                     {list.length === 0 && <p className="text-sm text-mu lg:text-xs p-3 lg:p-1">Sin clases.</p>}
-                    {list.map(s => <SessionCard key={s.key} s={s} coach={nameOf(s.coachId)} flagged={issueKeys.has(s.key)} past={s.date < today} onOpen={() => setOpen(s.key)} />)}
+                    {list.map(s => <SessionCard key={s.key} s={s} coach={nameOf(s.coachId)} flagged={issueKeys.has(s.key)} past={hasStarted(s, today, now)} onOpen={() => setOpen(s.key)} />)}
                   </section>
                 )
               })}
@@ -128,7 +131,8 @@ export function ScheduleView({ profile, box, boxes, today, from, people, slots, 
       </div>
 
       {openSession && (
-        <SessionSheet key={openSession.key} box={box} s={openSession} coaches={coaches} people={people}
+        <SessionSheet key={openSession.key} box={box} s={openSession} coaches={coaches} people={people} started={hasStarted(openSession, today, now)}
+          issues={issues.filter(i => i.status === 'open' && `${i.slot_id}|${i.class_date}` === openSession.key)}
           bookings={bookings.filter(b => `${b.slot_id}|${b.class_date}` === openSession.key)}
           onClose={() => setOpen(null)} onEditSlot={() => { const sl = slots.find(x => x.id === openSession.slotId); setOpen(null); if (sl) setSlotEdit(sl) }} />
       )}
@@ -161,8 +165,8 @@ function SessionCard({ s, coach, flagged, past, onOpen }: { s: Session; coach: s
   )
 }
 
-function SessionSheet({ box, s, coaches, people, bookings, onClose, onEditSlot }: {
-  box: Box; s: Session; coaches: PersonLite[]; people: PersonLite[]; bookings: ClassBooking[]; onClose: () => void; onEditSlot: () => void
+function SessionSheet({ box, s, coaches, people, bookings, issues, started, onClose, onEditSlot }: {
+  box: Box; s: Session; coaches: PersonLite[]; people: PersonLite[]; bookings: ClassBooking[]; issues: CoachIssue[]; started: boolean; onClose: () => void; onEditSlot: () => void
 }) {
   const router = useRouter()
   const { fire } = useToast()
@@ -178,9 +182,17 @@ function SessionSheet({ box, s, coaches, people, bookings, onClose, onEditSlot }
   async function override(patch: Partial<ClassOverride>, ok: string) {
     setBusy(true)
     const { error } = await supabase.from('class_overrides').upsert({ slot_id: s.slotId, box_id: box.id, class_date: s.date, ...patch }, { onConflict: 'slot_id,class_date' })
+    if (error) { setBusy(false); fire(friendlyError(error.message), 'error'); return }
+    // A coach said they can't teach this class: another coach or cancelling it settles the notice.
+    const handled = issues.filter(i => patch.cancelled === true || (!!patch.coach_id && patch.coach_id !== i.coach_id))
+    if (handled.length) {
+      const { error: e2 } = await supabase.from('coach_issues')
+        .update({ status: 'resolved', replacement_id: patch.cancelled ? null : patch.coach_id, resolved_at: new Date().toISOString() })
+        .in('id', handled.map(i => i.id))
+      if (e2) { setBusy(false); fire('La clase se guardó, pero el aviso del coach sigue abierto. Resuélvelo en Coaches.', 'error'); onClose(); router.refresh(); return }
+    }
     setBusy(false)
-    if (error) { fire(friendlyError(error.message), 'error'); return }
-    fire(ok, 'ok'); onClose(); router.refresh()
+    fire(handled.length && !patch.cancelled ? `${ok}. Aviso del coach resuelto` : ok, 'ok'); onClose(); router.refresh()
   }
   const dirty = coach !== (s.coachId ?? '') || Number(capacity) !== s.capacity
 
@@ -228,8 +240,9 @@ function SessionSheet({ box, s, coaches, people, bookings, onClose, onEditSlot }
             <Button variant="secondary" onClick={onEditSlot}><PencilSimple size={16} /> Editar horario</Button>
             {s.cancelled
               ? <Button variant="secondary" disabled={busy} onClick={() => override({ cancelled: false, cancel_reason: null }, 'Clase reactivada')}>Reactivar clase</Button>
-              : <Button variant="danger" onClick={() => setCancelling(true)}>Cancelar este día</Button>}
+              : !started && <Button variant="danger" onClick={() => setCancelling(true)}>Cancelar este día</Button>}
           </div>
+          {started && !s.cancelled && <p className="text-xs text-mu -mt-2">Esta clase ya empezó, así que no se puede cancelar: se perdería la asistencia.</p>}
         </div>
       </Modal>
       <Modal open={cancelling} onClose={() => setCancelling(false)} title="Cancelar esta clase" subtitle="Solo se cancela esta fecha. Los inscritos la verán como cancelada.">
@@ -261,7 +274,7 @@ function SlotSheet({ box, slot, coaches, defaultDay, onClose }: { box: Box; slot
     setBusy(true)
     const base = { box_id: box.id, start_time: `${time}:00`, duration_min: Math.max(15, Number(duration) || 60), name: name.trim() || 'CrossFit', capacity: Math.max(1, Number(capacity) || 16), coach_id: coach || null, is_active: true }
     const { error } = slot
-      ? await supabase.from('class_slots').update({ ...base, weekday: days[0] }).eq('id', slot.id)
+      ? await supabase.from('class_slots').update(base).eq('id', slot.id)
       : await supabase.from('class_slots').insert(days.map(weekday => ({ ...base, weekday })))
     setBusy(false)
     if (error) { fire(friendlyError(error.message), 'error'); return }
@@ -286,14 +299,15 @@ function SlotSheet({ box, slot, coaches, defaultDay, onClose }: { box: Box; slot
               {WEEK_ORDER.map(d => {
                 const on = days.includes(d)
                 return (
-                  <button key={d} type="button" aria-pressed={on}
-                    onClick={() => setDays(slot ? [d] : on ? days.filter(x => x !== d) : [...days, d])}
-                    className={cn('h-11 rounded-xl text-xs font-bold transition-colors', on ? 'bg-ac text-onac' : 'bg-p2 text-mu')}>
+                  <button key={d} type="button" aria-pressed={on} disabled={!!slot && !on}
+                    onClick={() => { if (!slot) setDays(on ? days.filter(x => x !== d) : [...days, d]) }}
+                    className={cn('h-11 rounded-xl text-xs font-bold transition-colors', on ? 'bg-ac text-onac' : 'bg-p2 text-mu', slot && !on && 'opacity-40')}>
                     {WEEKDAYS_SHORT[d]}
                   </button>
                 )
               })}
             </div>
+            {slot && <p className="text-xs text-mu mt-1.5 text-pretty">El día no se puede cambiar, porque las reservas son de ese día. Para moverla, crea una clase nueva en el otro día y elimina esta.</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Hora" type="time" required value={time} onChange={e => setTime(e.target.value)} />
@@ -315,7 +329,7 @@ function SlotSheet({ box, slot, coaches, defaultDay, onClose }: { box: Box; slot
         </form>
       </Modal>
       <ConfirmDialog open={confirm} onClose={() => setConfirm(false)} onConfirm={remove} busy={busy} danger title="¿Eliminar este horario?"
-        body="Deja de aparecer desde ahora en todas las semanas. Las asistencias ya registradas se conservan." confirmLabel="Eliminar" />
+        body="Deja de aparecer desde ahora en todas las semanas y se liberan las reservas de las clases que aún no empiezan. Las asistencias ya registradas se conservan." confirmLabel="Eliminar" />
     </>
   )
 }

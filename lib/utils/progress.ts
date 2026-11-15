@@ -29,7 +29,7 @@ export const XP_RULES: { kind: string; label: string; points: string }[] = [
   { kind: 'log',         label: 'Anotar un entreno propio',            points: '+5' },
   { kind: 'squad',       label: 'Tu dupla o cuarteto entrenó completo', points: '+15' },
   { kind: 'streak',      label: 'Rachas de 3, 7, 14, 30… días',        points: '+30 a +2000' },
-  { kind: 'competition', label: 'Competencia del box: 1°, 2°, 3° o participar', points: '+200 / 120 / 80 / 40' },
+  { kind: 'competition', label: 'Competencia del box: participar (el podio lo confirma tu coach: 1°, 2°, 3°)', points: '+40 / 200 / 120 / 80' },
   { kind: 'challenge',   label: 'Completar un reto de la app',         points: 'según el reto' },
 ]
 

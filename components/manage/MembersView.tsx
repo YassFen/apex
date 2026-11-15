@@ -18,7 +18,7 @@ export interface MemberRow {
   plan: string | null; state: PlanState; endsOn: string | null; left: number | null
 }
 
-type Filter = 'all' | 'active' | 'inactive' | 'expiring' | 'frozen' | 'low' | 'new'
+type Filter = 'all' | 'active' | 'inactive' | 'expiring' | 'frozen' | 'low' | 'new' | 'removed'
 export const INACTIVE_DAYS = 14
 export const LOW_ATTENDANCE = 4
 export const NEW_DAYS = 30
@@ -29,9 +29,10 @@ const TESTS: Record<Filter, (r: MemberRow) => boolean> = {
   active: r => !isAway(r),
   inactive: r => r.isActive && isAway(r),
   expiring: r => r.isActive && (r.state === 'expiring' || r.state === 'expired' || r.state === 'no_classes'),
-  frozen: r => r.state === 'frozen',
+  frozen: r => r.isActive && r.state === 'frozen',
   low: r => !isAway(r) && r.attendance30 < LOW_ATTENDANCE,
   new: r => r.isActive && r.joinedDays <= NEW_DAYS,
+  removed: r => !r.isActive,
 }
 
 function lastLabel(r: MemberRow): string {
@@ -101,6 +102,7 @@ export function MembersView({ profile, box, boxes, rows, initialFilter, missing 
             { key: 'low', label: 'Baja asistencia', count: count('low'), tone: 'text-or' },
             { key: 'inactive', label: 'Inactivos', count: count('inactive'), tone: 'text-rd' },
             { key: 'new', label: 'Nuevos', count: count('new'), tone: 'text-gr' },
+            { key: 'removed', label: 'Dados de baja', count: count('removed') },
           ]} />
         )}
 
@@ -132,7 +134,7 @@ export function MembersView({ profile, box, boxes, rows, initialFilter, missing 
                         </div>
                       )}
                     </div>
-                    {r.role === 'athlete' && <Badge color={meta.color}>{meta.label}</Badge>}
+                    {r.role === 'athlete' && (r.isActive ? <Badge color={meta.color}>{meta.label}</Badge> : <Badge color="neutral">De baja</Badge>)}
                     <ChevronRight size={16} className="text-fa flex-shrink-0" aria-hidden />
                   </Link>
                 </li>

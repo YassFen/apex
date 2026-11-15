@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { cn } from '@/lib/utils/cn'
 import { Warning } from '@/components/ui/icons'
+import { ACTIVE_BOX_COOKIE } from '@/lib/constants/cookies'
 import type { Box } from '@/lib/types/database'
 
 export function Avatar({ name, src, size = 44 }: { name: string; src?: string | null; size?: number }) {
@@ -61,13 +62,19 @@ export function MigrationNotice({ n = '010' }: { n?: string }) {
   )
 }
 
+/** Remembers the box picked here, so screens opened without ?box= (the menu) stay on it. */
+export function rememberBox(id: string) {
+  try { document.cookie = `${ACTIVE_BOX_COOKIE}=${id}; path=/; max-age=31536000; samesite=lax` } catch { /* blocked */ }
+  try { localStorage.setItem('apex.activeBoxId', id) } catch { /* blocked */ }
+}
+
 /** When the person administers several boxes. */
 export function BoxTabs({ boxes, current, base }: { boxes: Box[]; current: string; base: string }) {
   if (boxes.length < 2) return null
   return (
     <div className="flex gap-2 overflow-x-auto pb-1">
       {boxes.map(b => (
-        <Link key={b.id} href={`${base}?box=${b.id}`}
+        <Link key={b.id} href={`${base}?box=${b.id}`} onClick={() => rememberBox(b.id)}
           className={cn('flex-shrink-0 h-9 px-3.5 rounded-full text-xs font-semibold grid place-items-center', b.id === current ? 'bg-ac text-onac' : 'bg-p text-mu')}>
           {b.name}
         </Link>

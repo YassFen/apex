@@ -12,7 +12,7 @@ import { Avatar, BoxTabs, Empty, MigrationNotice, SectionTitle, Stat, selectCls 
 import { CaretLeft, CaretRight, ChalkboardTeacher, Warning, CheckCircle } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
 import { addDaysISO, formatDateOnly } from '@/lib/utils/dates'
-import { WEEKDAYS, WEEKDAYS_SHORT, WEEK_ORDER, buildSessions, coachLoad, hhmm, hoursLabel, weekdayOf } from '@/lib/utils/schedule'
+import { WEEKDAYS, WEEKDAYS_SHORT, WEEK_ORDER, buildSessions, coachLoad, hasStarted, hhmm, hoursLabel, nowHM, weekdayOf } from '@/lib/utils/schedule'
 import { friendlyError } from '@/lib/utils/errors'
 import { cn, roleLabel } from '@/lib/utils/cn'
 import type { PersonLite } from '@/components/manage/ScheduleView'
@@ -22,16 +22,20 @@ export function CoachesView({ profile, box, boxes, today, period, from, to, coac
   profile: Profile; box: Box; boxes: Box[]; today: string; period: 'week' | 'month'; from: string; to: string; coaches: PersonLite[]
   slots: ClassSlot[]; overrides: ClassOverride[]; bookings: Pick<ClassBooking, 'slot_id' | 'class_date' | 'status'>[]; issues: CoachIssue[]; missing: boolean
 }) {
-  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, from, to, today), [slots, overrides, bookings, from, to])
-  const load = useMemo(() => coachLoad(sessions), [sessions])
+  const now = nowHM()
+  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, from, to, today, now), [slots, overrides, bookings, from, to, today, now])
+  // "Dadas": classes that already started. "Programadas": every class of the period.
+  const load = useMemo(() => coachLoad(sessions.filter(s => hasStarted(s, today, now))), [sessions, today, now])
+  const planned = useMemo(() => coachLoad(sessions), [sessions])
   const [resolving, setResolving] = useState<CoachIssue | null>(null)
   const nameOf = (id: string | null) => coaches.find(c => c.id === id)?.name ?? 'Coach'
   const openIssues = issues.filter(i => i.status === 'open' && i.class_date >= today)
   const doneIssues = issues.filter(i => i.status === 'resolved').slice(-5).reverse()
-  const unassigned = sessions.filter(s => !s.cancelled && !s.coachId && s.date >= today)
+  const unassigned = sessions.filter(s => !s.cancelled && !s.coachId && !hasStarted(s, today, now))
   const idle = coaches.filter(c => !slots.some(s => s.is_active && s.coach_id === c.id))
   const totalHours = [...load.values()].reduce((a, c) => a + c.hours, 0)
-  const maxHours = Math.max(1, ...[...load.values()].map(c => c.hours))
+  const plannedHours = [...planned.values()].reduce((a, c) => a + c.hours, 0)
+  const maxHours = Math.max(1, ...[...planned.values()].map(c => c.hours))
   const q = (p: string, d: string) => `/manage/coaches?p=${p}&d=${d}${boxes.length > 1 ? `&box=${box.id}` : ''}`
   const step = (dir: 1 | -1) => period === 'month' ? addDaysISO(dir === 1 ? to : from, dir) : addDaysISO(from, 7 * dir)
   const slotOf = (id: string | null) => slots.find(s => s.id === id)
@@ -92,8 +96,8 @@ export function CoachesView({ profile, box, boxes, today, period, from, to, coac
 
         <div className="grid grid-cols-3 gap-3">
           <Stat label="Coaches" value={coaches.length} />
-          <Stat label="Horas en el periodo" value={hoursLabel(totalHours)} />
-          <Stat label="Clases" value={sessions.filter(s => !s.cancelled).length} />
+          <Stat label="Horas dadas" value={hoursLabel(totalHours)} hint={`de ${hoursLabel(plannedHours)} programadas`} />
+          <Stat label="Clases" value={sessions.filter(s => !s.cancelled).length} hint={`${sessions.filter(s => !s.cancelled && hasStarted(s, today, now)).length} ya dadas`} />
         </div>
 
         {coaches.length === 0 ? (
@@ -102,6 +106,7 @@ export function CoachesView({ profile, box, boxes, today, period, from, to, coac
           <ul className="flex flex-col gap-3 stagger">
             {coaches.map(c => {
               const l = load.get(c.id) ?? { hours: 0, classes: 0, athletes: 0 }
+              const pl = planned.get(c.id) ?? { hours: 0, classes: 0, athletes: 0 }
               const mine = slots.filter(s => s.is_active && s.coach_id === c.id)
               const weekly = mine.reduce((a, s) => a + s.duration_min / 60, 0)
               return (
@@ -115,10 +120,14 @@ export function CoachesView({ profile, box, boxes, today, period, from, to, coac
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="font-display text-2xl font-bold tabular-nums leading-none tracking-tight">{hoursLabel(l.hours)}</div>
-                        <div className="text-[11px] text-fa mt-0.5">{l.classes} clases · {l.athletes} asistentes</div>
+                        <div className="text-[11px] text-fa mt-0.5">dadas de {hoursLabel(pl.hours)} programadas</div>
+                        <div className="text-[11px] text-fa">{l.classes} clases · {l.athletes} asistentes</div>
                       </div>
                     </div>
-                    <div className="h-1.5 rounded-full bg-p3 overflow-hidden"><div className="h-full rounded-full bg-ac" style={{ width: `${(l.hours / maxHours) * 100}%` }} /></div>
+                    <div className="relative h-1.5 rounded-full bg-p3 overflow-hidden">
+                      <div className="absolute inset-y-0 left-0 rounded-full bg-ac/30" style={{ width: `${(pl.hours / maxHours) * 100}%` }} />
+                      <div className="absolute inset-y-0 left-0 rounded-full bg-ac" style={{ width: `${(l.hours / maxHours) * 100}%` }} />
+                    </div>
                     {mine.length === 0 ? <p className="text-xs text-or">Sin horarios asignados.</p> : (
                       <div className="grid grid-cols-7 gap-1" aria-label={`Horario semanal de ${c.name}`}>
                         {WEEK_ORDER.map(d => (

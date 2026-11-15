@@ -1,4 +1,4 @@
-import { requireAdminBox, loadPeople } from '@/lib/utils/admin-box'
+import { requireAdminBox, loadPeople, selectAll } from '@/lib/utils/admin-box'
 import { CoachesView } from '@/components/manage/CoachesView'
 import { addDaysISO, todayISO } from '@/lib/utils/dates'
 import { monthEnd, monthStart, weekStart } from '@/lib/utils/schedule'
@@ -18,7 +18,7 @@ export default async function CoachesPage({ searchParams }: { searchParams: Prom
     loadPeople(supabase, box),
     supabase.from('class_slots').select('*').eq('box_id', box.id).order('start_time'),
     supabase.from('class_overrides').select('*').eq('box_id', box.id).gte('class_date', from).lte('class_date', to),
-    supabase.from('class_bookings').select('slot_id, class_date, status').eq('box_id', box.id).gte('class_date', from).lte('class_date', to),
+    selectAll(() => supabase.from('class_bookings').select('id, slot_id, class_date, status').eq('box_id', box.id).gte('class_date', from).lte('class_date', to).neq('status', 'cancelled').order('id')),
     supabase.from('coach_issues').select('*').eq('box_id', box.id).gte('class_date', addDaysISO(today, -14)).order('class_date'),
   ])
 
@@ -28,7 +28,7 @@ export default async function CoachesPage({ searchParams }: { searchParams: Prom
       coaches={people.filter(p => p.isActive && p.role !== 'athlete').map(p => ({ id: p.id, name: p.name, avatar: p.avatar, role: p.role }))}
       slots={(slotsRes.data ?? []) as ClassSlot[]}
       overrides={(ovRes.data ?? []) as ClassOverride[]}
-      bookings={(bkRes.data ?? []) as Pick<ClassBooking, 'slot_id' | 'class_date' | 'status'>[]}
+      bookings={bkRes.data as Pick<ClassBooking, 'slot_id' | 'class_date' | 'status'>[]}
       issues={(isRes.data ?? []) as CoachIssue[]}
       missing={isMissingTable(slotsRes.error)}
     />

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { friendlyError } from '@/lib/utils/errors'
+import { joinBoxByCode, joinErrorMessage } from '@/lib/utils/join-box'
 import { Field, PasswordField, Alert, BrandMark } from '@/components/ui/Field'
 import { Button } from '@/components/ui/Button'
 
@@ -22,12 +23,28 @@ export function LoginForm({ confirmed = false, initialError = '', initialEmail =
     e.preventDefault()
     setLoading(true); setError(''); setNotice(''); setNeedsConfirm(false)
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    const { data: signIn, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     if (error) {
       setError(friendlyError(error.message))
       setNeedsConfirm(error.message.includes('Email not confirmed'))
       setLoading(false)
       return
+    }
+    // Invite code typed at sign-up whose confirmation link was opened elsewhere: apply it now.
+    const pendingCode = signIn.user?.user_metadata?.invite_code as string | undefined
+    if (signIn.user && pendingCode) {
+      const res = await joinBoxByCode(supabase, pendingCode, signIn.user.id)
+      if (res.ok || res.reason !== 'error') await supabase.auth.updateUser({ data: { invite_code: null } })
+      if (res.ok) {
+        router.push(`/settings/boxes?joined=${encodeURIComponent(res.boxName)}`)
+        router.refresh()
+        return
+      }
+      if (res.reason !== 'already_member') {
+        router.push(`/settings/boxes?joinError=${encodeURIComponent(joinErrorMessage(res, friendlyError))}`)
+        router.refresh()
+        return
+      }
     }
     router.push('/dashboard')
     router.refresh()

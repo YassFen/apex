@@ -121,7 +121,7 @@ export function buildSeed(today: string): Store {
       muscles: ['piernas', 'hombros', 'motor'], video_url: null, image_url: null },
   )
 
-  /* ── Programming: last ~80 days, two classes on Tue/Thu, Saturday partner WOD ── */
+  /* ── Programming: last ~80 days, one WOD per day, Saturday partner WOD ── */
   const daily_wods: Row[] = []
   const wod_results: Row[] = []
   const bumps: Row[] = []
@@ -130,42 +130,42 @@ export function buildSeed(today: string): Store {
     const day = addDaysISO(today, d)
     const dow = new Date(`${day}T12:00:00Z`).getUTCDay() // 0 Sunday
     if (dow === 0 && d !== 0) continue // Sundays off, except today so the demo always has classes
-    const sessions: { tpl: Tpl; time: string }[] = dow === 6 && d !== 0
-      ? [{ tpl: PROGRAM[19], time: '10:00' }]
-      : dow === 2 || dow === 4 || d === 0
-        ? [{ tpl: PROGRAM[14 + (p % 5)], time: '07:00' }, { tpl: PROGRAM[p % 14], time: '19:00' }]
-        : [{ tpl: PROGRAM[p % 14], time: '19:00' }]
+    const tpl: Tpl = dow === 6 && d !== 0
+      ? PROGRAM[19]
+      : dow === 2 || dow === 4 || d === 0 ? PROGRAM[14 + (p % 5)] : PROGRAM[p % 14]
     p++
-    sessions.forEach((s, k) => {
-      const id = `wod-${day}-${k}`
+    {
+      const id = `wod-${day}-0`
       daily_wods.push({
         id, box_id: BOX, coach_id: DEMO_USER_ID, wod_template_id: null, published_at: iso(addDaysISO(day, d > 0 ? -2 : 0), '06:00'),
-        scheduled_for: day, title: s.tpl.title, description: s.tpl.desc, movements: s.tpl.movs, is_live: true, type: s.tpl.type,
-        duration_mins: s.tpl.mins, class_time: `${s.time}:00`, show_early: d > 0 ? d <= 3 : false,
+        scheduled_for: day, title: tpl.title, description: tpl.desc, movements: tpl.movs, is_live: true, type: tpl.type,
+        duration_mins: tpl.mins, show_early: d > 0 ? d <= 3 : false,
       })
-      if (d > 0 || (d === 0 && k === 1)) return
-      const rt = resultTypeOf(s.tpl.type)
+      if (d > 0) continue
+      const rt = resultTypeOf(tpl.type)
+      // Today only the early classes have logged so far.
+      const logAt = d === 0 ? '08:10' : '20:10'
       for (const a of athletes) {
-        if (r() > a.attendance * (k === 0 ? 0.45 : 1)) continue
+        if (r() > a.attendance * (d === 0 ? 0.45 : 1)) continue
         // Three athletes stopped coming ~10 days ago, so the coach sees who to reach out to.
         if (['demo-ath-18', 'demo-ath-19', 'demo-ath-20'].includes(a.id) && d > -10) continue
         const rx = a.skill > 1.18 ? (r() < 0.7 ? 'scaled' : 'rx') : a.skill < 0.88 && r() < 0.2 ? 'rx+' : 'rx'
         const resId = `res-${id}-${a.id}`
-        wod_results.push({ id: resId, daily_wod_id: id, user_id: a.id, result_type: rt, result_value: formatResult(s.tpl, a.skill, r), rx_level: rx, notes: null, recorded_at: iso(day, s.time === '07:00' ? '08:10' : '20:10'), edit_count: 0 })
+        wod_results.push({ id: resId, daily_wod_id: id, user_id: a.id, result_type: rt, result_value: formatResult(tpl, a.skill, r), rx_level: rx, notes: null, recorded_at: iso(day, logAt), edit_count: 0 })
         if (r() < 0.25) bumps.push({ result_id: resId, user_id: athletes[Math.floor(r() * athletes.length)].id, created_at: iso(day, '21:00') })
       }
-      // The demo coach trains most days (PM class, or the AM one today).
-      if ((d === 0 && k === 0) || (d < 0 && k === sessions.length - 1 && r() < 0.72)) {
+      // The demo coach trains most days.
+      if (d === 0 || (d < 0 && r() < 0.72)) {
         const resId = `res-${id}-me`
-        wod_results.push({ id: resId, daily_wod_id: id, user_id: DEMO_USER_ID, result_type: rt, result_value: formatResult(s.tpl, 0.86, r), rx_level: 'rx', notes: null, recorded_at: iso(day, s.time === '07:00' ? '08:05' : '20:05'), edit_count: 0 })
+        wod_results.push({ id: resId, daily_wod_id: id, user_id: DEMO_USER_ID, result_type: rt, result_value: formatResult(tpl, 0.86, r), rx_level: 'rx', notes: null, recorded_at: iso(day, d === 0 ? '08:05' : '20:05'), edit_count: 0 })
         for (let b = 0; b < 3; b++) if (r() < 0.6) bumps.push({ result_id: resId, user_id: athletes[Math.floor(r() * athletes.length)].id, created_at: iso(day, '21:00') })
       }
-    })
+    }
   }
   // A WOD today at the second box too (multi-box).
   daily_wods.push({ id: `wod-${today}-vina`, box_id: BOX2, coach_id: 'demo-coach-vina', published_at: iso(today, '06:00'), scheduled_for: today,
     title: 'Viña Beach Run', description: '3 rondas por tiempo', movements: [{ name: 'Run', reps: '800 m' }, { name: 'Burpee', reps: '20' }, { name: 'Air Squat', reps: '30' }],
-    is_live: true, type: 'fortime', duration_mins: 30, class_time: '09:00:00', show_early: false })
+    is_live: true, type: 'fortime', duration_mins: 30, show_early: false })
 
   /* ── The demo coach's own records (12 months of progress) ── */
   const pr_records: Row[] = []

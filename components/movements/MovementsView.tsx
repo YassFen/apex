@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
 import { MUSCLE_LABEL, guideFor, youtubeEmbed, youtubeSearch, youtubeThumb, type MuscleGroup } from '@/lib/utils/movement-guide'
 import { cn } from '@/lib/utils/cn'
+import { useShell } from '@/lib/hooks/useShell'
 import { uploadPublicImage } from '@/lib/utils/upload-image'
 import type { Movement, MovementCategory, Profile } from '@/lib/types/database'
 
@@ -219,6 +220,9 @@ const MUSCLES = Object.keys(MUSCLE_LABEL) as MuscleGroup[]
 function CreateMovement({ open, onClose, boxes, userId }: { open: boolean; onClose: () => void; boxes: { id: string; name: string }[]; userId: string }) {
   const router = useRouter()
   const { fire } = useToast()
+  // Create in the box picked in the app when the person is staff there; otherwise the first box they coach.
+  const { activeBoxId } = useShell()
+  const target = boxes.find(b => b.id === activeBoxId) ?? boxes[0]
   const [name, setName] = useState('')
   const [category, setCategory] = useState<MovementCategory>('weightlifting')
   const [description, setDescription] = useState('')
@@ -232,18 +236,18 @@ function CreateMovement({ open, onClose, boxes, userId }: { open: boolean; onClo
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !target) return
     setBusy(true)
     const supabase = createClient()
     let imageUrl: string | null = null
     if (photo) {
-      try { imageUrl = await uploadPublicImage(supabase, 'movement-media', boxes[0].id, photo) }
+      try { imageUrl = await uploadPublicImage(supabase, 'movement-media', target.id, photo) }
       catch (err) { setBusy(false); fire((err as Error).message, 'error'); return }
     }
     const { error } = await supabase.from('movements').insert({
       name: name.trim(), category, description: description.trim() || null, cues: cues.trim() || null,
       muscles: muscles.length ? muscles : null, video_url: video.trim() || null, image_url: imageUrl,
-      box_id: boxes[0].id, created_by: userId,
+      box_id: target.id, created_by: userId,
     })
     setBusy(false)
     if (error) {
@@ -258,7 +262,7 @@ function CreateMovement({ open, onClose, boxes, userId }: { open: boolean; onClo
 
   const input = 'w-full h-12 px-4 rounded-2xl bg-p2 text-base sm:text-sm outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 placeholder:text-fa'
   return (
-    <Modal open={open} onClose={onClose} eyebrow={boxes[0]?.name} title={<>Nuevo <span className="text-ac">ejercicio</span></>}>
+    <Modal open={open} onClose={onClose} eyebrow={target?.name} title={<>Nuevo <span className="text-ac">ejercicio</span></>}>
       <form onSubmit={save} className="flex flex-col gap-4">
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Nombre (ej: Devil Press)" aria-label="Nombre" required className={input} />
         <div className="flex flex-wrap gap-1.5">

@@ -5,13 +5,14 @@ import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Alert, inputBase, labelCls } from '@/components/ui/Field'
+import { nativeResultType } from '@/lib/utils/wod-ranking'
 import { cn } from '@/lib/utils/cn'
 import type { Profile } from '@/lib/types/database'
 
 type ResultType = 'time' | 'rounds' | 'reps' | 'weight'
 
 const TYPE_LABELS: Record<ResultType, string> = {
-  time: 'Tiempo', rounds: 'Rondas', reps: 'Reps', weight: 'Peso',
+  time: 'Terminé (tiempo)', rounds: 'Rondas + reps', reps: 'Reps', weight: 'Peso',
 }
 
 const LEVELS = [
@@ -36,22 +37,32 @@ function Segmented<T extends string>({ value, onChange, options, label }: {
   )
 }
 
-export function WodResultModal({ wod, profile, existingResult, onClose, onSaved }: {
-  wod: any; profile: Profile; existingResult?: any; onClose: () => void; onSaved: () => void
+export function WodResultModal({ wod, profile, existingResult, prefill, onClose, onSaved }: {
+  wod: any; profile: Profile; existingResult?: any
+  /** From the timer: `?time=mm:ss` or `?rounds=N` in the /wod link. */
+  prefill?: { time?: string | null; rounds?: string | null }
+  onClose: () => void; onSaved: () => void
 }) {
   const [supabase] = useState(() => createClient())
   const isEditing = !!existingResult
 
-  const defaultType: ResultType =
-    wod.type === 'fortime' ? 'time' : wod.type === 'amrap' ? 'rounds' : wod.type === 'strength' ? 'weight' : 'reps'
-  const [resultType, setResultType] = useState<ResultType>((existingResult?.result_type as ResultType) ?? defaultType)
+  const defaultType = nativeResultType(wod.type) as ResultType
+  // The leaderboard ranks the WOD's own type first. The only alternative is a For Time
+  // that hit the time cap: those athletes log the reps they got ("No terminé").
+  const typeOptions: { key: ResultType; label: string }[] = [{ key: defaultType, label: TYPE_LABELS[defaultType] }]
+  if (defaultType === 'time') typeOptions.push({ key: 'reps', label: 'No terminé (reps)' })
+  const savedType = existingResult?.result_type as ResultType | undefined
+  if (savedType && !typeOptions.some(o => o.key === savedType)) typeOptions.push({ key: savedType, label: TYPE_LABELS[savedType] })
+  const [resultType, setResultType] = useState<ResultType>((existingResult?.result_type as ResultType) ?? (prefill?.rounds && defaultType === 'rounds' ? 'rounds' : defaultType))
 
-  const [prevMm, prevSs] = existingResult?.result_type === 'time' ? String(existingResult.result_value).split(':') : ['', '']
+  const [prevMm, prevSs] = existingResult?.result_type === 'time' ? String(existingResult.result_value).split(':')
+    : !existingResult && prefill?.time && /^\d{1,3}:\d{2}$/.test(prefill.time) ? prefill.time.split(':') : ['', '']
   const [mm, setMm] = useState(prevMm ?? '')
   const ssRef = useRef<HTMLInputElement>(null)
   const [ss, setSs] = useState(prevSs ?? '')
 
-  const [prevRounds, prevReps] = existingResult?.result_type === 'rounds' ? String(existingResult.result_value).split('+') : ['', '']
+  const [prevRounds, prevReps] = existingResult?.result_type === 'rounds' ? String(existingResult.result_value).split('+')
+    : !existingResult && prefill?.rounds && /^\d{1,3}$/.test(prefill.rounds) ? [prefill.rounds, ''] : ['', '']
   const [rounds, setRounds] = useState(prevRounds ?? '')
   const [extraReps, setExtraReps] = useState(prevReps ?? '')
 
@@ -64,7 +75,11 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
 
-  const unit = profile.preferred_unit ?? 'kg'
+  // A saved weight keeps the unit it was recorded in ("100 kg"), so editing it never changes the value.
+  const savedUnit = existingResult?.result_type === 'weight'
+    ? (/kg/i.test(String(existingResult.result_value)) ? 'kg' : /lb/i.test(String(existingResult.result_value)) ? 'lb' : null)
+    : null
+  const unit = savedUnit ?? profile.preferred_unit ?? 'kg'
 
   function buildValue(): string | null {
     if (resultType === 'time') {
@@ -100,16 +115,20 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
       result_value: resultValue,
       rx_level: rxLevel,
       notes: notes.trim() || null,
-      recorded_at: new Date().toISOString(),
     }
     const editCount = (existingResult?.edit_count ?? 0) + (isEditing ? 1 : 0)
 
-    let { error: dbErr } = await supabase.from('wod_results')
-      .upsert({ ...base, edit_count: editCount }, { onConflict: 'daily_wod_id,user_id' })
+    // recorded_at is set only when the result is first created: editing must not move it
+    // (it breaks ties on the leaderboard).
+    const write = (row: Record<string, unknown>) => isEditing
+      ? supabase.from('wod_results').update(row).eq('daily_wod_id', wod.id).eq('user_id', user.id)
+      : supabase.from('wod_results').upsert({ ...row, recorded_at: new Date().toISOString() }, { onConflict: 'daily_wod_id,user_id' })
+
+    let { error: dbErr } = await write({ ...base, edit_count: editCount })
 
     // Production DB without migration 004 has no edit_count column: save anyway.
     if (dbErr && isMissingColumn(dbErr)) {
-      ({ error: dbErr } = await supabase.from('wod_results').upsert(base, { onConflict: 'daily_wod_id,user_id' }))
+      ({ error: dbErr } = await write(base))
     }
 
     setSaving(false)
@@ -122,11 +141,14 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
   return (
     <Modal open onClose={onClose} title={isEditing ? 'Corregir resultado' : 'Registrar resultado'} subtitle={wod.title}>
       <form onSubmit={handleSave} className="flex flex-col gap-5">
-        <div>
+        {typeOptions.length > 1 && <div>
           <span className={labelCls}>Tipo de resultado</span>
           <Segmented label="Tipo de resultado" value={resultType} onChange={v => { setResultType(v); setError('') }}
-            options={(Object.keys(TYPE_LABELS) as ResultType[]).map(k => ({ key: k, label: TYPE_LABELS[k] }))} />
-        </div>
+            options={typeOptions} />
+          {resultType === 'reps' && defaultType === 'time' && (
+            <p className="mt-1.5 text-xs text-mu">Si no terminaste dentro del límite de tiempo, anota las repeticiones que hiciste. Quedas debajo de quienes terminaron.</p>
+          )}
+        </div>}
 
         {resultType === 'time' && (
           <fieldset>
@@ -142,7 +164,7 @@ export function WodResultModal({ wod, profile, existingResult, onClose, onSaved 
               <input ref={ssRef} aria-label="Segundos" inputMode="numeric" pattern="[0-9]*" maxLength={2} value={ss} placeholder="00"
                 onChange={e => setSs(e.target.value.replace(/\D/g, ''))} className={numCls} />
             </div>
-            <p className="mt-1.5 text-xs text-mu">Minutos : segundos. Si llegaste al time cap, anota el cap y explícalo en notas.</p>
+            <p className="mt-1.5 text-xs text-mu">Minutos : segundos. Si no terminaste dentro del límite de tiempo, elige «No terminé» arriba.</p>
           </fieldset>
         )}
 

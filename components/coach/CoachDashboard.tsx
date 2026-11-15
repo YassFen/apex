@@ -23,7 +23,6 @@ import type { ChallengeSummary } from '@/lib/utils/challenges'
 export interface CoachActivity {
   days: { date: string; athletes: number }[]
   inactive: { id: string; name: string; avatar: string | null; days: number | null }[]
-  classes: { id: string; title: string; time: string | null; count: number }[]
 }
 
 interface Props {
@@ -45,7 +44,7 @@ const TOOLS = [
   { href: '/calc',      icon: Calculator, label: 'Calculadora' },
 ]
 
-export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResults, recentMembers, nextEvent = null, activity = { days: [], inactive: [], classes: [] }, challenges = null, banners = null }: Props) {
+export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResults, recentMembers, nextEvent = null, activity = { days: [], inactive: [] }, challenges = null, banners = null }: Props) {
   const { setViewMode } = useShell()
   const { fire } = useToast()
   const [copied, setCopied] = useState(false)
@@ -110,7 +109,7 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
               <h2 className="font-display text-[34px] font-bold leading-tight tracking-tight">Hola, {firstName}</h2>
             </>}
             widgets={[
-              { id: 'today', label: 'WOD de hoy', desc: 'Clases de hoy y cuántos registraron', render: () => (<>
+              { id: 'today', label: 'WOD de hoy', desc: 'El WOD y cuántos registraron', render: () => (<>
             {todayWod ? (
               <Card padding={false} className="overflow-hidden">
                 <div className="p-5">
@@ -154,9 +153,8 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
               </Link>
             )}
               </>) },
-              { id: 'classes', label: 'Clases de hoy', desc: 'Resultados por horario', render: () => <ClassesCard classes={activity.classes} /> },
               { id: 'activity', label: 'Actividad del box', desc: 'Atletas que entrenaron cada día', render: () => <ActivityCard days={activity.days} total={athleteCount} /> },
-              { id: 'inactive', label: 'Atletas por recuperar', desc: '7+ días sin registrar un WOD', render: () => <InactiveCard list={activity.inactive} /> },
+              { id: 'inactive', label: 'Atletas por recuperar', desc: '14+ días sin registrar un WOD', render: () => <InactiveCard list={activity.inactive} /> },
               { id: 'nextEvent', label: 'Próximo evento', desc: 'Competencias del box', render: () => <NextEventCard event={nextEvent} /> },
               { id: 'challenges', label: 'Retos', desc: 'Retos activos en tu box', render: () => <ChallengesWidget challenges={challenges} /> },
               { id: 'box', label: 'Tu box e invitación', desc: 'Código para sumar atletas', render: () => (<>
@@ -256,27 +254,6 @@ export function CoachDashboard({ profile, box, athleteCount, todayWod, todayResu
 
 /* ── Coach widgets ───────────────────────────────────────────────────────── */
 
-function ClassesCard({ classes }: { classes: CoachActivity['classes'] }) {
-  if (classes.length === 0) return null
-  return (
-    <Card>
-      <h3 className="font-semibold mb-3">Clases de hoy</h3>
-      <ul className="flex flex-col gap-2">
-        {classes.map(c => (
-          <li key={c.id}>
-            <Link href={`/coach/wod-live`} className="flex items-center gap-3 p-3 rounded-2xl bg-p2 hover:bg-p3">
-              <span className="w-14 text-center font-display font-bold tabular-nums">{c.time ?? '—'}</span>
-              <span className="flex-1 min-w-0 font-medium leading-tight break-words">{c.title}</span>
-              <span className="text-sm text-mu tabular-nums">{c.count} result.</span>
-              <ChevronRight size={16} className="text-fa" />
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  )
-}
-
 function ActivityCard({ days, total }: { days: CoachActivity['days']; total: number }) {
   if (days.length === 0) return null
   const max = Math.max(1, ...days.map(d => d.athletes))
@@ -319,7 +296,7 @@ function InactiveCard({ list }: { list: CoachActivity['inactive'] }) {
         <Link href="/coach/athletes" className="text-ac text-sm font-semibold">Ver todos</Link>
       </div>
       {list.length === 0 ? (
-        <p className="text-mu text-sm">Todos tus atletas entrenaron esta semana.</p>
+        <p className="text-mu text-sm">Todos tus atletas registraron un WOD en las últimas dos semanas.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {list.slice(0, 5).map(a => (
@@ -328,7 +305,7 @@ function InactiveCard({ list }: { list: CoachActivity['inactive'] }) {
                 : <span className="size-10 rounded-full bg-p2 grid place-items-center text-xs font-bold text-mu">{a.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>}
               <span className="flex-1 min-w-0">
                 <span className="block font-medium text-sm leading-tight break-words">{a.name}</span>
-                <span className="block text-or text-xs">{a.days === null ? 'Sin WODs registrados' : `${a.days} días sin entrenar`}</span>
+                <span className="block text-or text-xs">{a.days === null ? 'Sin WODs registrados' : `${a.days} días sin registrar`}</span>
               </span>
             </li>
           ))}

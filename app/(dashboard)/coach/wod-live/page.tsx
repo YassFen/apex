@@ -21,7 +21,10 @@ export default function CoachWodLivePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let alive = true
     async function load() {
+      // Start clean so the previous box's WOD never shows while the new one loads.
+      setWod(null); setResults([]); setMembers([])
       setLoading(true)
       // Any box the person coaches; the one picked in the app first.
       const [{ data: owned }, { data: staff }] = await Promise.all([
@@ -30,16 +33,17 @@ export default function CoachWodLivePage() {
       ])
       const mine = [...((owned ?? []) as any[]), ...((staff ?? []) as any[]).map(m => m.boxes).filter(Boolean)]
       const box = mine.find(b => b.id === activeBoxId) ?? mine[0]
+      if (!alive) return
       if (!box) { setLoading(false); return }
 
       const today = todayISO()
       const { data: todayWod } = await supabase
         .from('daily_wods').select('*')
         .eq('box_id', box.id).eq('scheduled_for', today).eq('is_live', true)
-        .order('published_at', { ascending: false }).limit(1).maybeSingle()
+        .limit(1).maybeSingle()
 
+      if (!alive) return
       if (todayWod) {
-        setWod({ ...todayWod, box })
         const [{ data: res }, { data: mems }] = await Promise.all([
           supabase.from('wod_results')
             .select('*, profiles(full_name, email)')
@@ -49,12 +53,15 @@ export default function CoachWodLivePage() {
             .select('*, profiles(id, full_name)')
             .eq('box_id', box.id).eq('is_active', true).eq('role', 'athlete'),
         ])
+        if (!alive) return
         setResults(res ?? [])
         setMembers(mems ?? [])
+        setWod({ ...todayWod, box })
       }
       setLoading(false)
     }
     load()
+    return () => { alive = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBoxId])
 
@@ -82,7 +89,7 @@ export default function CoachWodLivePage() {
   const pendingAthletes = members.filter((m: any) =>
     m.profiles && !results.find((r: any) => r.user_id === m.profiles.id)
   )
-  const ranked = rankResults(results)
+  const ranked = rankResults(results, wod?.type)
   const meta = wod ? WOD_TYPE_META[wod.type] : null
   const pct = athleteCount > 0 ? Math.round((doneCount / athleteCount) * 100) : 0
 

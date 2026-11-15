@@ -1,6 +1,6 @@
 // Turns the weekly class grid (slots) plus one-date changes (overrides) into the actual
 // classes of a date range, and adds up coach hours and occupancy.
-import { addDaysISO, daysBetween } from '@/lib/utils/dates'
+import { APP_TIME_ZONE, addDaysISO, daysBetween, toDateInput } from '@/lib/utils/dates'
 import type { ClassBooking, ClassOverride, ClassSlot } from '@/lib/types/database'
 
 export const WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
@@ -37,7 +37,24 @@ export interface Session {
   attended: number
 }
 
-export function buildSessions(slots: ClassSlot[], overrides: ClassOverride[], bookings: Pick<ClassBooking, 'slot_id' | 'class_date' | 'status'>[], from: string, to: string, today?: string): Session[] {
+/** Current time in the box's time zone, as HH:MM. */
+export function nowHM(at: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: APP_TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at)
+}
+
+/** "YYYY-MM-DD HH:MM" of a timestamp, in the box's time zone. */
+function localStamp(iso: string): string | null {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return `${toDateInput(d)} ${nowHM(d)}`
+}
+
+/** A class has started once its date and start time (Santiago) have come. */
+export function hasStarted(s: { date: string; time: string }, today: string, now: string = nowHM()): boolean {
+  return s.date < today || (s.date === today && s.time <= now)
+}
+
+export function buildSessions(slots: ClassSlot[], overrides: ClassOverride[], bookings: Pick<ClassBooking, 'slot_id' | 'class_date' | 'status'>[], from: string, to: string, today?: string, now: string = nowHM()): Session[] {
   const ov = new Map(overrides.map(o => [`${o.slot_id}|${o.class_date}`, o]))
   const counts = new Map<string, { booked: number; waitlist: number; attended: number }>()
   for (const b of bookings) {
@@ -54,9 +71,18 @@ export function buildSessions(slots: ClassSlot[], overrides: ClassOverride[], bo
     const date = addDaysISO(from, i)
     const dow = weekdayOf(date)
     for (const s of slots) {
-      // A slot taken off the grid keeps its past classes (history), not its future ones.
-      if (s.weekday !== dow || (!s.is_active && (!today || date >= today))) continue
+      if (s.weekday !== dow) continue
       const key = `${s.id}|${date}`
+      // A slot taken off the grid keeps the classes it gave before (history), not the later ones.
+      if (!s.is_active) {
+        if (!today) continue
+        const removed = (s as ClassSlot & { removed_at?: string | null }).removed_at
+        const stamp = removed ? localStamp(removed) : null
+        const at = `${date} ${hhmm(s.start_time)}`
+        if (stamp) { if (at >= stamp) continue }
+        // Without the switch-off time: past days, and today's class only if it already started and had people.
+        else if (date > today || (date === today && (hhmm(s.start_time) > now || !counts.get(key)?.booked))) continue
+      }
       const o = ov.get(key)
       const c = counts.get(key)
       out.push({

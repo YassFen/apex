@@ -6,7 +6,7 @@ import {
   LayoutGrid, TrendingUp, Timer, Flame, Activity,
   BarChart3, Calculator, Users, User, Trophy, Dumbbell,
   ArrowLeftRight, ChevronDown, History, CalendarDays, Medal, BookOpenText, Gear, Flag,
-  CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed, ShieldStar,
+  CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed, ShieldStar, Books,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 import { useShell, MODE_LABEL } from '@/lib/hooks/useShell'
@@ -46,6 +46,8 @@ const COACH_NAV = [
   { label: 'Box', items: [
     { href: '/dashboard',           icon: LayoutGrid, label: 'Inicio' },
     { href: '/coach/publish-wod',   icon: Flame,      label: 'WOD' },
+    { href: '/coach/library',       icon: Books,      label: 'Biblioteca de WODs' },
+    { href: '/coach/competitions',  icon: Medal,      label: 'Competencias del box' },
     { href: '/calendar',            icon: CalendarDays, label: 'Calendario' },
     { href: '/classes',             icon: CalendarCheck, label: 'Mis clases' },
     { href: '/coach/wod-live',      icon: Activity,   label: 'En vivo', dot: true },
@@ -74,6 +76,8 @@ const ADMIN_NAV = [
     { href: '/manage/coaches',       icon: ChalkboardTeacher, label: 'Coaches' },
     { href: '/announcements',        icon: Megaphone,         label: 'Comunicados' },
     { href: '/manage/banners',       icon: RectangleDashed,   label: 'Banners' },
+    { href: '/coach/library',        icon: Books,             label: 'Biblioteca de WODs' },
+    { href: '/coach/competitions',   icon: Medal,             label: 'Competencias del box' },
   ]},
   { label: 'Cuenta', items: [
     { href: '/support',              icon: Lifebuoy,          label: 'Ayuda' },

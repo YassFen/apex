@@ -15,7 +15,7 @@ export interface BoxMember { id: string; box_id: string; user_id: string; role: 
 export interface Movement { id: string; name: string; category: MovementCategory; description: string | null; video_url: string | null; box_id?: string | null; created_by?: string | null; image_url?: string | null; cues?: string | null; muscles?: string[] | null }
 export interface PrRecord { id: string; user_id: string; movement_id: string; value_lb: number; metric: "1rm" | "3rm" | "max_reps" | "time"; recorded_at: string; notes: string | null; is_pr: boolean }
 export interface WodTemplate { id: string; box_id: string | null; created_by: string; name: string; type: WodType; description: string; duration_mins: number | null; movements: Json; is_public: boolean; created_at: string }
-export interface DailyWod { id: string; box_id: string; coach_id: string; wod_template_id: string | null; published_at: string; scheduled_for: string; title: string; description: string; movements: Json; is_live: boolean; type: WodType; duration_mins: number | null; show_early?: boolean; class_time?: string | null }
+export interface DailyWod { id: string; box_id: string; coach_id: string; wod_template_id: string | null; published_at: string; scheduled_for: string; title: string; description: string; movements: Json; is_live: boolean; type: WodType; duration_mins: number | null; show_early?: boolean; class_time?: string | null /* ya no se usa: un WOD por día */ }
 export interface WodResult { id: string; daily_wod_id: string; user_id: string; result_type: ResultType; result_value: string; rx_level: RxLevel; notes: string | null; recorded_at: string }
 // ── Box administration (010) ──
 export type MembershipKind = 'unlimited' | 'classes'

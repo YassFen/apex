@@ -19,7 +19,7 @@ export default async function MemberPage({ params, searchParams }: { params: Pro
     supabase.from('member_files').select('*').eq('box_id', box.id).eq('user_id', id).maybeSingle(),
   ])
   const person = people.find(p => p.id === id)
-  if (!person) redirect('/manage/members')
+  if (!person) redirect(`/manage/members?box=${box.id}`)
 
   return (
     <MemberFileView

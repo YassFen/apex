@@ -12,6 +12,7 @@ import { RmCelebrationModal, type Celebration } from './RmCelebrationModal'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { friendlyError } from '@/lib/utils/errors'
+import { lbToKg } from '@/lib/utils/units'
 import type { Profile, Movement } from '@/lib/types/database'
 
 // Logical filter buckets — Olympic + Weightlifting collapsed into one "Levantamiento"
@@ -53,8 +54,8 @@ function formatValue(pr: any, preferredUnit: 'kg' | 'lb'): { value: string; unit
     return { value: String(Math.round(raw)), unit: 'cal' }
   }
   if (metric === 'max_reps') return { value: String(Math.round(raw)), unit: 'reps' }
-  if (preferredUnit === 'kg') return { value: String(Math.round(raw * 0.453592)), unit: 'kg' }
-  return { value: String(Math.round(raw)), unit: 'lb' }
+  if (preferredUnit === 'kg') return { value: String(lbToKg(raw)), unit: 'kg' }
+  return { value: String(Math.round(raw * 10) / 10), unit: 'lb' }
 }
 
 function MetricBadge({ metric }: { metric: string }) {
@@ -210,8 +211,11 @@ export function PRsView({ profile, prs, movements }: { profile: Profile; prs: an
                     let trendLabel = '—'
                     if (prevBest && best.metric !== 'time') {
                       const diff = (best.value_lb ?? 0) - (prevBest.value_lb ?? 0)
-                      if (diff > 0) { trend = 'up'; trendLabel = `+${Math.round(unit === 'kg' ? diff * 0.453592 : diff)}` }
-                      else if (diff < 0) { trend = 'down'; trendLabel = String(Math.round(unit === 'kg' ? diff * 0.453592 : diff)) }
+                      // Only weights change with the unit; max reps are plain counts.
+                      const isWeight = ['1rm', '2rm', '3rm'].includes(best.metric)
+                      const shown = isWeight ? (unit === 'kg' ? lbToKg(diff) : Math.round(diff * 10) / 10) : Math.round(diff)
+                      if (diff > 0) { trend = 'up'; trendLabel = `+${shown}` }
+                      else if (diff < 0) { trend = 'down'; trendLabel = String(shown) }
                     }
                     if (prevBest && best.metric === 'time') {
                       const diff = (best.value_lb ?? 0) - (prevBest.value_lb ?? 0)

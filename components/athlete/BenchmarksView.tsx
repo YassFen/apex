@@ -4,7 +4,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/Topbar'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { Plus, Award, Medal, Trophy, PenLine } from '@/components/ui/icons'
+import { Plus, Award, Medal, Trophy, PenLine, Pencil, Trash2 } from '@/components/ui/icons'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { todayISO, toDateInput, dateInputToTimestamp } from '@/lib/utils/dates'
 import type { Profile, Benchmark } from '@/lib/types/database'
 import { useRouter } from 'next/navigation'
 import { friendlyError } from '@/lib/utils/errors'
@@ -39,6 +41,20 @@ function normalizeResult(result: string, unit: 'time' | 'rounds'): string {
   const r = (result ?? '').trim()
   if (unit === 'time' && /^\d{3,5}$/.test(r)) return `${r.slice(0, -2)}:${r.slice(-2)}`
   return r
+}
+
+/** What to show: rounds saved as "12+0" read better as "12". */
+function showResult(result: string, unit: 'time' | 'rounds'): string {
+  const r = normalizeResult(result, unit)
+  return unit === 'rounds' ? r.replace(/^(\d+)\+0$/, '$1') : r
+}
+
+/**
+ * Unit of a benchmark that isn't in the canonical list. Rounds results are always
+ * saved with a "+" (12 -> "12+0"), so a "+" in any record means rounds; otherwise time.
+ */
+function inferUnit(records: { result: string }[]): 'time' | 'rounds' {
+  return records.some(r => r.result.includes('+')) ? 'rounds' : 'time'
 }
 
 function resultScore(result: string, unit: 'time' | 'rounds'): number {
@@ -96,6 +112,12 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
   const [customUnit, setCustomUnit]   = useState<'time' | 'rounds'>('time')
   const [result, setResult]   = useState('')
   const [notes, setNotes]     = useState('')
+  const [date, setDate]       = useState(todayISO())
+  const [editing, setEditing] = useState<Benchmark | null>(null)
+  const [editUnit, setEditUnit] = useState<'time' | 'rounds'>('time')
+  const [historyName, setHistoryName] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Benchmark | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [saving, setSaving]   = useState(false)
   const [saveErr, setSaveErr] = useState('')
   const router = useRouter()
@@ -110,32 +132,62 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
   function openCustom() {
     setCustomMode(true); setModalBm(null)
     setCustomName(''); setCustomUnit('time')
-    setResult(''); setNotes('')
+    setResult(''); setNotes(''); setDate(todayISO()); setEditing(null)
+  }
+
+  function openNew(bm: typeof BENCHMARK_LIST[0]) {
+    setModalBm(bm); setCustomMode(false); setEditing(null)
+    setResult(''); setNotes(''); setDate(todayISO()); setSaveErr('')
+  }
+
+  function openEdit(b: Benchmark, unit: 'time' | 'rounds') {
+    setHistoryName(null); setModalBm(null); setCustomMode(false); setSaveErr('')
+    setEditing(b); setEditUnit(unit)
+    setResult(showResult(b.result, unit)); setNotes(b.notes ?? '')
+    setDate(toDateInput(b.recorded_at))
   }
 
   function closeModal() {
-    setModalBm(null); setCustomMode(false); setSaveErr('')
-    setResult(''); setNotes(''); setCustomName('')
+    setModalBm(null); setCustomMode(false); setSaveErr(''); setEditing(null)
+    setResult(''); setNotes(''); setCustomName(''); setDate(todayISO())
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    const supabase = createClient()
+    const { error } = await supabase.from('benchmarks').delete().eq('id', deleteTarget.id)
+    setDeleting(false)
+    setDeleteTarget(null)
+    if (error) { setHistoryName(null); setSaveErr(friendlyError(error.message)); return }
+    router.refresh()
   }
 
   async function saveBenchmark(e: React.FormEvent) {
     e.preventDefault()
-    const name  = customMode ? customName.trim() : modalBm?.name
-    const unit  = customMode ? customUnit : (modalBm?.unit ?? 'time')
+    const name  = editing ? editing.name : customMode ? customName.trim() : modalBm?.name
+    const unit  = editing ? editUnit : customMode ? customUnit : (modalBm?.unit ?? 'time')
     if (!name || !result) return
-    const clean = normalizeResult(result, unit)
-    if (unit === 'time' && !/^\d+:\d{2}$/.test(clean)) { setSaveErr('Escribe el tiempo como minutos y segundos, por ejemplo 6:29.'); return }
-    if (unit === 'rounds' && !/^\d+(\+\d+)?$/.test(clean)) { setSaveErr('Escribe rondas o rondas+reps, por ejemplo 12+5.'); return }
+    let clean = normalizeResult(result, unit)
+    if (unit === 'time') {
+      if (!/^\d+:\d{2}$/.test(clean)) { setSaveErr('Escribe el tiempo como minutos y segundos, por ejemplo 6:29.'); return }
+      if (parseInt(clean.split(':')[1], 10) > 59) { setSaveErr('Los segundos van de 0 a 59.'); return }
+      if (clean.split(':').every(n => parseInt(n, 10) === 0)) { setSaveErr('Ingresa tu tiempo.'); return }
+    }
+    if (unit === 'rounds') {
+      if (!/^\d+(\+\d+)?$/.test(clean)) { setSaveErr('Escribe rondas o rondas+reps, por ejemplo 12+5.'); return }
+      if (!clean.includes('+')) clean = `${clean}+0` // always keep the "+" so the result is recognised as rounds
+    }
+    if (!date) { setSaveErr('Elige la fecha.'); return }
     setSaving(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSaving(false); setSaveErr('Tu sesión expiró. Vuelve a iniciar sesión.'); return }
     const level = estimateLevel(name, clean, unit)
-    const { error } = await supabase.from('benchmarks').insert({
-      user_id: user.id, name, result: clean,
-      notes: notes || null, level: level.label,
-      recorded_at: new Date().toISOString(),
-    })
+    const row = { result: clean, notes: notes || null, level: level.label, recorded_at: dateInputToTimestamp(date) }
+    const { error } = editing
+      ? await supabase.from('benchmarks').update(row).eq('id', editing.id).eq('user_id', user.id)
+      : await supabase.from('benchmarks').insert({ user_id: user.id, name, ...row })
     setSaving(false)
     if (error) { setSaveErr(friendlyError(error.message)); return }
     closeModal()
@@ -152,8 +204,8 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
   const filledCount = BENCHMARK_LIST.filter(b => bmByName[b.name]?.length).length + extraNames.length
 
   // Active modal unit (custom or canonical)
-  const activeUnit = customMode ? customUnit : (modalBm?.unit ?? 'time')
-  const modalOpen  = customMode || !!modalBm
+  const activeUnit = editing ? editUnit : customMode ? customUnit : (modalBm?.unit ?? 'time')
+  const modalOpen  = customMode || !!modalBm || !!editing
 
   return (
     <>
@@ -199,7 +251,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
               return (
                 <button
                   key={bm.name}
-                  onClick={() => { setModalBm(bm); setCustomMode(false); setResult(''); setNotes('') }}
+                  onClick={() => openNew(bm)}
                   className="relative overflow-hidden text-left p-5 rounded-2xl border border-dashed border-[var(--ln2)] bg-transparent hover:bg-ac/5 hover:border-ac/30 transition group"
                 >
                   <div className="font-display text-lg font-bold tracking-tight">{bm.name}</div>
@@ -221,7 +273,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
 
                 <div className="font-display font-bold leading-none text-ac my-2 tabular-nums tracking-tight"
                      style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
-                  {normalizeResult(best.result, bm.unit)}
+                  {showResult(best.result, bm.unit)}
                 </div>
                 <div className="text-mu text-[12px] leading-snug">{bm.desc}</div>
 
@@ -236,10 +288,14 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                   </span>
                 </div>
 
-                <button onClick={() => { setModalBm(bm); setCustomMode(false); setResult(''); setNotes('') }}
+                <button onClick={() => openNew(bm)}
                         className="mt-3 w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl bg-p3 border border-[var(--ln)] text-mu text-[12px] font-bold hover:text-ac hover:border-ac/25 transition">
                   <Plus size={12} strokeWidth={2.5} />
                   Mejorar registro
+                </button>
+                <button onClick={() => setHistoryName(bm.name)}
+                        className="mt-2 w-full min-h-10 text-[12px] font-semibold text-mu hover:text-t transition">
+                  Ver y corregir registros ({records.length})
                 </button>
               </div>
             )
@@ -248,7 +304,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
           {/* Extra benchmarks from DB not in canonical list */}
           {extraNames.map(name => {
             const records = bmByName[name] ?? []
-            const extraUnit: 'time' | 'rounds' = records.some(r => r.result.includes('+')) ? 'rounds' : 'time'
+            const extraUnit = inferUnit(records)
             const best    = pickBest(records, extraUnit)
             const level   = best ? estimateLevel(name, best.result, extraUnit) : null
 
@@ -265,7 +321,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                   <>
                     <div className="font-display font-bold leading-none text-ac my-2 tabular-nums tracking-tight"
                          style={{ fontSize: 'clamp(48px, 9vw, 64px)' }}>
-                      {normalizeResult(best.result, extraUnit)}
+                      {showResult(best.result, extraUnit)}
                     </div>
                     {best.notes && (
                       <div className="text-mu text-[12px] leading-snug line-clamp-2">{best.notes}</div>
@@ -286,12 +342,16 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                 <button
                   onClick={() => {
                     setCustomMode(true); setModalBm(null)
-                    setCustomName(name); setCustomUnit('time')
-                    setResult(''); setNotes('')
+                    setCustomName(name); setCustomUnit(extraUnit)
+                    setResult(''); setNotes(''); setDate(todayISO()); setEditing(null)
                   }}
                   className="mt-3 w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl bg-p3 border border-[var(--ln)] text-mu text-[12px] font-bold hover:text-ac hover:border-ac/25 transition">
                   <Plus size={12} strokeWidth={2.5} />
                   Mejorar registro
+                </button>
+                <button onClick={() => setHistoryName(name)}
+                        className="mt-2 w-full min-h-10 text-[12px] font-semibold text-mu hover:text-t transition">
+                  Ver y corregir registros ({records.length})
                 </button>
               </div>
             )
@@ -304,12 +364,12 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
         <Modal
           open
           onClose={closeModal}
-          title={customMode ? 'BENCHMARK PERSONALIZADO' : `BENCHMARK: ${modalBm?.name}`}
-          subtitle={customMode ? 'Registra un WOD, Hero WOD o benchmark propio' : modalBm?.desc}
+          title={editing ? 'CORREGIR REGISTRO' : customMode ? 'BENCHMARK PERSONALIZADO' : `BENCHMARK: ${modalBm?.name}`}
+          subtitle={editing ? editing.name : customMode ? 'Registra un WOD, Hero WOD o benchmark propio' : modalBm?.desc}
         >
           <form onSubmit={saveBenchmark} className="flex flex-col gap-4">
             {/* Custom name + unit (only in custom mode) */}
-            {customMode && (
+            {customMode && !editing && (
               <>
                 <div>
                   <label className="block text-xs text-mu font-semibold mb-1.5">
@@ -349,7 +409,7 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
             {/* Result input */}
             <div>
               <label className="block text-xs text-mu font-semibold mb-1.5">
-                Resultado ({activeUnit === 'time' ? 'mm:ss · escribe solo dígitos' : 'rondas'})
+                Resultado ({activeUnit === 'time' ? 'mm:ss · escribe solo dígitos' : 'rondas o rondas+reps'})
               </label>
               <input
                 required
@@ -358,6 +418,15 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
                 className="w-full px-3 py-3 rounded-xl bg-p3 border border-[var(--ln)] text-t outline-none focus:border-ac font-display text-3xl font-bold text-center tracking-tight"
                 placeholder={activeUnit === 'time' ? '06:29' : '21+3'}
                 inputMode={activeUnit === 'time' ? 'numeric' : 'text'}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-mu font-semibold mb-1.5">Fecha</label>
+              <input
+                type="date" required value={date} max={todayISO()}
+                onChange={e => setDate(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-p3 border border-[var(--ln)] text-t text-base sm:text-sm outline-none focus:border-ac [color-scheme:dark]"
               />
             </div>
 
@@ -383,6 +452,47 @@ export function BenchmarksView({ profile, benchmarks }: { profile: Profile; benc
           </form>
         </Modal>
       )}
+
+      {historyName && (
+        <Modal open onClose={() => setHistoryName(null)} title="REGISTROS" subtitle={historyName}>
+          {(() => {
+            const list = bmByName[historyName] ?? []
+            const unit = BENCHMARK_LIST.find(b => b.name === historyName)?.unit ?? inferUnit(list)
+            return (
+              <ul className="flex flex-col gap-2">
+                {list.length === 0 && <li className="text-mu text-sm">No hay registros.</li>}
+                {list.map(b => (
+                  <li key={b.id} className="flex items-center gap-3 p-3 rounded-2xl bg-p2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-display text-2xl font-bold tabular-nums tracking-tight">{showResult(b.result, unit)}</div>
+                      <div className="text-[11px] text-fa">
+                        {new Date(b.recorded_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {b.notes ? ` · ${b.notes}` : ''}
+                      </div>
+                    </div>
+                    <button type="button" aria-label="Corregir registro" onClick={() => openEdit(b, unit)}
+                      className="size-11 grid place-items-center rounded-xl text-mu hover:text-ac hover:bg-p3 transition"><Pencil size={16} /></button>
+                    <button type="button" aria-label="Eliminar registro" onClick={() => setDeleteTarget(b)}
+                      className="size-11 grid place-items-center rounded-xl text-mu hover:text-rd hover:bg-p3 transition"><Trash2 size={16} /></button>
+                  </li>
+                ))}
+              </ul>
+            )
+          })()}
+        </Modal>
+      )}
+
+      {saveErr && !modalOpen && <div className="px-4 lg:px-6 pb-4"><Alert tone="error">{saveErr}</Alert></div>}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        danger busy={deleting}
+        title="¿Eliminar este registro?"
+        body="Se borrará de tu historial y no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </>
   )
 }

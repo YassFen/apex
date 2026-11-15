@@ -7,7 +7,7 @@ import { WidgetBoard } from '@/components/home/WidgetBoard'
 import { ChallengesWidget, type ChallengeSummary } from '@/components/challenges/ChallengesWidget'
 import {
   Plus, Fire, Trophy, CaretRight, ClockCounterClockwise, Calculator, Check, Users, SlidersHorizontal,
-  DotsSixVertical, Target, Barbell, PersonSimpleRun, ArrowCounterClockwise, X, Clock,
+  DotsSixVertical, Target, Barbell, PersonSimpleRun, ArrowCounterClockwise, X,
 } from '@/components/ui/icons'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
@@ -27,6 +27,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toDateInput, todayISO, formatDateOnly } from '@/lib/utils/dates'
 import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 import { cn } from '@/lib/utils/cn'
+import { lbToKg } from '@/lib/utils/units'
 import type { Hit } from '@/lib/utils/movement-guide'
 import type { Profile, Movement } from '@/lib/types/database'
 
@@ -39,7 +40,7 @@ interface PR {
   is_pr: boolean
 }
 
-export type TodayWod = { title: string; type: string; durationMins: number | null; myResult: string | null; classTime?: string | null; count?: number }
+export type TodayWod = { title: string; type: string; durationMins: number | null; myResult: string | null; boxId?: string }
 export type GoalProgress = { id: string; movement: string; target: number; unit: string; period: string; done: number }
 
 type WidgetId = 'hero' | 'today' | 'nextEvent' | 'goals' | 'week' | 'highlights' | 'strength' | 'heatmap' | 'records' | 'stats' | 'links' | 'challenges'
@@ -72,7 +73,7 @@ function formatPrValue(pr: PR, unit: 'kg' | 'lb'): { value: string; unit: string
   }
   if (metric === 'max_reps' && pr.movements?.category === 'cardio') return { value: String(Math.round(raw)), unit: 'cal' }
   if (metric === 'max_reps') return { value: String(Math.round(raw)), unit: 'reps' }
-  if (unit === 'kg') return { value: String(Math.round(raw * 0.453592)), unit: 'kg' }
+  if (unit === 'kg') return { value: String(lbToKg(raw)), unit: 'kg' }
   return { value: String(Math.round(raw)), unit: 'lb' }
 }
 
@@ -119,7 +120,10 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
     ...movements.filter(m => m.category === 'weightlifting' || m.category === 'olympic').map(m => m.name),
   ])].sort((a, b) => a.localeCompare(b, 'es')), [prs, movements])
   const kpiPRs = kpiMovements.map(name => {
-    const sorted = prs.filter(p => p.movements?.name === name).sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())
+    const all = prs.filter(p => p.movements?.name === name)
+    // Prefer the 1RM so a 3RM never shows up as the top of a lift.
+    const pool = all.some(p => p.metric === '1rm') ? all.filter(p => p.metric === '1rm') : all
+    const sorted = pool.sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())
     const best = sorted.find(p => p.is_pr) ?? sorted[0]
     const previous = sorted.filter(p => p.id !== best?.id).sort((a, b) => a.metric === 'time' ? a.value_lb - b.value_lb : b.value_lb - a.value_lb)[0]
     return { name, best, previous }
@@ -167,16 +171,10 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
         return <HeroRings data={heroData} onLog={() => setAddOpen(true)} onGenerate={() => setGenOpen(true)} />
       case 'today':
         return today ? (
-          <Link href="/wod" className={cn('tap-card block rounded-[24px] p-5 relative overflow-hidden', today.myResult ? 'bg-p' : 'bg-ac text-onac')}>
+          <Link href={today.boxId ? `/wod?box=${today.boxId}` : '/wod'} className={cn('tap-card block rounded-[24px] p-5 relative overflow-hidden', today.myResult ? 'bg-p' : 'bg-ac text-onac')}>
             {!today.myResult && <Fire size={130} weight="fill" className="absolute -right-6 -bottom-8 opacity-15" aria-hidden />}
             <div className="flex items-center gap-2 flex-wrap">
               <span className={cn('text-[13px] font-semibold', today.myResult ? 'text-mu' : 'opacity-80')}>WOD de hoy</span>
-              {today.classTime && (
-                <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold tabular-nums', today.myResult ? 'bg-p2' : 'bg-onac/15')}>
-                  <Clock size={12} weight="bold" aria-hidden />{today.classTime}
-                </span>
-              )}
-              {(today.count ?? 1) > 1 && <span className={cn('text-[11px]', today.myResult ? 'text-mu' : 'opacity-70')}>+{(today.count ?? 1) - 1} clase{(today.count ?? 1) > 2 ? 's' : ''} más</span>}
             </div>
             <div className="font-display text-3xl font-bold leading-tight mt-1 text-balance max-w-[18ch] tracking-tight">{today.title}</div>
             {today.myResult ? (

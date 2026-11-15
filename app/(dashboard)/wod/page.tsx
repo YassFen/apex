@@ -1,4 +1,3 @@
-import { bookedTimesToday, nowHmSantiago, pickTodayWod } from '@/lib/utils/wod-pick'
 import { createClient } from '@/lib/supabase/server'
 import { getUser, getProfile } from '@/lib/supabase/session'
 import { todayISO } from '@/lib/utils/dates'
@@ -6,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { WodView } from '@/components/wod/WodView'
 import type { Profile } from '@/lib/types/database'
 
-export default async function WodPage({ searchParams }: { searchParams: Promise<{ box?: string; wod?: string }> }) {
+export default async function WodPage({ searchParams }: { searchParams: Promise<{ box?: string; time?: string; rounds?: string }> }) {
   const supabase = await createClient()
   const user = await getUser()
   if (!user) redirect('/auth/login')
@@ -24,6 +23,8 @@ export default async function WodPage({ searchParams }: { searchParams: Promise<
   const boxIds = ((memberships ?? []) as any[]).map((m: any) => m.box_id as string)
   const today = todayISO()
 
+  // One WOD per box and day. With several boxes: ?box= picks one, else the one I logged, else the first.
+  const { box: boxParam, time: timeParam, rounds: roundsParam } = await searchParams
   const { data: dailyWods } = boxIds.length > 0
     ? await supabase
         .from('daily_wods')
@@ -32,26 +33,21 @@ export default async function WodPage({ searchParams }: { searchParams: Promise<
         .eq('scheduled_for', today)
         .eq('is_live', true)
         .order('published_at', { ascending: false })
+        .limit(20)
     : { data: [] as any[] }
-
-  // Several WODs today (several boxes, or one per class time): ?wod= picks one.
-  // By default show the next class still to come, else the last one.
-  const { box: boxParam, wod: wodParam } = await searchParams
   const todays = ((dailyWods ?? []) as any[])
-    .sort((x, y) => String(x.class_time ?? '').localeCompare(String(y.class_time ?? '')))
-  const [{ data: myToday }, bookedTimes] = await Promise.all([
-    todays.length ? supabase.from('wod_results').select('daily_wod_id').eq('user_id', user.id).in('daily_wod_id', todays.map(w => w.id)) : Promise.resolve({ data: [] }),
-    bookedTimesToday(supabase, user.id, today),
-  ])
+  const wanted = boxParam ? todays.filter(w => w.box_id === boxParam) : todays
+  const { data: myToday } = wanted.length > 1
+    ? await supabase.from('wod_results').select('daily_wod_id').eq('user_id', user.id).in('daily_wod_id', wanted.map(w => w.id))
+    : { data: [] as any[] }
   const logged = new Set(((myToday ?? []) as any[]).map(r => r.daily_wod_id as string))
-  const wod = todays.find(w => w.id === wodParam)
-    ?? pickTodayWod(boxParam ? todays.filter(w => w.box_id === boxParam) : todays, { logged, bookedTimes, nowHm: nowHmSantiago() }) ?? null
-  const multiBox = new Set(todays.map(w => w.box_id)).size > 1
-  const todayWods = todays.map(w => ({
-    id: w.id as string,
-    label: [multiBox ? (w.boxes?.name as string) ?? 'Box' : null, w.class_time ? String(w.class_time).slice(0, 5) : null]
-      .filter(Boolean).join(' · ') || (w.title as string),
-  }))
+  const wod = wanted.find(w => logged.has(w.id)) ?? wanted[0] ?? todays[0] ?? null
+
+  // The timer links here with the finished time or rounds, to prefill the result.
+  const prefill = {
+    time: timeParam && /^\d{1,3}:[0-5]\d$/.test(timeParam) ? timeParam : undefined,
+    rounds: roundsParam && /^\d{1,4}$/.test(roundsParam) ? roundsParam : undefined,
+  }
 
   let results: any[] = []
   if (wod) {
@@ -96,7 +92,7 @@ export default async function WodPage({ searchParams }: { searchParams: Promise<
       library={(library ?? []) as any[]}
       key={wod?.id ?? 'none'}
       profile={profile}
-      todayWods={todayWods}
+      prefill={prefill}
       wod={wod}
       results={results}
       myResult={myResult}

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
 import {
-  ChevronLeft, ChevronRight, Plus, Trophy, Lock, MapPin, CheckCircle2, ArrowRight, CalendarPlus, Eye, EyeOff, Flame, Users, Clock,
+  ChevronLeft, ChevronRight, Plus, Trophy, Lock, MapPin, CheckCircle2, ArrowRight, CalendarPlus, Eye, EyeOff, Flame, Users,
 } from '@/components/ui/icons'
 import { Topbar } from '@/components/layout/Topbar'
 import { Card } from '@/components/ui/Card'
@@ -20,7 +20,6 @@ export interface CalBox { id: string; name: string; logo: string | null; isCoach
 export interface CalWod {
   id: string; boxId: string; date: string; title: string; type: string; description: string
   duration: number | null; movements: any[]; isLive: boolean; showEarly: boolean; myResult: string | null
-  classTime: string | null
 }
 export interface CalEvent {
   id: string; boxId: string | null; name: string; kind: EventKind; startsOn: string; endsOn: string
@@ -72,7 +71,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
       if (!map.has(d)) map.set(d, { wods: [], hidden: [], events: [] })
       return map.get(d)!
     }
-    for (const w of [...fWods].sort((a, b) => (a.classTime ?? '').localeCompare(b.classTime ?? ''))) get(w.date).wods.push(w)
+    for (const w of fWods) get(w.date).wods.push(w)
     for (const h of fHidden) get(h.date).hidden.push(h.boxId)
     for (const e of fEvents) {
       for (let d = e.startsOn, i = 0; d <= e.endsOn && i < 14; d = addDaysISO(d, 1), i++) get(d).events.push(e)
@@ -227,7 +226,7 @@ export function CalendarView({ profile, today, month: initialMonth, range, boxes
                     <TimelineRow key={e.id} time={null} tone="bg-rd"><EventRow event={e} today={today} /></TimelineRow>
                   ))}
                   {day.wods.map(w => (
-                    <TimelineRow key={w.id} time={w.classTime} done={!!w.myResult} tone={w.isLive ? (TYPE_BAR[w.type] ?? 'bg-mu') : 'bg-fa'}>
+                    <TimelineRow key={w.id} time={null} done={!!w.myResult} tone={w.isLive ? (TYPE_BAR[w.type] ?? 'bg-mu') : 'bg-fa'}>
                       <WodCard wod={w} today={today}
                         boxName={multiBox ? boxes.find(b => b.id === w.boxId)?.name : undefined}
                         tone={boxTone(boxes, w.boxId)}
@@ -356,7 +355,6 @@ function WodCard({ wod, today, boxName, tone, canEdit }: { wod: CalWod; today: s
   return (
     <Card padding={false} className={cn('p-4', isToday && wod.isLive && !wod.myResult && 'bg-gradient-to-br from-ac/20 via-p to-p ring-1 ring-inset ring-ac/25')}>
       <div className="flex items-center gap-2 mb-2 flex-wrap">
-        {wod.classTime && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-t text-bg text-[11px] font-bold tabular-nums"><Clock size={12} weight="bold" aria-hidden />{wod.classTime}</span>}
         <span className={cn('px-2 py-0.5 rounded-full text-[11px] font-bold uppercase', meta.cls)}>{meta.label}</span>
         {wod.duration ? <span className="text-mu text-xs">{wod.duration} min</span> : null}
         {boxName && <span className="flex items-center gap-1 text-xs text-mu"><span className={cn('size-2 rounded-full', tone)} />{boxName}</span>}

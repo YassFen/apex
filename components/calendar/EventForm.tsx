@@ -1,5 +1,5 @@
 'use client'
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
 import { Plus, Trash2, GripVertical, Save, X } from '@/components/ui/icons'
@@ -73,6 +73,8 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
     movs: w.movements.length ? w.movements.map(m => ({ name: m.name, reps: m.reps, m: toUnitStr(m.load_lb, unit), f: toUnitStr(m.load_lb_f, unit) })) : [emptyMov()],
   })))
   const [saving, setSaving] = useState(false)
+  // Id of the event created by a first attempt whose workouts failed: a retry updates it instead of creating another.
+  const createdId = useRef<string | null>(null)
 
   const patchW = (key: string, patch: Partial<WorkoutDraft>) => setWorkouts(ws => ws.map(w => w.key === key ? { ...w, ...patch } : w))
   const patchMov = (key: string, i: number, patch: Partial<MovRow>) =>
@@ -90,11 +92,13 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
       name: name.trim(), kind, starts_on: startsOn, ends_on: endsOn || null,
       location: location.trim() || null, url: url.trim() || null, notes: notes.trim() || null,
     }
-    const res = editing
-      ? await supabase.from('events').update(row).eq('id', initial.id as string).select('id').single()
+    const existingId = initial.id ?? createdId.current
+    const res = existingId
+      ? await supabase.from('events').update(row).eq('id', existingId).select('id').single()
       : await supabase.from('events').insert({ ...row, created_by: profile.id }).select('id').single()
     if (res.error || !res.data) { setSaving(false); fire(friendlyError(res.error?.message ?? 'No se pudo guardar'), 'error'); return }
     const eventId = (res.data as any).id as string
+    if (!editing) createdId.current = eventId
 
     const rows = workouts
       .filter(w => w.title.trim() || w.movs.some(m => m.name.trim()))

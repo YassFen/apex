@@ -16,7 +16,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useShell } from '@/lib/hooks/useShell'
 import { addDaysISO, daysBetween, formatDateOnly } from '@/lib/utils/dates'
 import { PLAN_STATE_META, classesLeft, planState } from '@/lib/utils/membership'
-import { WEEKDAYS, WEEKDAYS_SHORT, buildSessions, weekdayOf, type Session } from '@/lib/utils/schedule'
+import { WEEKDAYS, WEEKDAYS_SHORT, buildSessions, hasStarted, nowHM, weekdayOf, type Session } from '@/lib/utils/schedule'
+import { Segmented } from '@/components/ui/motion'
 import { friendlyError } from '@/lib/utils/errors'
 import { playSound } from '@/lib/utils/sound'
 import { cn } from '@/lib/utils/cn'
@@ -27,26 +28,40 @@ const REASONS: Record<string, string> = {
   no_class: 'Esa clase ya no existe.', not_member: 'No eres parte de este box.', cancelled: 'Esa clase fue cancelada.',
   frozen: 'Tu plan está congelado. Habla con tu box para reactivarlo.', too_late: 'Esa clase ya empezó.', no_plan: 'No tienes un plan vigente en este box.', removed: 'Ya no eres parte de este box.', expired: 'Tu plan venció. Renuévalo en tu box para reservar.',
   no_classes: 'Ya usaste todas las clases de tu plan.', out_of_range: 'Solo puedes reservar hasta 30 días adelante.',
+  no_booking: 'Esa reserva ya no existe.',
+}
+// The same reasons, worded for a coach adding someone else.
+const STAFF_REASONS: Record<string, string> = {
+  ...REASONS,
+  not_member: 'Esa persona ya no es parte del box.', removed: 'Esa persona ya no es parte del box.',
+  frozen: 'Su plan está congelado.', no_plan: 'No tiene un plan vigente en este box.', expired: 'Su plan venció.',
+  no_classes: 'Ya usó todas las clases de su plan.', out_of_range: 'Solo puedes agregar a alguien hasta 7 días después de la clase.',
+  too_late: 'Esa clase ya empezó.',
 }
 
-export function ClassesView({ profile, me, boxes, box, staff, today, slots, overrides, bookings, people, membership, issues, missing }: {
+export function ClassesView({ profile, me, boxes, box, staff, today, slots, overrides, bookings, people, membership, upcoming, issues, missing }: {
   profile: Profile; me: string; boxes: Box[]; box: Box | null; staff: boolean; today: string
-  slots: ClassSlot[]; overrides: ClassOverride[]; bookings: ClassBooking[]; people: PersonLite[]; membership: Membership | null; issues: CoachIssue[]; missing: boolean
+  slots: ClassSlot[]; overrides: ClassOverride[]; bookings: ClassBooking[]; people: PersonLite[]; membership: Membership | null; upcoming: Membership | null; issues: CoachIssue[]; missing: boolean
 }) {
   const { viewMode } = useShell()
   const router = useRouter()
   const { fire } = useToast()
   const supabase = createClient()
   const coachView = staff && viewMode !== 'athlete'
-  const dates = Array.from({ length: 7 }, (_, i) => addDaysISO(today, i))
+  // Coaches also get yesterday, to mark attendance left pending.
+  const first = coachView ? addDaysISO(today, -1) : today
+  const dates = Array.from({ length: coachView ? 8 : 7 }, (_, i) => addDaysISO(first, i))
   const [day, setDay] = useState(today)
   const [busy, setBusy] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState<Session | null>(null)
   // Classes that already started can't be booked or cancelled by the athlete.
-  const nowHM = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date())
-  const started = (s: Session) => s.date < today || (s.date === today && s.time <= nowHM)
-  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, today, addDaysISO(today, 6), today), [slots, overrides, bookings, today])
+  const now = nowHM()
+  const started = (s: Session) => hasStarted(s, today, now)
+  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, first, addDaysISO(today, 6), today, now), [slots, overrides, bookings, first, today, now])
+  const iTeach = sessions.some(s => s.coachId === me)
+  // "Mis clases": mine plus the ones nobody is assigned to. "Todas": every class of the box.
+  const [scope, setScope] = useState<'mine' | 'all'>(iTeach ? 'mine' : 'all')
   const nameOf = (id: string | null) => people.find(p => p.id === id)?.name ?? null
   const myStatus = (s: Session) => bookings.find(b => b.slot_id === s.slotId && b.class_date === s.date && b.user_id === me && b.status !== 'cancelled')?.status ?? null
   const state = planState(membership, today)
@@ -64,13 +79,16 @@ export function ClassesView({ profile, me, boxes, box, staff, today, slots, over
   }
   async function cancel(s: Session) {
     setBusy(s.key)
-    const { error } = await supabase.rpc('cancel_booking', { p_slot: s.slotId, p_date: s.date })
+    const { data, error } = await supabase.rpc('cancel_booking', { p_slot: s.slotId, p_date: s.date })
     setBusy(null)
     if (error) { fire(friendlyError(error.message), 'error'); return }
+    if (data?.ok === false) { fire(REASONS[data.reason] ?? 'No se pudo cancelar la reserva.', 'error'); router.refresh(); return }
     fire('Reserva cancelada', 'info'); router.refresh()
   }
 
-  const list = sessions.filter(s => s.date === day && (!coachView || s.coachId === me))
+  const shownToCoach = (s: Session) => scope === 'all' || s.coachId === me || !s.coachId
+  const list = sessions.filter(s => s.date === day && (!coachView || shownToCoach(s)))
+  const activeSlots = slots.filter(s => s.is_active)
   const openSession = sessions.find(s => s.key === open) ?? null
 
   return (
@@ -82,10 +100,20 @@ export function ClassesView({ profile, me, boxes, box, staff, today, slots, over
 
         {!box ? (
           <Empty icon={<CalendarCheck size={26} />} title="Únete a un box para reservar" body="Con el código de invitación de tu box verás aquí sus clases y tu plan." />
-        ) : slots.length === 0 ? (
+        ) : activeSlots.length === 0 && sessions.length === 0 ? (
           <Empty icon={<CalendarCheck size={26} />} title="Tu box aún no publica horarios" body="Cuando la administración arme la grilla de clases, aquí podrás reservar tu cupo." />
         ) : (
           <>
+            {!coachView && !membership && upcoming && (
+              <Card className="flex items-center gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-semibold text-mu">Tu plan</div>
+                  <div className="font-display text-xl font-bold tracking-tight truncate">{upcoming.plan_name}</div>
+                  <div className="text-sm mt-0.5 text-mu">Empieza el {formatDateOnly(upcoming.starts_on, { day: 'numeric', month: 'long' })}</div>
+                </div>
+                <Badge color="blue">Por empezar</Badge>
+              </Card>
+            )}
             {!coachView && membership && (
               <Card className="flex items-center gap-4">
                 <div className="min-w-0 flex-1">
@@ -101,7 +129,11 @@ export function ClassesView({ profile, me, boxes, box, staff, today, slots, over
               </Card>
             )}
 
-            <div className="grid grid-cols-7 gap-1">
+            {coachView && (
+              <Segmented id="classes-scope" value={scope} onChange={setScope} options={[['mine', 'Mis clases'], ['all', 'Todas las clases']]} />
+            )}
+
+            <div className={cn('grid gap-1', coachView ? 'grid-cols-8' : 'grid-cols-7')}>
               {dates.map(d => {
                 const on = d === day
                 const mineThatDay = sessions.some(s => s.date === d && (coachView ? s.coachId === me && !s.cancelled : !!myStatus(s)))
@@ -109,7 +141,7 @@ export function ClassesView({ profile, me, boxes, box, staff, today, slots, over
                   <button key={d} type="button" onClick={() => { playSound('tick'); setDay(d) }} aria-pressed={on}
                     className={cn('relative isolate h-16 rounded-2xl flex flex-col items-center justify-center gap-0.5', on ? 'text-onac' : 'bg-p')}>
                     {on && <motion.span layoutId="classes-day" className="absolute inset-0 -z-10 rounded-2xl bg-ac" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />}
-                    <span className="text-[11px] font-semibold">{d === today ? 'Hoy' : WEEKDAYS_SHORT[weekdayOf(d)]}</span>
+                    <span className="text-[11px] font-semibold">{d === today ? 'Hoy' : d < today ? 'Ayer' : WEEKDAYS_SHORT[weekdayOf(d)]}</span>
                     <span className="font-display text-lg font-bold leading-none tabular-nums">{Number(d.slice(8))}</span>
                     <span className={cn('size-1.5 rounded-full', mineThatDay ? (on ? 'bg-onac' : 'bg-ac') : 'bg-transparent')} />
                   </button>
@@ -118,7 +150,7 @@ export function ClassesView({ profile, me, boxes, box, staff, today, slots, over
             </div>
 
             <ul className="flex flex-col gap-2">
-              {list.length === 0 && <li className="text-center text-mu text-sm py-10">{coachView ? 'No tienes clases asignadas este día.' : 'Sin clases este día.'}</li>}
+              {list.length === 0 && <li className="text-center text-mu text-sm py-10">{coachView && scope === 'mine' ? 'No tienes clases asignadas este día. Mira "Todas las clases".' : 'Sin clases este día.'}</li>}
               {list.map(s => {
                 const mine = myStatus(s)
                 const full = s.booked >= s.capacity
@@ -162,7 +194,7 @@ export function ClassesView({ profile, me, boxes, box, staff, today, slots, over
         onConfirm={async () => { if (cancelling) await cancel(cancelling); setCancelling(null) }} />
 
       {openSession && box && (
-        <RosterSheet key={openSession.key} box={box} me={me} s={openSession} people={people} today={today}
+        <RosterSheet key={openSession.key} box={box} me={me} s={openSession} people={people} started={started(openSession)}
           bookings={bookings.filter(b => b.slot_id === openSession.slotId && b.class_date === openSession.date && b.status !== 'cancelled')}
           issue={issues.find(i => i.slot_id === openSession.slotId && i.class_date === openSession.date) ?? null}
           onClose={() => setOpen(null)} />
@@ -172,8 +204,8 @@ export function ClassesView({ profile, me, boxes, box, staff, today, slots, over
 }
 
 /** Coach: who is coming, take attendance, add a walk-in, or report that you can't teach it. */
-function RosterSheet({ box, me, s, people, bookings, issue, today, onClose }: {
-  box: Box; me: string; s: Session; people: PersonLite[]; bookings: ClassBooking[]; issue: CoachIssue | null; today: string; onClose: () => void
+function RosterSheet({ box, me, s, people, bookings, issue, started, onClose }: {
+  box: Box; me: string; s: Session; people: PersonLite[]; bookings: ClassBooking[]; issue: CoachIssue | null; started: boolean; onClose: () => void
 }) {
   const router = useRouter()
   const { fire } = useToast()
@@ -187,17 +219,32 @@ function RosterSheet({ box, me, s, people, bookings, issue, today, onClose }: {
   const inClass = new Set(bookings.map(b => b.user_id))
   const others = people.filter(p => !inClass.has(p.id)).sort((a, b) => a.name.localeCompare(b.name, 'es'))
   const sorted = [...bookings].sort((a, b) => (a.status === 'waitlist' ? 1 : 0) - (b.status === 'waitlist' ? 1 : 0) || (a.created_at < b.created_at ? -1 : 1))
-  const canMark = s.date <= today
+  // Attendance is taken once the class has started.
+  const canMark = started
+  const pending = sorted.filter(b => b.status === 'booked')
 
   async function call(p: PromiseLike<{ data?: any; error: any }>, ok?: string) {
     setBusy(true)
     const { error, data } = await p
     setBusy(false)
-    if (error || data?.ok === false) { fire(error ? friendlyError(error.message) : REASONS[data.reason] ?? 'No se pudo.', 'error'); return false }
+    if (error || data?.ok === false) { fire(error ? friendlyError(error.message) : STAFF_REASONS[data.reason] ?? 'No se pudo. Inténtalo de nuevo.', 'error'); return false }
     if (data?.status === 'waitlist') fire('La clase está llena: quedó en lista de espera. Sube el cupo en Horarios para que cuente.', 'info')
     else if (ok) fire(ok, 'ok')
     router.refresh()
     return true
+  }
+
+  async function markAll() {
+    setBusy(true)
+    let failed = 0
+    for (const b of pending) {
+      const { data, error } = await supabase.rpc('mark_attendance', { p_booking: b.id, p_status: 'attended' })
+      if (error || data?.ok === false) failed++
+    }
+    setBusy(false)
+    if (failed) fire(failed === pending.length ? 'No se pudo marcar la asistencia. Inténtalo de nuevo.' : `Faltaron ${failed} por marcar. Inténtalo de nuevo.`, 'error')
+    else fire(pending.length === 1 ? 'Marcado como presente' : `${pending.length} marcados como presentes`, 'ok')
+    router.refresh()
   }
 
   return (
@@ -205,6 +252,9 @@ function RosterSheet({ box, me, s, people, bookings, issue, today, onClose }: {
       <Modal open onClose={onClose} eyebrow={`${WEEKDAYS[weekdayOf(s.date)]} ${formatDateOnly(s.date, { day: 'numeric', month: 'long' })}`} title={`${s.time} · ${s.name}`}
         subtitle={`${s.booked} de ${s.capacity} inscritos${canMark ? '. Marca quién vino.' : ''}`}>
         <div className="flex flex-col gap-4">
+          {canMark && pending.length > 0 && (
+            <Button variant="secondary" disabled={busy} onClick={markAll}><Check size={16} weight="bold" /> Marcar todos presentes</Button>
+          )}
           {sorted.length === 0 ? <p className="text-sm text-mu">Nadie se ha inscrito todavía.</p> : (
             <ul className="flex flex-col gap-1.5">
               {sorted.map(b => {
@@ -241,7 +291,7 @@ function RosterSheet({ box, me, s, people, bookings, issue, today, onClose }: {
             </div>
           </div>
 
-          {s.coachId === me && s.date >= today && (
+          {s.coachId === me && !started && (
             issue?.status === 'open' ? (
               <div className="p-3.5 rounded-2xl bg-or/10 text-sm flex items-center gap-3">
                 <span className="flex-1 text-or">Avisaste que no puedes dar esta clase.</span>

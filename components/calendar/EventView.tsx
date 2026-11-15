@@ -252,6 +252,10 @@ export function EventView({ profile, event, today, prs, benchmarks, canEdit }: {
           </Reveal>
         )}
 
+        {canEdit && event.boxId && event.results !== null && event.workouts.length > 0 && event.participants.length > 0 && today >= event.startsOn && (
+          <Reveal><CoachResults event={event} /></Reveal>
+        )}
+
         {event.notes && (
           <Reveal>
             <Card>
@@ -472,5 +476,114 @@ function FinalPlace({ eventId, me }: { eventId: string; me: EventDetail['partici
         <Link href="/competitions" className="inline-flex items-center gap-1 text-sm text-ac font-semibold mt-3">Ver mi progreso en competencias <ChevronRight size={14} /></Link>
       </Card>
     </div>
+  )
+}
+
+/* ── Coach: enter or correct an athlete's results ─────────────────────────── */
+
+function CoachResults({ event }: { event: EventDetail }) {
+  const router = useRouter()
+  const { fire } = useToast()
+  const [athlete, setAthlete] = useState<EventDetail['participants'][number] | null>(null)
+  const [values, setValues] = useState<Record<string, string>>({})
+  const [places, setPlaces] = useState<Record<string, string>>({})
+  const [finalPlace, setFinalPlace] = useState('')
+  const [field, setField] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  function open(pt: EventDetail['participants'][number]) {
+    const v: Record<string, string> = {}, pl: Record<string, string> = {}
+    for (const w of event.workouts) {
+      const r = event.results?.find(x => x.workoutId === w.id && x.userId === pt.userId)
+      if (w.id) { v[w.id] = r?.value ?? ''; pl[w.id] = r?.place ? String(r.place) : '' }
+    }
+    setValues(v); setPlaces(pl)
+    setFinalPlace(pt.finalPlace ? String(pt.finalPlace) : ''); setField(pt.fieldSize ? String(pt.fieldSize) : '')
+    setAthlete(pt)
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (!athlete) return
+    setBusy(true)
+    const supabase = createClient()
+    const denied = 'No tienes permiso para hacer esto.'
+    for (const w of event.workouts) {
+      if (!w.id) continue
+      const had = event.results?.find(x => x.workoutId === w.id && x.userId === athlete.userId)
+      const val = (values[w.id] ?? '').trim()
+      if (!val) {
+        if (had) {
+          const { data, error } = await supabase.from('event_results').delete().eq('workout_id', w.id).eq('user_id', athlete.userId).select('workout_id')
+          if (error || !data?.length) { setBusy(false); fire(error ? friendlyError(error.message) : denied, 'error'); return }
+        }
+        continue
+      }
+      const place = places[w.id] ? Number(places[w.id]) : null
+      if (had && had.value === val && had.place === place) continue
+      const { error } = await supabase.from('event_results').upsert(
+        { workout_id: w.id, event_id: event.id, user_id: athlete.userId, result_value: val, place },
+        { onConflict: 'workout_id,user_id' })
+      if (error) { setBusy(false); fire(friendlyError(error.message), 'error'); return }
+    }
+    const fp = finalPlace ? Number(finalPlace) : null, fs = field ? Number(field) : null
+    if (fp !== (athlete.finalPlace ?? null) || fs !== (athlete.fieldSize ?? null)) {
+      const { data, error } = await supabase.from('event_participants')
+        .update({ final_place: fp, field_size: fs }).eq('event_id', event.id).eq('user_id', athlete.userId).select('user_id')
+      if (error || !data?.length) { setBusy(false); fire(error ? friendlyError(error.message) : denied, 'error'); return }
+    }
+    setBusy(false)
+    setAthlete(null)
+    fire('Resultados guardados', 'pr')
+    router.refresh()
+  }
+
+  const num = (set: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => set(e.target.value.replace(/\D/g, ''))
+  const inp = 'h-12 px-4 rounded-2xl bg-p2 outline-none ring-1 ring-inset ring-transparent focus:ring-ac/60 placeholder:text-fa'
+
+  return (
+    <Card>
+      <h2 className="font-display text-lg font-bold tracking-tight">Resultados de los atletas</h2>
+      <p className="text-mu text-sm mt-0.5 mb-3">Anota o corrige las marcas y el puesto final de quien compite.</p>
+      <ul className="flex flex-col gap-1.5">
+        {event.participants.map(pt => (
+          <li key={pt.userId}>
+            <button type="button" onClick={() => open(pt)}
+              className="w-full flex items-center gap-3 h-12 px-4 rounded-2xl bg-p2 hover:bg-p3 text-left transition">
+              <span className="flex-1 truncate text-sm font-semibold">{pt.name}</span>
+              {pt.finalPlace ? <span className="text-xs text-mu font-bold tabular-nums">#{pt.finalPlace}{pt.fieldSize ? ` de ${pt.fieldSize}` : ''}</span> : null}
+              <ChevronRight size={14} className="text-fa" aria-hidden />
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {athlete && (
+        <Modal open onClose={() => setAthlete(null)} eyebrow="Resultados" title={athlete.name}>
+          <form onSubmit={save} className="flex flex-col gap-4">
+            {event.workouts.map(w => w.id && (
+              <div key={w.id}>
+                <span className="block text-[13px] text-mu font-medium mb-1.5 px-1">{w.title}</span>
+                <div className="grid grid-cols-[1fr_96px] gap-2">
+                  <input value={values[w.id] ?? ''} onChange={e => setValues(v => ({ ...v, [w.id as string]: e.target.value }))}
+                    placeholder="Resultado" aria-label={`Resultado en ${w.title}`} className={cn(inp, 'font-display text-lg font-bold')} />
+                  <input value={places[w.id] ?? ''} onChange={num(x => setPlaces(p => ({ ...p, [w.id as string]: x })))}
+                    inputMode="numeric" placeholder="Puesto" aria-label={`Puesto en ${w.title}`} className={cn(inp, 'text-center')} />
+                </div>
+              </div>
+            ))}
+            <div>
+              <span className="block text-[13px] text-mu font-medium mb-1.5 px-1">Puesto final</span>
+              <div className="flex items-center gap-2">
+                <input value={finalPlace} onChange={num(setFinalPlace)} inputMode="numeric" placeholder="Puesto" aria-label="Puesto final" className={cn(inp, 'w-24 text-center')} />
+                <span className="text-mu">de</span>
+                <input value={field} onChange={num(setField)} inputMode="numeric" placeholder="Total" aria-label="Total de competidores" className={cn(inp, 'w-24 text-center')} />
+              </div>
+            </div>
+            <ModalActions secondary="Cancelar" primary="Guardar" onSecondary={() => setAthlete(null)} primaryType="submit" busy={busy} />
+          </form>
+        </Modal>
+      )}
+    </Card>
   )
 }

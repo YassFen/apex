@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Dumbbell, ClipboardList, MailCheck } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
 import { friendlyError } from '@/lib/utils/errors'
-import { joinBoxByCode } from '@/lib/utils/join-box'
+import { joinBoxByCode, joinErrorMessage } from '@/lib/utils/join-box'
 import { Field, PasswordField, Alert, BrandMark } from '@/components/ui/Field'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils/cn'
@@ -63,7 +63,15 @@ export function RegisterForm() {
       return
     }
 
-    if (code) await joinBoxByCode(supabase, code, data.user.id)
+    if (code) {
+      const res = await joinBoxByCode(supabase, code, data.user.id)
+      if (!res.ok && res.reason !== 'already_member') {
+        // Account is created; send them where they can fix the code, with a clear message.
+        router.push(`/settings/boxes?joinError=${encodeURIComponent(joinErrorMessage(res, friendlyError))}`)
+        router.refresh()
+        return
+      }
+    }
     router.push('/dashboard')
     router.refresh()
   }

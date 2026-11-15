@@ -13,14 +13,18 @@ import { Avatar, MigrationNotice, SectionTitle, Stat, selectCls } from '@/compon
 import { Snowflake, Play, ArrowsClockwise, Ticket, EnvelopeSimple, Phone, WhatsappLogo } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
 import { addDaysISO, daysBetween, formatDateOnly, toDateInput } from '@/lib/utils/dates'
-import { MEMBERSHIP_EVENT_LABEL, PLAN_STATE_META, classesLeft, currentMembership, planState, unfreeze, upcomingMembership } from '@/lib/utils/membership'
-import { friendlyError } from '@/lib/utils/errors'
+import { MEMBERSHIP_EVENT_LABEL, PLAN_STATE_META, classesLeft, currentMembership, planState, reactivateMembership, upcomingMembership } from '@/lib/utils/membership'
+import { friendlyError, isMissingColumn } from '@/lib/utils/errors'
 import { cn, roleLabel } from '@/lib/utils/cn'
 import type { Person } from '@/lib/utils/admin-box'
 import type { Profile, Box, Membership, MembershipEvent, MembershipPlan, MemberFile } from '@/lib/types/database'
 
 const fmt = (d: string) => formatDateOnly(d, { day: 'numeric', month: 'short', year: 'numeric' })
 const GAP_DAYS = 14
+const ROLE_REASONS: Record<string, string> = {
+  owner: 'El dueño del box siempre es administrador.',
+  not_member: 'Esta persona está dada de baja. Reactiva su cuenta antes de cambiarle el rol.',
+}
 
 export function MemberFileView({ profile, box, person, me, today, days, memberships, events, plans, file, missing }: {
   profile: Profile; box: Box; person: Person; me: string; today: string; days: string[]
@@ -80,29 +84,31 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
 
   const reactivate = () => run(async () => {
     if (!m) return
-    const u = unfreeze(m, today)
-    const { error } = await supabase.from('memberships').update({ status: 'active', frozen_on: null, ends_on: u.ends_on }).eq('id', m.id)
+    // Gives back the frozen days and moves a renewal already loaded by the same days.
+    const { error } = await reactivateMembership(supabase, m, memberships, today, me)
     if (error) return { error }
-    return log(m.id, 'reactivated', { days: u.days })
-  }, 'Plan reactivado')
+  }, next ? 'Plan reactivado. La renovación se corrió los días congelados' : 'Plan reactivado')
 
+  // The plan to cancel: the one in force, or the one waiting to start.
+  const target = m ?? next
   const cancelPlan = () => run(async () => {
-    if (!m) return
-    const { error } = await supabase.from('memberships').update({ status: 'cancelled' }).eq('id', m.id)
+    if (!target) return
+    const { error } = await supabase.from('memberships').update({ status: 'cancelled' }).eq('id', target.id)
     if (error) return { error }
-    return log(m.id, 'cancelled')
+    return log(target.id, 'cancelled')
   }, 'Plan cancelado')
 
   const setActive = (on: boolean) => run(async () => {
     const full = await supabase.from('box_members').update({ is_active: on, left_at: on ? null : new Date().toISOString() }).eq('box_id', box.id).eq('user_id', person.id)
-    if (!full.error) return
+    // Only when the server doesn't have the "left on" date yet: switch the account without it.
+    if (!full.error || !isMissingColumn(full.error)) return full
     return supabase.from('box_members').update({ is_active: on }).eq('box_id', box.id).eq('user_id', person.id)
   }, on ? 'Cuenta reactivada' : 'Cuenta desactivada')
 
   const setRole = (role: string) => run(async () => {
     const { data, error } = await supabase.rpc('set_member_role', { p_box: box.id, p_user: person.id, p_role: role })
     if (error) return { error }
-    if (data && data.ok === false) return { error: { message: 'El dueño del box siempre es administrador.' } }
+    if (data && data.ok === false) return { error: { message: ROLE_REASONS[data.reason as string] ?? 'No se pudo cambiar el rol. Inténtalo de nuevo.' } }
   }, 'Rol actualizado')
 
   const phone = file?.phone?.replace(/[^\d+]/g, '') ?? ''
@@ -138,10 +144,11 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="text-xs font-semibold text-mu">Plan contratado</div>
-              <div className="font-display text-2xl font-bold tracking-tight mt-0.5 truncate">{m?.plan_name ?? 'Sin plan'}</div>
+              <div className="font-display text-2xl font-bold tracking-tight mt-0.5 truncate">{m?.plan_name ?? next?.plan_name ?? 'Sin plan'}</div>
               {m && <div className="text-sm text-mu mt-0.5">{fmt(m.starts_on)} → {fmt(m.ends_on)}</div>}
+              {!m && next && <div className="text-sm text-mu mt-0.5">Empieza el {fmt(next.starts_on)} · vence el {fmt(next.ends_on)}</div>}
             </div>
-            <Badge color={meta.color}>{meta.label}</Badge>
+            {!m && next ? <Badge color="blue">Por empezar</Badge> : <Badge color={meta.color}>{meta.label}</Badge>}
           </div>
           {m && state !== 'frozen' && (
             <div className="text-sm">
@@ -150,9 +157,11 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
             </div>
           )}
           {m?.status === 'frozen' && m.frozen_on && (
-            <div className="text-sm text-bl">Congelado desde {fmt(m.frozen_on)} ({daysBetween(m.frozen_on, today)} días). Al reactivar, esos días se suman al vencimiento.</div>
+            <div className="text-sm text-bl">
+              Congelado desde {fmt(m.frozen_on)} ({daysBetween(m.frozen_on, today)} días). Al reactivar, esos días se suman al vencimiento{memberships.some(x => x.id !== m.id && x.status !== 'cancelled' && x.starts_on > m.starts_on) ? ' y la renovación se corre los mismos días' : ''}. Mientras tanto no puede reservar clases.
+            </div>
           )}
-          {next && next.id !== m?.id && (
+          {m && next && next.id !== m.id && (
             <div className="text-sm text-gr">Renovación cargada: {next.plan_name} desde el {fmt(next.starts_on)}.</div>
           )}
           {m?.kind === 'classes' && (
@@ -171,7 +180,7 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
             {m?.status === 'active' && state !== 'expired' && <Button size="sm" variant="secondary" onClick={() => setSheet('freeze')}><Snowflake size={15} /> Congelar</Button>}
             {m?.status === 'frozen' && <Button size="sm" variant="secondary" onClick={reactivate} disabled={busy}><Play size={15} /> Reactivar</Button>}
             {m?.kind === 'classes' && <Button size="sm" variant="secondary" onClick={() => setSheet('adjust')}><Ticket size={15} /> Ajustar clases</Button>}
-            {m && <Button size="sm" variant="danger" onClick={() => setConfirm('cancel')}>Cancelar plan</Button>}
+            {target && <Button size="sm" variant="danger" onClick={() => setConfirm('cancel')}>Cancelar plan</Button>}
           </div>
         </Card>
 
@@ -234,12 +243,12 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
         <Card className="flex flex-col gap-4">
           <div>
             <label className={labelCls} htmlFor="role">Rol</label>
-            <select id="role" className={selectCls} value={person.role} disabled={busy || person.isOwner || person.id === me} onChange={e => setRole(e.target.value)}>
+            <select id="role" className={selectCls} value={person.role} disabled={busy || person.isOwner || person.id === me || !person.isActive} onChange={e => setRole(e.target.value)}>
               <option value="athlete">Atleta</option>
               <option value="coach">Coach</option>
               <option value="admin">Administrador</option>
             </select>
-            <p className="text-xs text-mu mt-1.5">{person.isOwner ? 'El dueño del box siempre es administrador.' : 'Un coach publica WODs y pasa lista. Un administrador además gestiona personas, planes y horarios.'}</p>
+            <p className="text-xs text-mu mt-1.5">{person.isOwner ? 'El dueño del box siempre es administrador.' : !person.isActive ? 'Reactiva la cuenta para cambiarle el rol.' : 'Un coach publica WODs y pasa lista. Un administrador además gestiona personas, planes y horarios.'}</p>
           </div>
           {!person.isOwner && person.id !== me && (
             person.isActive
@@ -277,9 +286,9 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
         }, 'Clases ajustadas')} />}
 
       <ConfirmDialog open={confirm === 'cancel'} onClose={() => setConfirm(null)} onConfirm={cancelPlan} busy={busy} danger
-        title="¿Cancelar el plan?" body="El plan deja de estar vigente y queda en el historial. Puedes asignar otro después." confirmLabel="Cancelar plan" />
+        title="¿Cancelar el plan?" body="El plan deja de estar vigente y queda en el historial. Las reservas que ningún otro plan cubra se liberan. Puedes asignar otro después." confirmLabel="Cancelar plan" />
       <ConfirmDialog open={confirm === 'deactivate'} onClose={() => setConfirm(null)} onConfirm={() => setActive(false)} busy={busy} danger
-        title={`¿Dar de baja a ${person.name.split(' ')[0]}?`} body="Deja de ver el WOD y las clases del box. Su historial se conserva y puedes reactivar la cuenta cuando quieras." confirmLabel="Dar de baja" />
+        title={`¿Dar de baja a ${person.name.split(' ')[0]}?`} body="Deja de ver el WOD y las clases del box, y se liberan sus reservas de las próximas clases. Su historial se conserva y puedes reactivar la cuenta cuando quieras." confirmLabel="Dar de baja" />
     </>
   )
 }

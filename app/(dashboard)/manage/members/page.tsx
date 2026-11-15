@@ -1,4 +1,4 @@
-import { requireAdminBox, loadPeople, loadAttendance } from '@/lib/utils/admin-box'
+import { requireAdminBox, loadPeople, loadAttendance, selectAll } from '@/lib/utils/admin-box'
 import { MembersView, type MemberRow } from '@/components/manage/MembersView'
 import { addDaysISO, daysBetween, todayISO, toDateInput } from '@/lib/utils/dates'
 import { classesLeft, currentMembership, planState } from '@/lib/utils/membership'
@@ -14,7 +14,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
   const [people, days, msRes] = await Promise.all([
     loadPeople(supabase, box),
     loadAttendance(supabase, box.id, from, today),
-    supabase.from('memberships').select('*').eq('box_id', box.id),
+    selectAll(() => supabase.from('memberships').select('*').eq('box_id', box.id).order('id')),
   ])
   const byUser = new Map<string, Membership[]>()
   for (const m of ((msRes.data ?? []) as Membership[])) byUser.set(m.user_id, [...(byUser.get(m.user_id) ?? []), m])
