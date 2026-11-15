@@ -3,6 +3,8 @@ export function friendlyError(raw: string | undefined | null): string {
   const msg = raw ?? ''
   if (/failed to fetch|networkerror|load failed/i.test(msg))
     return 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.'
+  if (/unregistered api key|invalid api key|no api key found/i.test(msg))
+    return 'La app no puede conectarse con el servidor en este momento. Ya lo estamos revisando; intenta en unos minutos.'
   if (msg.includes('Invalid login credentials'))
     return 'Email o contraseña incorrectos. Si te registraste hace poco, primero confirma tu correo.'
   if (msg.includes('Email not confirmed'))
