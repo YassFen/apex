@@ -6,7 +6,7 @@ import { Reorder, motion } from 'motion/react'
 import {
   LayoutGrid, Flame, Timer, TrendingUp, Activity, Users, ArrowLeftRight, MoreHorizontal,
   Trophy, Calculator, BarChart3, Gear, History, ChevronRight, CalendarDays, Medal, BookOpenText, Flag,
-  SlidersHorizontal, ArrowCounterClockwise, CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed,
+  SlidersHorizontal, ArrowCounterClockwise, CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed, ShieldStar,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 import { SPRING } from '@/components/ui/motion'
@@ -26,6 +26,7 @@ const ATHLETE_ITEMS: Item[] = [
   { href: '/calendar',     label: 'Calendario',        short: 'Agenda',    icon: CalendarDays, desc: 'WODs programados y competencias' },
   { href: '/classes',      label: 'Clases',            short: 'Clases',    icon: CalendarCheck, desc: 'Reserva tu clase y mira tu plan' },
   { href: '/announcements', label: 'Comunicados',      short: 'Avisos',    icon: Megaphone,   desc: 'Comunicados de tu box' },
+  { href: '/league',       label: 'Liga',              short: 'Liga',      icon: ShieldStar,  desc: 'Tu liga, racha, duplas y retos' },
   { href: '/prs',          label: 'Récords',           short: 'Récords',       icon: TrendingUp,  desc: 'Tus RMs y su evolución' },
   { href: '/timer',        label: 'Timer',             short: 'Timer',     icon: Timer,       desc: 'For Time, AMRAP, EMOM, Tabata' },
   { href: '/calc',         label: 'Calculadora RM',    short: 'Calcular',  icon: Calculator,  desc: 'Porcentajes y discos' },

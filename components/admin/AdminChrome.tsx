@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { MotionConfig } from 'motion/react'
 import { LogoMark } from '@/components/ui/Logo'
 import { ToastProvider } from '@/components/ui/Toast'
-import { ChartPieSlice, Buildings, Users, CursorClick, Bug, ClockCounterClockwise, ArrowLeft, Lifebuoy, RectangleDashed } from '@/components/ui/icons'
+import { ChartPieSlice, Buildings, Users, CursorClick, Bug, ClockCounterClockwise, ArrowLeft, Lifebuoy, RectangleDashed, Target } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 
 const NAV = [
@@ -16,6 +16,7 @@ const NAV = [
   { href: '/admin/errors', label: 'Errores', icon: Bug },
   { href: '/admin/support', label: 'Soporte', icon: Lifebuoy },
   { href: '/admin/banners', label: 'Banners', icon: RectangleDashed },
+  { href: '/admin/challenges', label: 'Retos', icon: Target },
   { href: '/admin/audit', label: 'Auditoría', icon: ClockCounterClockwise },
 ]
 

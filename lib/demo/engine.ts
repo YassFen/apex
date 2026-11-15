@@ -4,6 +4,7 @@
 // single/maybeSingle, count, insert/update/upsert/delete and a couple of RPCs.
 
 import { demoAdminRpc } from './admin'
+import { demoAward, demoProgressRpc } from './progress'
 
 export type Row = Record<string, any>
 export type Store = Record<string, Row[]>
@@ -117,6 +118,7 @@ export function runQuery(store: Store, spec: QuerySpec, userId: string): { data:
       const existing = spec.op === 'upsert' && keys ? rows.find(r => keys.every(k => String(r[k]) === String(base[k]))) : undefined
       if (existing) { Object.assign(existing, v); written.push(existing) } else { rows.push(base); written.push(base) }
       if (spec.table === 'pr_records') recalcPr(store, base)
+      if (!existing) demoAward(store, spec.table, base)
     }
     return finish(store, spec, written)
   }
@@ -166,6 +168,8 @@ export function runRpc(store: Store, fn: string, args: Row): { data: any; error:
     return { data: [...new Map(days.map(d => [`${d.box_id}|${d.scheduled_for}`, { box_id: d.box_id, scheduled_for: d.scheduled_for }])).values()], error: null }
   }
   const me: string = store.__me?.[0]?.id
+  const progress = demoProgressRpc(store, fn, args, me)
+  if (progress) return progress
   const current = (box: string, user: string) => (store.memberships ?? []).filter(m => m.box_id === box && m.user_id === user && m.status !== 'cancelled').sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0]
   const spendClass = (box: string, user: string, n: number) => { const m = current(box, user); if (m && m.kind === 'classes') m.classes_used = Math.max(0, m.classes_used + n) }
   if (fn === 'book_class') {
@@ -226,6 +230,8 @@ export function runRpc(store: Store, fn: string, args: Row): { data: any; error:
     if (t) t.seen_reply = true
     return { data: null, error: null }
   }
+  if (fn === 'admin_open_counts') return { data: { errors: 3, tickets: (store.support_tickets ?? []).filter(t => t.status === 'open').length }, error: null }
+  if (fn === 'admin_period_users') return { data: (store.profiles ?? []).length, error: null }
   if (fn === 'join_box_by_code') return { data: null, error: { message: 'En la demo no puedes unirte a otros boxes.' } }
   return { data: null, error: { message: `rpc ${fn} no disponible en la demo` } }
 }

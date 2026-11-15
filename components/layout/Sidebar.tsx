@@ -6,7 +6,7 @@ import {
   LayoutGrid, TrendingUp, Timer, Flame, Activity,
   BarChart3, Calculator, Users, User, Trophy, Dumbbell,
   ArrowLeftRight, ChevronDown, History, CalendarDays, Medal, BookOpenText, Gear, Flag,
-  CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed,
+  CalendarCheck, Megaphone, Ticket, ChalkboardTeacher, ChartPieSlice, ShieldCheck, Lifebuoy, RectangleDashed, ShieldStar,
 } from '@/components/ui/icons'
 import { cn } from '@/lib/utils/cn'
 import { useShell, MODE_LABEL } from '@/lib/hooks/useShell'
@@ -25,6 +25,7 @@ const ATHLETE_NAV = [
     { href: '/timer',        icon: Timer,      label: 'Timer' },
   ]},
   { label: 'Progreso', items: [
+    { href: '/league',       icon: ShieldStar, label: 'Liga' },
     { href: '/prs',          icon: TrendingUp, label: 'Récords' },
     { href: '/benchmarks',   icon: Trophy,     label: 'Benchmarks' },
     { href: '/competitions', icon: Medal,      label: 'Competencias' },
