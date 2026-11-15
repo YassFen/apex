@@ -1,5 +1,7 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useMemo } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { ACTIVE_BOX_COOKIE } from '@/lib/constants/cookies'
 import type { Profile, Box } from '@/lib/types/database'
 import type { Notice } from '@/lib/utils/notifications'
 
@@ -29,12 +31,14 @@ const VIEW_MODE_KEY  = 'apex.viewMode'
 const ACTIVE_BOX_KEY = 'apex.activeBoxId'
 
 export function ShellProvider({
-  profile, openSidebar, boxes = [], notices = [], adminBoxIds = [], isPlatformAdmin = false, children,
+  profile, openSidebar, boxes = [], notices = [], adminBoxIds = [], isPlatformAdmin = false, coachAllowed, children,
 }: {
-  profile: Profile; openSidebar: () => void; boxes?: Box[]; notices?: Notice[]; adminBoxIds?: string[]; isPlatformAdmin?: boolean; children: React.ReactNode
+  profile: Profile; openSidebar: () => void; boxes?: Box[]; notices?: Notice[]; adminBoxIds?: string[]; isPlatformAdmin?: boolean; coachAllowed?: boolean; children: React.ReactNode
 }) {
+  const router = useRouter()
+  const pathname = usePathname()
   const accountRole  = profile.role as 'coach' | 'athlete' | 'admin'
-  const canCoach = accountRole === 'coach' || accountRole === 'admin'
+  const canCoach = coachAllowed ?? (accountRole === 'coach' || accountRole === 'admin')
   const canAdmin = adminBoxIds.length > 0
   const modes = useMemo<ViewMode[]>(() => [...(canAdmin ? ['admin' as const] : []), ...(canCoach ? ['coach' as const] : []), 'athlete'], [canAdmin, canCoach])
   const canSwitchMode = modes.length > 1
@@ -66,6 +70,11 @@ export function ShellProvider({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])  // only on mount — boxes array ref changes on every render
 
+  useEffect(() => {
+    if (pathname.startsWith('/manage') && modes.includes('admin') && viewMode !== 'admin') setViewModeState('admin')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
+
   // Keep activeBoxId valid when boxes change
   useEffect(() => {
     if (boxes.length > 0 && (!activeBoxId || !boxes.some(b => b.id === activeBoxId))) {
@@ -82,6 +91,9 @@ export function ShellProvider({
   function setActiveBoxId(id: string) {
     setActiveBoxIdState(id)
     try { localStorage.setItem(ACTIVE_BOX_KEY, id) } catch {}
+    // Server pages read the box from this cookie, then the screen reloads its data.
+    try { document.cookie = `${ACTIVE_BOX_COOKIE}=${id}; path=/; max-age=31536000; samesite=lax` } catch {}
+    router.refresh()
   }
 
   const value = useMemo<ShellCtx>(() => ({

@@ -36,7 +36,7 @@ export function CompetitionsView({ profile, entries, today, missingResults }: { 
         </Link>
       } />
       <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-3xl w-full mx-auto">
-        {missingResults && <p className="text-mu text-xs px-1">Los resultados por workout se activan con la migración 007.</p>}
+        {missingResults && <p className="text-mu text-xs px-1">Los resultados por workout estarán disponibles muy pronto.</p>}
 
         <div className="grid grid-cols-3 gap-3 stagger">
           <Stat label="Competencias" value={past.length} />

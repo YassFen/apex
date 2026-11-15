@@ -23,9 +23,9 @@ export function friendlyError(raw: string | undefined | null): string {
   if (/invalid email|unable to validate email/i.test(msg))
     return 'Ese email no parece válido. Revísalo.'
   if (msg.includes('pr_records_metric_check'))
-    return 'Ese tipo de récord aún no está habilitado en el servidor. Pide al administrador aplicar la migración 004.'
+    return 'Ese tipo de récord todavía no está disponible. Inténtalo más tarde.'
   if (/column .* does not exist|could not find the .* column/i.test(msg))
-    return 'El servidor no está actualizado para guardar esto. Falta aplicar la migración 004 en Supabase.'
+    return 'El servidor todavía no está listo para guardar esto. Inténtalo más tarde.'
   if (/row-level security|permission denied/i.test(msg))
     return 'No tienes permiso para hacer esto.'
   return msg || 'Algo salió mal. Inténtalo de nuevo.'

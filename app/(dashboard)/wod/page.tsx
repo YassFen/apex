@@ -1,3 +1,4 @@
+import { bookedTimesToday, nowHmSantiago, pickTodayWod } from '@/lib/utils/wod-pick'
 import { createClient } from '@/lib/supabase/server'
 import { getUser, getProfile } from '@/lib/supabase/session'
 import { todayISO } from '@/lib/utils/dates'
@@ -38,10 +39,13 @@ export default async function WodPage({ searchParams }: { searchParams: Promise<
   const { box: boxParam, wod: wodParam } = await searchParams
   const todays = ((dailyWods ?? []) as any[])
     .sort((x, y) => String(x.class_time ?? '').localeCompare(String(y.class_time ?? '')))
-  const nowHm = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' }).format(new Date())
-  const upcoming = todays.find(w => !w.class_time || String(w.class_time).slice(0, 5) >= nowHm)
-  const wod = todays.find(w => w.id === wodParam) ?? todays.find(w => w.box_id === boxParam)
-    ?? upcoming ?? todays[todays.length - 1] ?? null
+  const [{ data: myToday }, bookedTimes] = await Promise.all([
+    todays.length ? supabase.from('wod_results').select('daily_wod_id').eq('user_id', user.id).in('daily_wod_id', todays.map(w => w.id)) : Promise.resolve({ data: [] }),
+    bookedTimesToday(supabase, user.id, today),
+  ])
+  const logged = new Set(((myToday ?? []) as any[]).map(r => r.daily_wod_id as string))
+  const wod = todays.find(w => w.id === wodParam)
+    ?? pickTodayWod(boxParam ? todays.filter(w => w.box_id === boxParam) : todays, { logged, bookedTimes, nowHm: nowHmSantiago() }) ?? null
   const multiBox = new Set(todays.map(w => w.box_id)).size > 1
   const todayWods = todays.map(w => ({
     id: w.id as string,

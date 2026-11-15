@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getUser, getProfile } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import { AthletesView, type AthleteRow } from '@/components/coach/AthletesView'
-import type { Profile, Box } from '@/lib/types/database'
+import type { Profile } from '@/lib/types/database'
+import { pickCoachBox } from '@/lib/utils/coach-boxes'
 
 const WINDOW_DAYS = 30
 
@@ -13,11 +14,10 @@ export default async function AthletesPage() {
 
   const p = await getProfile(user.id)
   const profile = p as Profile | null
-  if (!profile || profile.role !== 'coach') redirect('/dashboard')
+  if (!profile) redirect('/dashboard')
 
-  const { data: b } = await supabase.from('boxes').select('*').eq('owner_id', user.id).maybeSingle()
-  const box = b as Box | null
-  if (!box) redirect('/dashboard')
+  const { box } = await pickCoachBox(supabase, user.id)
+  if (!box) redirect('/coach/create-box')
 
   const since = new Date(Date.now() - WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10)
 

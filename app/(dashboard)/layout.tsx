@@ -43,7 +43,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     loadAnnouncements(supabase, user.id, boxes, staffBoxIds),
   ])
 
-  return <DashboardShell profile={profile as any} boxes={boxes} notices={notices} adminBoxIds={adminBoxIds} isPlatformAdmin={isPlatformAdmin} announcements={announcements}>{children}</DashboardShell>
+  return <DashboardShell profile={profile as any} boxes={boxes} notices={notices} adminBoxIds={adminBoxIds} isPlatformAdmin={isPlatformAdmin} announcements={announcements}
+    coachAllowed={staffBoxIds.size > 0 || (profile.role !== 'athlete' && !(memberships ?? []).length && !(owned ?? []).length)}>{children}</DashboardShell>
 }
 
 /** Live announcements of the person's boxes (010). Returns nothing until the migration runs. */

@@ -12,7 +12,7 @@ import { rankResults } from '@/lib/utils/wod-ranking'
 import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 
 export default function CoachWodLivePage() {
-  const { profile } = useShell()
+  const { profile, activeBoxId } = useShell()
   const supabase = createClient()
 
   const [wod, setWod]         = useState<any>(null)
@@ -23,15 +23,20 @@ export default function CoachWodLivePage() {
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const { data: box } = await supabase
-        .from('boxes').select('id, name, invite_code').eq('owner_id', profile.id).single()
+      // Any box the person coaches; the one picked in the app first.
+      const [{ data: owned }, { data: staff }] = await Promise.all([
+        supabase.from('boxes').select('id, name, invite_code').eq('owner_id', profile.id),
+        supabase.from('box_members').select('boxes(id, name, invite_code)').eq('user_id', profile.id).eq('is_active', true).in('role', ['coach', 'admin']),
+      ])
+      const mine = [...((owned ?? []) as any[]), ...((staff ?? []) as any[]).map(m => m.boxes).filter(Boolean)]
+      const box = mine.find(b => b.id === activeBoxId) ?? mine[0]
       if (!box) { setLoading(false); return }
 
       const today = todayISO()
       const { data: todayWod } = await supabase
         .from('daily_wods').select('*')
         .eq('box_id', box.id).eq('scheduled_for', today).eq('is_live', true)
-        .order('published_at', { ascending: false }).limit(1).single()
+        .order('published_at', { ascending: false }).limit(1).maybeSingle()
 
       if (todayWod) {
         setWod({ ...todayWod, box })
@@ -50,7 +55,8 @@ export default function CoachWodLivePage() {
       setLoading(false)
     }
     load()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBoxId])
 
   // Realtime updates
   useEffect(() => {

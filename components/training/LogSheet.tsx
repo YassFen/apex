@@ -75,7 +75,7 @@ export function LogSheet({ open, onClose, tab: initialTab = 'log', movements = [
       : await supabase.from('goals').insert({ movement: name, target, unit: u, period })
     setBusy(false)
     if (error) {
-      fire(isMissingTable(error) ? 'Falta aplicar la migración 007 en Supabase.' : friendlyError(error.message), 'error')
+      fire(isMissingTable(error) ? 'Esta función todavía no está disponible.' : friendlyError(error.message), 'error')
       return
     }
     fire(tab === 'log' ? 'Entreno registrado' : 'Meta creada', 'pr')

@@ -14,7 +14,7 @@ export async function uploadPublicImage(supabase: any, bucket: string, folder: s
   const blob = await compressImage(file)
   const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`
   const { error } = await supabase.storage.from(bucket).upload(path, blob, { contentType: 'image/jpeg', upsert: false })
-  if (error) throw new Error(/bucket|not found/i.test(error.message) ? 'Falta aplicar la migración 008 (almacenamiento de fotos).' : error.message)
+  if (error) throw new Error(/bucket|not found/i.test(error.message) ? 'Subir fotos todavía no está disponible.' : error.message)
   const { data } = supabase.storage.from(bucket).getPublicUrl(path)
   return data.publicUrl as string
 }

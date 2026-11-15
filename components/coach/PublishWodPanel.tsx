@@ -83,10 +83,10 @@ function formatMovExport(m: WodMovement): string {
 }
 
 function buildWodText(args: {
-  title: string; type: WodType; duration: string; desc: string; movs: WodMovement[]; boxName: string
+  title: string; type: WodType; duration: string; desc: string; movs: WodMovement[]; boxName: string; day: string
 }): string {
   const { title, type, duration, desc, movs, boxName } = args
-  const date = new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })
+  const date = formatDateOnly(args.day, { weekday: 'long', day: 'numeric', month: 'long' })
   const header = `🔥 WOD · ${boxName.toUpperCase()} 🔥\n${date}\n────────────────`
   const typeLabel = WOD_TYPE_INFO[type].label
   const timeLine  = duration ? ` · ${duration} min` : ''
@@ -272,22 +272,25 @@ export function PublishWodPanel({
     if (!title.trim()) { setPublishing(false); fire('Ponle un nombre al WOD antes de publicar', 'error'); return }
     const save = (body: Record<string, unknown>) => todayWod
       ? supabase.from('daily_wods').update(body).eq('id', todayWod.id)
-      : supabase.from('daily_wods').insert(body)
-    let { error } = await save(payload)
+      : supabase.from('daily_wods').insert(body).select('id').single()
+    let { error, data: saved } = await save(payload) as { error: any; data?: any }
     // Without migration 006 there is no show_early column: save without it.
     // Without migrations 006/007 there are no show_early/class_time columns: save without them.
     if (error && isMissingColumn(error)) {
       const { show_early: _a, class_time: _b, ...rest } = payload
-      ;({ error } = await save(rest))
+      ;({ error, data: saved } = await save(rest) as { error: any; data?: any })
     }
     setPublishing(false)
     if (error) { fire(friendlyError(error.message), 'error'); return }
     try { localStorage.removeItem(draftKey) } catch {}
     if (isToday) {
       fire('WOD publicado. Tus atletas ya lo ven.', 'pr')
-      setTimeout(() => router.push('/dashboard'), 1500)
+      // Stay here, so the next class of the day can be programmed right away.
+      if (!todayWod && saved?.id) router.replace(`/coach/publish-wod?date=${date}&wod=${saved.id}`)
+      router.refresh()
     } else {
       fire(`WOD programado para ${dayLabel}${showEarly ? '. Tus atletas ya lo pueden ver.' : '. Se revela ese día.'}`, 'pr')
+      if (!todayWod && saved?.id) router.replace(`/coach/publish-wod?date=${date}&wod=${saved.id}`)
       router.refresh()
     }
   }
@@ -321,7 +324,7 @@ export function PublishWodPanel({
   }
 
   function handleExportText() {
-    const text = buildWodText({ title, type, duration, desc, movs: wodMovs.filter(m => m.name), boxName: box.name })
+    const text = buildWodText({ title, type, duration, desc, movs: wodMovs.filter(m => m.name), boxName: box.name, day: date })
     navigator.clipboard.writeText(text)
       .then(() => fire('Texto del WOD copiado. Pégalo en WhatsApp.', 'pr'))
       .catch(() => fire('No se pudo copiar. Selecciona el texto y cópialo a mano.', 'error'))

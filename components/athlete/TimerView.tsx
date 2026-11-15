@@ -98,7 +98,8 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
   const [elapsed, setElapsed] = useState(0)
   const [getReady, setGetReady] = useState(GET_READY_SECS)
   const [cfg, setCfg] = useState<Cfg>(() => {
-    const mins = initialMins && initialMins > 0 ? initialMins : 12
+    // A WOD without a time cap opens the For Time timer with no cap.
+    const mins = initialMins && initialMins > 0 ? initialMins : initialMode === 'fortime' ? 0 : 12
     return { mins, secs: 0, durationMin: initialMins && initialMode === 'emom' ? initialMins : 10, intervalSec: 60, work: 20, rest: 10, rounds: 8 }
   })
   const [amrapRounds, setAmrapRounds] = useState(0)
@@ -111,8 +112,11 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
   const pausedAtRef = useRef(0)
   const lastSecRef  = useRef(-1)
 
+  const capMs = (cfg.mins * 60 + cfg.secs) * 1000
+  // For Time with no cap runs until "Terminé"; an AMRAP lasts at least a minute.
   const totalMs =
-    mode === 'fortime' || mode === 'amrap' ? (cfg.mins * 60 + cfg.secs) * 1000
+    mode === 'fortime' ? (capMs > 0 ? capMs : Number.POSITIVE_INFINITY)
+    : mode === 'amrap' ? Math.max(60_000, capMs)
     : mode === 'emom' ? cfg.durationMin * 60 * 1000
     : cfg.rounds * (cfg.work + cfg.rest) * 1000
 
@@ -151,7 +155,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
       else if ((into < cfg.work && cfg.work - into <= 3) || (into >= cfg.work && cycle - into <= 3)) beep('tick')
     } else {
       const left = Math.ceil((totalMs - now) / 1000)
-      if (left <= 3) beep('tick')
+      if (Number.isFinite(left) && left <= 3) beep('tick')
     }
   }, [beep])
 
@@ -301,7 +305,7 @@ export function TimerView({ profile, initialMode, initialMins, wodTitle }: {
             </>
           )}
           {mode === 'fortime' && state !== 'idle' && state !== 'countdown' && (
-            <span className="text-mu">Cap {fmt(totalMs)}</span>
+            <span className="text-mu">{Number.isFinite(totalMs) ? `Cap ${fmt(totalMs)}` : 'Sin time cap'}</span>
           )}
         </div>
 

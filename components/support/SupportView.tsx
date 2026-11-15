@@ -40,7 +40,7 @@ export function SupportView({ profile, tickets, missing, openNew, from }: { prof
           </div>
           <button type="button" onClick={() => setSheet(true)} disabled={missing}
             className="h-12 rounded-full bg-ac text-onac font-bold flex items-center justify-center gap-2 disabled:opacity-40"><Plus size={18} weight="bold" aria-hidden /> Escribir a soporte</button>
-          {missing && <p className="text-xs text-or">El soporte se activa cuando se aplique la migración 012 en el servidor.</p>}
+          {missing && <p className="text-xs text-or">El envío de mensajes estará disponible muy pronto.</p>}
         </div>
 
         {tickets.length > 0 && <h2 className="text-xs font-semibold text-mu mt-2">Tus mensajes</h2>}

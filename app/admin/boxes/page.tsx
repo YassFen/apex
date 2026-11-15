@@ -7,6 +7,7 @@ import { formatDateOnly, toDateInput } from '@/lib/utils/dates'
 import type { Box } from '@/lib/types/database'
 
 const PLAN_COLOR = { free: 'neutral', pro: 'lime', enterprise: 'purple' } as const
+const PLAN_NAME: Record<string, string> = { free: 'Gratis', pro: 'Pro', enterprise: 'Empresa' }
 
 export default async function AdminBoxes() {
   const { supabase } = await requirePlatformAdmin()
@@ -42,7 +43,7 @@ export default async function AdminBoxes() {
             <li key={b.id}>
               <Link href={`/admin/boxes/${b.id}`} className="tap-card flex items-center gap-4 p-4 rounded-2xl bg-p">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2"><span className="font-semibold truncate">{b.name}</span><Badge color={PLAN_COLOR[b.plan] ?? 'neutral'}>{b.plan}</Badge></div>
+                  <div className="flex items-center gap-2"><span className="font-semibold truncate">{b.name}</span><Badge color={PLAN_COLOR[b.plan] ?? 'neutral'}>{PLAN_NAME[b.plan] ?? b.plan}</Badge></div>
                   <div className="text-xs text-mu mt-0.5 truncate">{[b.city, b.country].filter(Boolean).join(', ')} · Dueño: {o?.full_name ?? '—'} · desde {formatDateOnly(toDateInput(b.created_at), { month: 'short', year: 'numeric' })}</div>
                 </div>
                 <div className="text-right flex-shrink-0">

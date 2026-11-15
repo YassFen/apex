@@ -247,7 +247,7 @@ function CreateMovement({ open, onClose, boxes, userId }: { open: boolean; onClo
     })
     setBusy(false)
     if (error) {
-      fire(isMissingColumn(error) ? 'Falta aplicar la migración 007 en Supabase.'
+      fire(isMissingColumn(error) ? 'Esta función todavía no está disponible.'
         : /duplicate|unique/i.test(error.message) ? 'Ya existe un ejercicio con ese nombre.' : friendlyError(error.message), 'error')
       return
     }

@@ -48,7 +48,7 @@ export function SettingsHub({ profile, ownsBox }: { profile: Profile; ownsBox: b
     { title: 'App', rows: [
       { href: '/dashboard?edit=1', icon: SquaresFour, tone: 'bg-ac', label: 'Personalizar Inicio', hint: 'Orden y widgets' },
       { href: '/settings/appearance', icon: PaintBrush, tone: 'bg-pu', label: 'Apariencia', hint: 'Modo y color' },
-      { href: '/settings/notifications', icon: Bell, tone: 'bg-rd', label: 'Avisos' },
+      { href: '/settings/notifications', icon: Bell, tone: 'bg-rd', label: 'Notificaciones' },
     ]},
     { title: 'Cuenta', rows: [
       { href: '/settings/privacy', icon: Lock, tone: 'bg-bl', label: 'Privacidad', hint: profile.profile_public ? 'Perfil público' : 'Perfil privado' },

@@ -52,20 +52,29 @@ export function buildNotices({ today, myEvents, newBoxEvents, wods, replies = []
   }
 
   const tomorrow = addDaysISO(today, 1)
-  for (const w of wods.filter(w => w.date === tomorrow)) {
-    const time = formatClassTime(w.classTime)
+  // One notice per box and day, even when the box runs several classes.
+  const byBox = (list: typeof wods) => {
+    const m = new Map<string, typeof wods>()
+    for (const w of list) m.set(w.boxName, [...(m.get(w.boxName) ?? []), w])
+    return [...m.values()]
+  }
+
+  for (const group of byBox(wods.filter(w => w.date === tomorrow))) {
+    const w = group[0]
+    const times = group.map(x => formatClassTime(x.classTime)).filter(Boolean).sort()
     out.push({
       id: `wod-${w.id}`, kind: 'wod', date: w.date, href: '/calendar',
-      title: `Mañana hay WOD${time ? ` a las ${time}` : ''}`,
+      title: `Mañana hay WOD${times.length ? ` · ${times.join(', ')}` : ''}`,
       body: w.visible ? `${w.title} · ${w.boxName}` : `${w.boxName} lo revela mañana.`,
     })
   }
 
-  for (const w of wods.filter(w => w.date === today && w.visible && !w.myResult)) {
-    const time = formatClassTime(w.classTime)
+  for (const group of byBox(wods.filter(w => w.date === today && w.visible))) {
+    if (group.some(w => w.myResult)) continue
+    const w = group[0]
     out.push({
       id: `log-${w.id}`, kind: 'log', date: w.date, href: '/wod',
-      title: `WOD de hoy${time ? ` · ${time}` : ''}: ${w.title}`,
+      title: `WOD de hoy: ${w.title}`,
       body: 'Cuando termines, registra tu resultado y mira el ranking.',
     })
   }

@@ -136,7 +136,8 @@ function ChallengeSheet({ challenge: c, profile, today, onClose }: { challenge: 
   const supabase = createClient()
   const active = isActive(c, today)
   const pct = Math.min(100, Math.round((c.myTotal / c.target) * 100))
-  const canDelete = c.createdBy === profile.id || profile.role === 'coach'
+  // RLS decides; the delete below checks that a row was really removed.
+  const canDelete = c.createdBy === profile.id || profile.role !== 'athlete'
   const managing = viewMode === 'coach' && canDelete
   const chips = c.unit === 'm' ? [100, 200, 400, 800, 1000] : [5, 10, 15, 20, 25, 50]
 
@@ -144,7 +145,7 @@ function ChallengeSheet({ challenge: c, profile, today, onClose }: { challenge: 
     setBusy(true)
     const { error } = await fn()
     setBusy(false)
-    if (error) { fire(isMissingTable(error) ? 'Falta aplicar la migración 008.' : friendlyError(error.message), 'error'); return false }
+    if (error) { fire(isMissingTable(error) ? 'Los retos aún no están disponibles en tu box.' : friendlyError(error.message), 'error'); return false }
     fire(ok, 'pr'); router.refresh(); return true
   }
 
@@ -239,7 +240,7 @@ function ChallengeSheet({ challenge: c, profile, today, onClose }: { challenge: 
       </Modal>
       <ConfirmDialog open={confirmDel} danger busy={busy} title="¿Eliminar el reto?" body="Se borran el reto, sus participantes y lo que registraron."
         confirmLabel="Eliminar" onClose={() => setConfirmDel(false)}
-        onConfirm={async () => { if (await act(() => supabase.from('challenges').delete().eq('id', c.id), 'Reto eliminado')) { setConfirmDel(false); onClose() } }} />
+        onConfirm={async () => { if (await act(async () => { const r = await supabase.from('challenges').delete().eq('id', c.id).select('id'); return { error: r.error ?? (!(r.data ?? []).length ? { message: 'No tienes permiso para eliminar este reto.' } : null) } }, 'Reto eliminado')) { setConfirmDel(false); onClose() } }} />
     </>
   )
 }
@@ -290,7 +291,7 @@ function CreateChallenge({ open, onClose, boxes, today }: { open: boolean; onClo
     }).select('id').single()
     if (!error && data) await supabase.from('challenge_participants').insert({ challenge_id: (data as any).id })
     setBusy(false)
-    if (error) { fire(isMissingTable(error) ? 'Falta aplicar la migración 008 en Supabase.' : friendlyError(error.message), 'error'); return }
+    if (error) { fire(isMissingTable(error) ? 'Los retos todavía no están disponibles.' : friendlyError(error.message), 'error'); return }
     fire('Reto creado. Tu box ya lo ve.', 'pr')
     setTitle(''); onClose(); router.refresh()
   }

@@ -25,8 +25,8 @@ const ATHLETE_ITEMS: Item[] = [
   { href: '/wod',          label: 'WOD del día',       short: 'WOD',       icon: Flame,       desc: 'El WOD de tu box y el ranking' },
   { href: '/calendar',     label: 'Calendario',        short: 'Agenda',    icon: CalendarDays, desc: 'WODs programados y competencias' },
   { href: '/classes',      label: 'Clases',            short: 'Clases',    icon: CalendarCheck, desc: 'Reserva tu clase y mira tu plan' },
-  { href: '/announcements', label: 'Avisos',           short: 'Avisos',    icon: Megaphone,   desc: 'Comunicados de tu box' },
-  { href: '/prs',          label: 'Récords',           short: 'RMs',       icon: TrendingUp,  desc: 'Tus RMs y su evolución' },
+  { href: '/announcements', label: 'Comunicados',      short: 'Avisos',    icon: Megaphone,   desc: 'Comunicados de tu box' },
+  { href: '/prs',          label: 'Récords',           short: 'Récords',       icon: TrendingUp,  desc: 'Tus RMs y su evolución' },
   { href: '/timer',        label: 'Timer',             short: 'Timer',     icon: Timer,       desc: 'For Time, AMRAP, EMOM, Tabata' },
   { href: '/calc',         label: 'Calculadora RM',    short: 'Calcular',  icon: Calculator,  desc: 'Porcentajes y discos' },
   { href: '/challenges',   label: 'Retos',             short: 'Retos',     icon: Flag,        desc: 'Desafíos con tu box' },
@@ -42,10 +42,10 @@ const COACH_ITEMS: Item[] = [
   { href: '/coach/publish-wod', label: 'Publicar WOD',        short: 'WOD',       icon: Flame,        desc: 'Programa por día y por clase' },
   { href: '/calendar',          label: 'Calendario',          short: 'Agenda',    icon: CalendarDays, desc: 'WODs programados y eventos' },
   { href: '/classes',           label: 'Mis clases',          short: 'Clases',    icon: CalendarCheck, desc: 'Tus horarios, lista y asistencia' },
-  { href: '/announcements',     label: 'Avisos',              short: 'Avisos',    icon: Megaphone,    desc: 'Comunicados y avisos a atletas' },
+  { href: '/announcements',     label: 'Comunicados',         short: 'Avisos',    icon: Megaphone,    desc: 'Comunicados y avisos a atletas' },
   { href: '/coach/athletes',    label: 'Atletas',             short: 'Atletas',   icon: Users,        desc: 'Tu roster e inactivos' },
-  { href: '/coach/wod-live',    label: 'Seguimiento en vivo', short: 'En vivo',   icon: Activity,     desc: 'Quién ya registró el WOD' },
-  { href: '/analytics',         label: 'Analytics',           short: 'Datos',     icon: BarChart3,    desc: 'Progreso del box' },
+  { href: '/coach/wod-live',    label: 'En vivo',             short: 'En vivo',   icon: Activity,     desc: 'Quién ya registró el WOD' },
+  { href: '/analytics',         label: 'Estadísticas',        short: 'Datos',     icon: BarChart3,    desc: 'Progreso del box' },
   { href: '/challenges',        label: 'Retos',               short: 'Retos',     icon: Flag,         desc: 'Desafíos del box' },
   { href: '/movements',         label: 'Ejercicios',          short: 'Ejercicios', icon: BookOpenText, desc: 'Crea los de tu box' },
   { href: '/timer',             label: 'Timer',               short: 'Timer',     icon: Timer,        desc: 'For Time, AMRAP, EMOM, Tabata' },
@@ -66,8 +66,8 @@ const ADMIN_ITEMS: Item[] = [
 ]
 const DEFAULT_TABS: Record<ViewMode, string[]> = {
   admin: ['/manage', '/manage/members', '/manage/schedule', '/manage/coaches'],
-  athlete: ['/dashboard', '/wod', '/calendar', '/prs'],
-  coach: ['/dashboard', '/coach/publish-wod', '/calendar', '/coach/athletes'],
+  athlete: ['/dashboard', '/wod', '/classes', '/prs'],
+  coach: ['/dashboard', '/coach/publish-wod', '/classes', '/coach/athletes'],
 }
 const tabsKey = (m: ViewMode) => `apex.tabs.${m}`
 
@@ -77,7 +77,7 @@ function isActive(pathname: string, href: string) {
 
 export function MobileNav({ profile }: { profile: Profile }) {
   const pathname = usePathname()
-  const { viewMode, canSwitchMode, modes, isPlatformAdmin } = useShell()
+  const { viewMode, canSwitchMode, modes, isPlatformAdmin, boxes, activeBoxId, setActiveBoxId } = useShell()
   const { go } = useModeSwitch()
   const [moreOpen, setMoreOpen] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -123,6 +123,17 @@ export function MobileNav({ profile }: { profile: Profile }) {
       </nav>
 
       <Modal open={moreOpen} onClose={() => setMoreOpen(false)} title="Más" subtitle={profile.full_name}>
+        {boxes.length > 1 && (
+          <div className="mb-3">
+            <div className="text-xs font-semibold text-mu mb-2">Box</div>
+            <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+              {boxes.map(b => (
+                <button key={b.id} type="button" aria-pressed={b.id === activeBoxId} onClick={() => setActiveBoxId(b.id)}
+                  className={cn('flex-shrink-0 h-10 px-4 rounded-full text-sm font-semibold', b.id === activeBoxId ? 'bg-ac text-onac' : 'bg-p2 text-mu')}>{b.name}</button>
+              ))}
+            </div>
+          </div>
+        )}
         <nav className="flex flex-col gap-1.5 stagger" aria-label="Más secciones">
           {more.map(item => {
             const Icon = item.icon

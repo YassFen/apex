@@ -13,10 +13,10 @@ import { Telemetry } from '@/components/layout/Telemetry'
 import { AnnouncementCenter } from '@/components/announcements/AnnouncementCenter'
 import type { ShellAnnouncement } from '@/lib/utils/announcements'
 
-export function DashboardShell({ profile, boxes, notices = [], adminBoxIds = [], isPlatformAdmin = false, announcements = [], children }: { announcements?: ShellAnnouncement[]; profile: Profile; boxes: Box[]; notices?: Notice[]; adminBoxIds?: string[]; isPlatformAdmin?: boolean; children: React.ReactNode }) {
+export function DashboardShell({ profile, boxes, notices = [], adminBoxIds = [], isPlatformAdmin = false, announcements = [], coachAllowed, children }: { coachAllowed?: boolean; announcements?: ShellAnnouncement[]; profile: Profile; boxes: Box[]; notices?: Notice[]; adminBoxIds?: string[]; isPlatformAdmin?: boolean; children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   return (
-    <ShellProvider profile={profile} boxes={boxes} notices={notices} adminBoxIds={adminBoxIds} isPlatformAdmin={isPlatformAdmin} openSidebar={() => setSidebarOpen(true)}>
+    <ShellProvider profile={profile} boxes={boxes} notices={notices} adminBoxIds={adminBoxIds} isPlatformAdmin={isPlatformAdmin} coachAllowed={coachAllowed} openSidebar={() => setSidebarOpen(true)}>
       <MotionConfig reducedMotion="user">
       <ToastProvider>
         <Telemetry />

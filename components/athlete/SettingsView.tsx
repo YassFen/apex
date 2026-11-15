@@ -103,7 +103,7 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
     const { error: upErr } = await supabase.storage
       .from('avatars').upload(path, file, { upsert: true, contentType: file.type })
 
-    if (upErr) { setUploadingAvatar(false); setProfileErr(upErr.message.includes("Bucket not found") ? "El almacenamiento de fotos no está activado. Falta aplicar la migración 004." : friendlyError(upErr.message)); return }
+    if (upErr) { setUploadingAvatar(false); setProfileErr(upErr.message.includes("Bucket not found") ? "Subir fotos todavía no está disponible. Inténtalo más tarde." : friendlyError(upErr.message)); return }
 
     const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path)
     const newUrl = pub.publicUrl
@@ -127,7 +127,7 @@ export function SettingsView({ section, profile, memberships, movements, ownedBo
     const { error: upErr } = await supabase.storage
       .from('box-logos').upload(path, file, { upsert: true, contentType: file.type })
 
-    if (upErr) { setUploadingLogo(false); setBoxErr(upErr.message.includes("Bucket not found") ? "El almacenamiento de logos no está activado. Falta aplicar la migración 004." : friendlyError(upErr.message)); return }
+    if (upErr) { setUploadingLogo(false); setBoxErr(upErr.message.includes("Bucket not found") ? "Subir el logo todavía no está disponible. Inténtalo más tarde." : friendlyError(upErr.message)); return }
 
     const { data: pub } = supabase.storage.from('box-logos').getPublicUrl(path)
     const newUrl = pub.publicUrl

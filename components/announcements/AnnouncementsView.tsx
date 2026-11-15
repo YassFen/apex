@@ -83,7 +83,7 @@ export function AnnouncementsView({ profile, me, today, boxes, items, slots, rea
 
   return (
     <>
-      <Topbar title={staffBoxes.length ? 'Comunicados' : 'Avisos'} profile={profile} backHref={null} actions={staffBoxes.length > 0 ? (
+      <Topbar title="Comunicados" profile={profile} backHref={null} actions={staffBoxes.length > 0 ? (
         <button type="button" disabled={missing} onClick={() => setDraft({ boxId: staffBoxes[0].id, title: '', body: '', parentId: null })} aria-label="Nuevo aviso"
           className="inline-flex items-center gap-1.5 h-10 px-3 sm:px-4 rounded-full bg-ac text-onac text-sm font-bold disabled:opacity-40">
           <Plus size={16} weight="bold" aria-hidden /><span className="hidden sm:inline">Nuevo aviso</span>

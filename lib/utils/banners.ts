@@ -31,7 +31,7 @@ export type BannerIcon = keyof typeof BANNER_ICONS
 /** Screens an administrator can send people to without typing an address. */
 export const BANNER_LINKS: { href: string; label: string }[] = [
   { href: '/classes', label: 'Clases y reservas' }, { href: '/wod', label: 'WOD del día' }, { href: '/challenges', label: 'Retos' },
-  { href: '/calendar', label: 'Calendario' }, { href: '/competitions', label: 'Competencias' }, { href: '/announcements', label: 'Avisos' },
+  { href: '/calendar', label: 'Calendario' }, { href: '/competitions', label: 'Competencias' }, { href: '/announcements', label: 'Comunicados' },
   { href: '/prs', label: 'Récords' }, { href: '/movements', label: 'Ejercicios' }, { href: '/settings/boxes', label: 'Mis boxes' },
 ]
 

@@ -1,4 +1,6 @@
 'use client'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { AthleteDashboard } from '@/components/athlete/AthleteDashboard'
 import { CoachDashboard } from '@/components/coach/CoachDashboard'
 import { useShell } from '@/lib/hooks/useShell'
@@ -35,9 +37,11 @@ interface Props {
 
 export function DashboardDispatcher({ profile, coachBox, prs, movements = [], athleteCount = 0, todayWod = null, todayResults = 0, recentMembers = [], athleteToday = null, hasBox = false, resultDates = [], nextEvent = null, hits = [], goals = [], logDates = [], goalsMissing = false, coachActivity, challenges = null, banners = [] }: Props) {
   const { viewMode } = useShell()
+  const router = useRouter()
+  useEffect(() => { if (viewMode === 'admin') router.replace('/manage') }, [viewMode, router])
   const coachView = viewMode !== 'athlete'
   const strip = <BannerStrip banners={banners.filter(b => b.audience === 'all' || b.audience === (coachView ? 'coaches' : 'athletes'))} />
-  if (viewMode === 'coach' && (profile.role === 'coach' || profile.role === 'admin')) {
+  if (viewMode === 'coach' || viewMode === 'admin') {
     return <CoachDashboard profile={profile} box={coachBox} athleteCount={athleteCount} todayWod={todayWod} todayResults={todayResults} recentMembers={recentMembers} nextEvent={nextEvent} activity={coachActivity} challenges={challenges} banners={strip} />
   }
   return <AthleteDashboard profile={profile} prs={prs} movements={movements} today={athleteToday} hasBox={hasBox} resultDates={resultDates} nextEvent={nextEvent} hits={hits} goals={goals} logDates={logDates} goalsMissing={goalsMissing} challenges={challenges} banners={strip} />

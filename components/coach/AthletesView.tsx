@@ -21,7 +21,7 @@ export interface AthleteRow {
 }
 
 type Filter = 'all' | 'active' | 'inactive'
-const INACTIVE_DAYS = 7
+const INACTIVE_DAYS = 14
 
 function daysSince(iso: string | null): number | null {
   if (!iso) return null

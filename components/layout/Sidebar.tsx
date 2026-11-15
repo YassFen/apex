@@ -25,11 +25,11 @@ const ATHLETE_NAV = [
     { href: '/timer',        icon: Timer,      label: 'Timer' },
   ]},
   { label: 'Progreso', items: [
-    { href: '/prs',          icon: TrendingUp, label: 'RMs' },
+    { href: '/prs',          icon: TrendingUp, label: 'Récords' },
     { href: '/benchmarks',   icon: Trophy,     label: 'Benchmarks' },
     { href: '/competitions', icon: Medal,      label: 'Competencias' },
     { href: '/challenges',   icon: Flag,       label: 'Retos' },
-    { href: '/announcements', icon: Megaphone, label: 'Avisos' },
+    { href: '/announcements', icon: Megaphone, label: 'Comunicados' },
   ]},
   { label: 'Herramientas', items: [
     { href: '/calc',         icon: Calculator, label: 'Calculadora RM' },
@@ -47,11 +47,11 @@ const COACH_NAV = [
     { href: '/coach/publish-wod',   icon: Flame,      label: 'WOD' },
     { href: '/calendar',            icon: CalendarDays, label: 'Calendario' },
     { href: '/classes',             icon: CalendarCheck, label: 'Mis clases' },
-    { href: '/coach/wod-live',      icon: Activity,   label: 'Seguimiento WOD', dot: true },
+    { href: '/coach/wod-live',      icon: Activity,   label: 'En vivo', dot: true },
     { href: '/coach/athletes',      icon: Users,      label: 'Atletas' },
-    { href: '/analytics',           icon: BarChart3,  label: 'Analytics' },
+    { href: '/analytics',           icon: BarChart3,  label: 'Estadísticas' },
     { href: '/challenges',          icon: Flag,       label: 'Retos' },
-    { href: '/announcements',       icon: Megaphone,  label: 'Avisos' },
+    { href: '/announcements',       icon: Megaphone,  label: 'Comunicados' },
   ]},
   { label: 'Herramientas', items: [
     { href: '/calc',                icon: Calculator, label: 'Calculadora RM' },
@@ -120,7 +120,7 @@ export function Sidebar({ profile, isOpen, onClose }: { profile: Profile; isOpen
             {canSwitchMode && (
               <button
                 onClick={() => go(next)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-colors bg-p2 text-mu hover:bg-p3 hover:text-t"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors bg-p2 text-mu hover:bg-p3 hover:text-t"
                 aria-label="Cambiar modo"
               >
                 <ArrowLeftRight size={13} />

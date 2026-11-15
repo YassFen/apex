@@ -1,3 +1,4 @@
+import { bookedTimesToday, nowHmSantiago, pickTodayWod } from '@/lib/utils/wod-pick'
 import { createClient } from '@/lib/supabase/server'
 import { getUser, getProfile } from '@/lib/supabase/session'
 import { addDaysISO, daysBetween, todayISO } from '@/lib/utils/dates'
@@ -9,6 +10,7 @@ import type { CoachActivity } from '@/components/coach/CoachDashboard'
 import { loadChallenges } from '@/lib/utils/challenges'
 import { redirect } from 'next/navigation'
 import { DashboardDispatcher } from '@/components/layout/DashboardDispatcher'
+import { pickCoachBox } from '@/lib/utils/coach-boxes'
 import type { Banner } from '@/lib/utils/banners'
 import type { Profile, Box, Movement } from '@/lib/types/database'
 
@@ -29,10 +31,8 @@ export default async function DashboardPage() {
   let recentMembers: { id: string; name: string; avatar: string | null; joinedAt: string }[] = []
   let coachActivity: CoachActivity = { days: [], inactive: [], classes: [] }
 
-  if (profile.role === 'coach' || profile.role === 'admin') {
-    const { data: b } = await supabase
-      .from('boxes').select('*').eq('owner_id', user.id).maybeSingle()
-    coachBox = b as Box | null
+  if (profile.role !== 'athlete') {
+    coachBox = (await pickCoachBox(supabase, user.id)).box
 
     if (coachBox) {
       // Count active athletes
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
       for (const r of results) { const d = dayOf.get(r.daily_wod_id) ?? ''; if (d > (last.get(r.user_id) ?? '')) last.set(r.user_id, d) }
       coachActivity.inactive = allMembers
         .map(m => ({ ...m, last: last.get(m.id) ?? null }))
-        .filter(m => m.last ? daysBetween(m.last, today) >= 7 : daysBetween(m.joinedAt.slice(0, 10), today) >= 7)
+        .filter(m => m.last ? daysBetween(m.last, today) >= 14 : daysBetween(m.joinedAt.slice(0, 10), today) >= 14)
         .map(m => ({ id: m.id, name: m.name, avatar: m.avatar, days: m.last ? daysBetween(m.last, today) : null }))
         .sort((a, b) => (b.days ?? 99) - (a.days ?? 99))
     }
@@ -109,12 +109,15 @@ export default async function DashboardPage() {
   if (myBoxIds.length > 0) {
     const q = (cols: string) => supabase.from('daily_wods').select(cols)
       .in('box_id', myBoxIds).eq('scheduled_for', todayISO()).eq('is_live', true)
-    let { data: ws, error: wErr } = await q('id, title, type, duration_mins, class_time')
-    if (wErr) ({ data: ws } = await q('id, title, type, duration_mins'))
-    // Several classes today: show the next one still to come.
-    const nowHm = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' }).format(new Date())
+    let { data: ws, error: wErr } = await q('id, box_id, title, type, duration_mins, class_time')
+    if (wErr) ({ data: ws } = await q('id, box_id, title, type, duration_mins'))
+    // Several classes today: the one I logged, else the one I booked, else the last that started.
     const list = ((ws ?? []) as any[]).sort((a, b) => String(a.class_time ?? '').localeCompare(String(b.class_time ?? '')))
-    const w = list.find(x => !x.class_time || String(x.class_time).slice(0, 5) >= nowHm) ?? list[list.length - 1]
+    const [{ data: mineToday }, bookedTimes] = await Promise.all([
+      list.length ? supabase.from('wod_results').select('daily_wod_id').eq('user_id', user.id).in('daily_wod_id', list.map(x => x.id)) : Promise.resolve({ data: [] }),
+      bookedTimesToday(supabase, user.id, todayISO()),
+    ])
+    const w = pickTodayWod(list, { logged: new Set(((mineToday ?? []) as any[]).map(r => r.daily_wod_id as string)), bookedTimes, nowHm: nowHmSantiago() })
     if (w) {
       const { data: r } = await supabase
         .from('wod_results').select('result_value').eq('daily_wod_id', w.id).eq('user_id', user.id).maybeSingle()
@@ -141,7 +144,7 @@ export default async function DashboardPage() {
   ]
   const goals: GoalProgress[] = ((goalsRes.error ? [] : goalsRes.data ?? []) as any[]).map(g => {
     const from = g.period === 'today' || g.period === 'daily' ? todayISO()
-      : g.period === 'week' || g.period === 'weekly' ? addDaysISO(todayISO(), -((new Date().getDay() + 6) % 7)) : g.starts_on
+      : g.period === 'week' || g.period === 'weekly' ? addDaysISO(todayISO(), -((new Date(`${todayISO()}T12:00:00Z`).getUTCDay() + 6) % 7)) : g.starts_on
     const done = logs.filter(l => l.logged_on >= from && l.movement.toLowerCase() === String(g.movement).toLowerCase())
       .reduce((s, l) => s + (l.sets ?? 1) * (l.reps ?? l.distance_m ?? 0), 0)
     return { id: g.id, movement: g.movement, target: g.target, unit: g.unit, period: g.period, done }

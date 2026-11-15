@@ -56,7 +56,7 @@ export function MigrationNotice({ n = '010' }: { n?: string }) {
   return (
     <div className="flex gap-2.5 p-3.5 rounded-2xl bg-or/10 text-or text-sm">
       <Warning size={18} className="flex-shrink-0 mt-px" aria-hidden />
-      <span className="text-pretty">Esta parte necesita la migración {n} en Supabase. Hasta que se aplique, aquí no se puede guardar.</span>
+      <span className="text-pretty">Esta sección todavía no está activa en el servidor, así que aún no se puede guardar aquí. Pronto estará disponible.</span>
     </div>
   )
 }

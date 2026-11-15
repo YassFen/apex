@@ -3,25 +3,25 @@ import { getUser, getProfile } from '@/lib/supabase/session'
 import { addDaysISO, todayISO } from '@/lib/utils/dates'
 import { redirect } from 'next/navigation'
 import { PublishWodPanel, type ScheduledDay, type DaySession } from '@/components/coach/PublishWodPanel'
-import type { Profile, Box, Movement } from '@/lib/types/database'
+import type { Profile, Movement } from '@/lib/types/database'
+import { pickCoachBox } from '@/lib/utils/coach-boxes'
 
 const AHEAD_DAYS = 13
 
-export default async function PublishWodPage({ searchParams }: { searchParams: Promise<{ date?: string; wod?: string }> }) {
+export default async function PublishWodPage({ searchParams }: { searchParams: Promise<{ date?: string; wod?: string; box?: string }> }) {
   const supabase = await createClient()
   const user = await getUser()
   if (!user) redirect('/auth/login')
 
   const p = await getProfile(user.id)
   const profile = p as Profile | null
-  if (!profile || profile.role !== 'coach') redirect('/dashboard')
+  if (!profile) redirect('/dashboard')
 
-  const { data: b } = await supabase.from('boxes').select('*').eq('owner_id', user.id).single()
-  const box = b as Box | null
-  if (!box) redirect('/dashboard')
+  const { date: rawDate, wod: wodParam, box: boxParam } = await searchParams
+  const { box } = await pickCoachBox(supabase, user.id, boxParam)
+  if (!box) redirect('/coach/create-box')
 
   const today = todayISO()
-  const { date: rawDate, wod: wodParam } = await searchParams
   // Programming is for today and the next two weeks; anything else falls back to today.
   const date = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) && rawDate >= today && rawDate <= addDaysISO(today, AHEAD_DAYS)
     ? rawDate : today

@@ -31,7 +31,7 @@ export function RegisterForm() {
     if (password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
     setLoading(true); setError('')
     const supabase = createClient()
-    const code = role === 'athlete' ? inviteCode.trim().toUpperCase() : ''
+    const code = inviteCode.trim().toUpperCase()
 
     const { data, error: signUpErr } = await supabase.auth.signUp({
       email: email.trim(),
@@ -136,13 +136,13 @@ export function RegisterForm() {
         <PasswordField label="Contraseña" name="password" required minLength={8} autoComplete="new-password"
           value={password} onChange={e => setPassword(e.target.value)} hint="Mínimo 8 caracteres." />
 
-        {role === 'athlete' && (
+        {(
           <Field
             label={<>Código de box <span className="text-fa normal-case tracking-normal font-normal">(opcional)</span></>}
             name="invite-code" autoComplete="off" spellCheck={false} maxLength={8}
             value={inviteCode} onChange={e => setInviteCode(e.target.value.toUpperCase())}
             placeholder="Ej. A1B2C3D4" className="tracking-[3px] font-display font-bold tracking-tight"
-            hint="Te lo da tu coach. También puedes ingresarlo después en tu perfil."
+            hint={role === 'coach' ? 'Si trabajas en un box, pídele el código a la administración: entras al box y ellos te dan el rol de coach.' : 'Te lo da tu coach. También puedes ingresarlo después en tu perfil.'}
           />
         )}
 

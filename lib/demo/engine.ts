@@ -27,7 +27,7 @@ export interface QuerySpec {
 // Many-to-one embeds: the column on the base row that points at the embedded table's id.
 const ONE: Record<string, string[]> = {
   movements: ['movement_id'], boxes: ['box_id'], profiles: ['user_id', 'coach_id', 'created_by', 'author_id'],
-  daily_wods: ['daily_wod_id'], events: ['event_id'],
+  daily_wods: ['daily_wod_id'], events: ['event_id'], class_slots: ['slot_id'],
 }
 // One-to-many embeds: the column on the embedded table that points back at the base row.
 const MANY_FK: Record<string, string> = {

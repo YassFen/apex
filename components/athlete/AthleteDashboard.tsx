@@ -211,7 +211,7 @@ export function AthleteDashboard({ profile, prs, movements = [], today = null, h
               <h3 className="font-semibold">Metas</h3>
               <button type="button" onClick={() => setLogTab('goal')} className="text-ac text-sm font-semibold flex items-center gap-1"><Plus size={14} weight="bold" />Nueva</button>
             </div>
-            {goalsMissing ? <p className="text-mu text-sm">Las metas se activan con la migración 007.</p>
+            {goalsMissing ? <p className="text-mu text-sm">Las metas estarán disponibles muy pronto.</p>
               : goals.length === 0 ? (
                 <button type="button" onClick={() => setLogTab('goal')} className="w-full flex items-center gap-3 p-3 rounded-2xl bg-p2 text-left">
                   <span className="size-10 rounded-xl bg-ac/15 text-ac grid place-items-center"><Target size={20} weight="duotone" /></span>

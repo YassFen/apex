@@ -1,3 +1,4 @@
+import { pickCoachBox } from '@/lib/utils/coach-boxes'
 import { WOD_TYPE_META } from '@/lib/utils/wod-types'
 import { createClient } from '@/lib/supabase/server'
 import { getUser, getProfile } from '@/lib/supabase/session'
@@ -9,7 +10,7 @@ import { formatDateOnly } from '@/lib/utils/dates'
 
 const CAT_LABELS: Record<string, string> = {
   weightlifting: 'Halterofilia', olympic: 'Olímpicos',
-  gymnastics: 'Gymnastics', cardio: 'Cardio', benchmark: 'Benchmarks',
+  gymnastics: 'Gimnásticos', cardio: 'Cardio', benchmark: 'Benchmarks',
 }
 
 export default async function AnalyticsPage() {
@@ -22,13 +23,14 @@ export default async function AnalyticsPage() {
   if (!profile) redirect('/auth/login')
 
   // ── Coach analytics ─────────────────────────────────────────────────────────
-  if (profile.role === 'coach') {
-    const { data: box } = await supabase.from('boxes').select('*').eq('owner_id', user.id).single()
+  const { box: coachBox } = await pickCoachBox(supabase, user.id)
+  if (profile.role !== 'athlete') {
+    const box = coachBox
 
     if (!box) {
       return (
         <>
-          <Topbar title="Analytics" profile={profile} />
+          <Topbar title="Estadísticas" profile={profile} />
           <div className="p-4 lg:p-6">
             <Card className="text-center py-12">
               <div className="text-mu text-sm">Crea tu box primero para ver estadísticas.</div>
@@ -58,7 +60,7 @@ export default async function AnalyticsPage() {
 
     return (
       <>
-        <Topbar title="Analytics" profile={profile} />
+        <Topbar title="Estadísticas" profile={profile} />
         <div className="p-4 lg:p-6 flex flex-col gap-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
             <Card>
@@ -146,7 +148,7 @@ export default async function AnalyticsPage() {
 
   return (
     <>
-      <Topbar title="Analytics" profile={profile} />
+      <Topbar title="Estadísticas" profile={profile} />
       <div className="p-4 lg:p-6 flex flex-col gap-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
           <Card>
