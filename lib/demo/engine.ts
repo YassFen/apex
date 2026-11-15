@@ -8,7 +8,7 @@ import { demoAdminRpc } from './admin'
 export type Row = Record<string, any>
 export type Store = Record<string, Row[]>
 
-export interface Filter { op: 'eq' | 'neq' | 'in' | 'gt' | 'gte' | 'lt' | 'lte' | 'is'; col: string; val: any }
+export interface Filter { op: 'eq' | 'neq' | 'in' | 'gt' | 'gte' | 'lt' | 'lte' | 'is' | 'not_is' | 'or'; col: string; val: any }
 export interface QuerySpec {
   table: string
   op: 'select' | 'insert' | 'update' | 'upsert' | 'delete'
@@ -86,6 +86,8 @@ function matches(row: Row, f: Filter): boolean {
     case 'lt': return v !== null && v !== undefined && v < f.val
     case 'lte': return v !== null && v !== undefined && v <= f.val
     case 'is': return f.val === null ? v === null || v === undefined : v === f.val
+    case 'not_is': return f.val === null ? v !== null && v !== undefined : v !== f.val
+    case 'or': return (f.val as { col: string; op: Filter['op']; val: any }[]).some(c => matches(row, c))
   }
 }
 

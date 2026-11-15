@@ -32,6 +32,14 @@ class DemoQuery implements PromiseLike<any> {
   lt(c: string, v: any) { return this.f('lt', c, v) }
   lte(c: string, v: any) { return this.f('lte', c, v) }
   is(c: string, v: any) { return this.f('is', c, v) }
+  /** .not('col', 'is', null) and .not('col', 'eq', v) */
+  not(c: string, op: string, v: any) { return this.f(op === 'is' ? 'not_is' : 'neq', c, v) }
+  /** .or('a.is.null,b.gte.2026-01-01'): any of the conditions. */
+  or(expr: string) {
+    const parts = expr.split(',').map(p => { const [col, op, ...rest] = p.split('.'); const raw = rest.join('.'); return { col, op, val: raw === 'null' ? null : raw } })
+    this.spec.filters.push({ op: 'or', col: '', val: parts })
+    return this
+  }
   order(col: string, opts?: { ascending?: boolean }) { this.spec.orders.push({ col, asc: opts?.ascending !== false }); return this }
   limit(n: number) { this.spec.limit = n; return this }
   single() { this.spec.single = 'single'; return this }
