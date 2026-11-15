@@ -42,8 +42,11 @@ export function generateWod(recovery: GroupRecovery[], maxesLb: Map<string, numb
   const r = rng(seed)
   const pick = <T,>(xs: T[]) => xs[Math.floor(r() * xs.length)]
   // The three freshest non-motor groups + always some motor work.
-  const fresh = recovery.filter(g => g.group !== 'motor').sort((a, b) => b.pct - a.pct).slice(0, 3).map(g => g.group)
-  const focus: MuscleGroup[] = [...fresh.slice(0, 2), 'motor']
+  // Only groups that have movements in the pool (a group without exercises used to crash the sheet).
+  const hasPool = (g: MuscleGroup) => POOL.some(x => x.group === g)
+  const fresh = recovery.filter(g => g.group !== 'motor' && hasPool(g.group)).sort((a, b) => b.pct - a.pct).slice(0, 3).map(g => g.group)
+  const fallback = [...new Set(POOL.map(x => x.group))].filter(g => g !== 'motor' && !fresh.includes(g))
+  const focus: MuscleGroup[] = [...[...fresh, ...fallback].slice(0, 2), 'motor']
   const type = pick(['amrap', 'fortime', 'emom'] as const)
   const minutes = type === 'emom' ? pick([12, 15, 16]) : type === 'amrap' ? pick([12, 15, 18, 20]) : pick([10, 12, 15])
 
