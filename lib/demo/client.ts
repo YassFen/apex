@@ -42,6 +42,9 @@ class DemoQuery implements PromiseLike<any> {
   }
   order(col: string, opts?: { ascending?: boolean }) { this.spec.orders.push({ col, asc: opts?.ascending !== false }); return this }
   limit(n: number) { this.spec.limit = n; return this }
+  /** .range(from, to): rows from..to inclusive, like PostgREST. */
+  range(from: number, to: number) { this.spec.offset = from; this.spec.limit = Math.max(0, to - from + 1); return this }
+  ilike(c: string, v: string) { return this.f('ilike', c, v) }
   single() { this.spec.single = 'single'; return this }
   maybeSingle() { this.spec.single = 'maybe'; return this }
   then<A = any, B = never>(ok?: ((v: any) => A | PromiseLike<A>) | null, bad?: ((e: any) => B | PromiseLike<B>) | null): PromiseLike<A | B> {

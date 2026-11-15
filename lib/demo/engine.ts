@@ -9,7 +9,7 @@ import { demoAward, demoProgressRpc } from './progress'
 export type Row = Record<string, any>
 export type Store = Record<string, Row[]>
 
-export interface Filter { op: 'eq' | 'neq' | 'in' | 'gt' | 'gte' | 'lt' | 'lte' | 'is' | 'not_is' | 'or'; col: string; val: any }
+export interface Filter { op: 'eq' | 'neq' | 'in' | 'gt' | 'gte' | 'lt' | 'lte' | 'is' | 'not_is' | 'or' | 'ilike'; col: string; val: any }
 export interface QuerySpec {
   table: string
   op: 'select' | 'insert' | 'update' | 'upsert' | 'delete'
@@ -19,6 +19,7 @@ export interface QuerySpec {
   filters: Filter[]
   orders: { col: string; asc: boolean }[]
   limit?: number
+  offset?: number
   single?: 'single' | 'maybe'
   values?: Row | Row[]
   onConflict?: string
@@ -62,7 +63,9 @@ function project(store: Store, table: string, row: Row, columns: string): Row {
         out[key] = target ? project(store, embed, target, inner) : null
       } else {
         const fk = MANY_FK[table] ?? `${table.replace(/s$/, '')}_id`
-        out[key] = (store[embed] ?? []).filter(r => r[fk] === row.id).map(r => project(store, embed, r, inner))
+        const kids = (store[embed] ?? []).filter(r => r[fk] === row.id)
+        // embed(count): PostgREST returns [{ count: n }]
+        out[key] = inner.trim() === 'count' ? [{ count: kids.length }] : kids.map(r => project(store, embed, r, inner))
       }
     } else if (p === '*') {
       out = { ...row, ...out }
@@ -88,6 +91,10 @@ function matches(row: Row, f: Filter): boolean {
     case 'lte': return v !== null && v !== undefined && v <= f.val
     case 'is': return f.val === null ? v === null || v === undefined : v === f.val
     case 'not_is': return f.val === null ? v !== null && v !== undefined : v !== f.val
+    case 'ilike': {
+      const pattern = String(f.val).split('%').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/_/g, '.')).join('.*')
+      return v !== null && v !== undefined && new RegExp(`^${pattern}$`, 'is').test(String(v))
+    }
     case 'or': return (f.val as { col: string; op: Filter['op']; val: any }[]).some(c => matches(row, c))
   }
 }
@@ -138,6 +145,7 @@ export function runQuery(store: Store, spec: QuerySpec, userId: string): { data:
   let out = rows.filter(pass)
   for (const o of [...spec.orders].reverse()) out = [...out].sort((a, b) => (o.asc ? 1 : -1) * cmp(a[o.col], b[o.col]))
   const count = out.length
+  if (spec.offset) out = out.slice(spec.offset)
   if (spec.limit !== undefined) out = out.slice(0, spec.limit)
   if (spec.head) return { data: null, error: null, count }
   return finish(store, spec, out, spec.count ? count : null)
