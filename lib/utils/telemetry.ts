@@ -79,6 +79,8 @@ export async function flush() {
 }
 
 export function track(kind: Kind, label?: string | null, path: string = location.pathname) {
+  // With usage data off, only the screens visited are kept for error reports, never presses.
+  if (kind !== 'view' && !usageEnabled()) return
   remember(kind, kind === 'view' ? cleanPath(path) : label ?? '')
   if (!ctx || disabledTables || !usageEnabled()) return
   events.push({
@@ -136,6 +138,8 @@ export function labelOf(el: Element): string | null {
   const target = el.closest('[data-track], a, button, [role="button"], [role="tab"], [role="switch"], summary')
   if (!target || target.closest('[data-track-off]')) return null
   const explicit = target.getAttribute('data-track') ?? target.getAttribute('aria-label') ?? target.getAttribute('title')
+  // A link's text is often a person's name: for links, record only where they go.
+  if (!explicit && target.tagName === 'A') return `→ ${cleanPath((target as HTMLAnchorElement).pathname ?? '')}`
   const text = (explicit ?? (target as HTMLElement).innerText ?? '').replace(/\s+/g, ' ').trim()
   if (!text) return target.tagName === 'A' ? `→ ${cleanPath((target as HTMLAnchorElement).pathname ?? '')}` : null
   // Digits are dropped so names, weights and times shown on a button don't end up in the stats.

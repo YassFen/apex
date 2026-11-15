@@ -20,7 +20,7 @@ export default async function ManagePage({ searchParams }: { searchParams: Promi
 
   const [people, days, msRes, slotsRes, ovRes, bkRes, isRes] = await Promise.all([
     loadPeople(supabase, box),
-    loadAttendance(supabase, box.id, prevStart, today),
+    loadAttendance(supabase, box.id, addDaysISO(today, -365), today),
     supabase.from('memberships').select('*').eq('box_id', box.id),
     supabase.from('class_slots').select('*').eq('box_id', box.id),
     supabase.from('class_overrides').select('*').eq('box_id', box.id).gte('class_date', prevStart).lte('class_date', addDaysISO(today, 7)),
@@ -50,7 +50,7 @@ export default async function ManagePage({ searchParams }: { searchParams: Promi
   const planCount = new Map<string, number>()
   for (const p of athletes) {
     if (!p.isActive) continue
-    const m = currentMembership(byUser.get(p.id) ?? [])
+    const m = currentMembership(byUser.get(p.id) ?? [], today)
     const s = planState(m, today)
     if (s === 'frozen') frozen++
     if (s === 'expiring') expiring++
@@ -75,7 +75,7 @@ export default async function ManagePage({ searchParams }: { searchParams: Promi
   for (let i = 1; i < dayN; i++) { cumNow[i] += cumNow[i - 1]; cumPrev[i] += cumPrev[i - 1] }
 
   /* ── Classes: busiest times, occupancy, waiting lists, per coach ── */
-  const sessions = buildSessions(slots, (ovRes.data ?? []) as ClassOverride[], bookings, prevStart, addDaysISO(today, 7))
+  const sessions = buildSessions(slots, (ovRes.data ?? []) as ClassOverride[], bookings, prevStart, addDaysISO(today, 7), today)
   const given = sessions.filter(s => !s.cancelled && s.date >= thisStart && s.date <= today)
   const byHour = new Map<string, { sum: number; n: number }>()
   for (const s of sessions.filter(x => !x.cancelled && x.date <= today)) {

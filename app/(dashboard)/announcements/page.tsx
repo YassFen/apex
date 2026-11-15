@@ -25,7 +25,7 @@ export default async function AnnouncementsPage() {
   const today = todayISO()
 
   const [annRes, slotsRes, readsRes, membersRes] = await Promise.all([
-    boxIds.length ? supabase.from('announcements').select('*').in('box_id', boxIds).gte('created_at', `${addDaysISO(today, -60)}T00:00:00Z`).order('created_at', { ascending: false }) : Promise.resolve({ data: [], error: null }),
+    boxIds.length ? supabase.from('announcements').select('*').in('box_id', boxIds).or(`ends_on.is.null,ends_on.gte.${addDaysISO(today, -60)}`).order('created_at', { ascending: false }) : Promise.resolve({ data: [], error: null }),
     boxIds.length ? supabase.from('class_slots').select('*').in('box_id', boxIds).eq('is_active', true).order('start_time') : Promise.resolve({ data: [] }),
     supabase.from('announcement_reads').select('announcement_id, user_id'),
     boxIds.length ? supabase.from('box_members').select('box_id, role').in('box_id', boxIds).eq('is_active', true) : Promise.resolve({ data: [] }),

@@ -104,7 +104,7 @@ export function UsageView({ u }: { u: Usage }) {
         action={<PeriodTabs days={u.days} base="/admin/usage" />} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat label="Visitas (sesiones)" value={u.totals.sessions} hint={`en ${u.days} días`} />
-        <Stat label="Sesiones por persona" value={(u.totals.sessions / Math.max(1, u.totals.mau)).toFixed(1)} />
+        <Stat label="Sesiones por persona" value={(u.totals.sessions / Math.max(1, u.totals.period_users ?? u.totals.mau)).toFixed(1)} hint={`${u.totals.period_users ?? u.totals.mau} personas en el periodo`} />
         <Stat label="App instalada" value={`${pct(installed, devUsers)}%`} hint="la usan desde el ícono del teléfono" />
         <Stat label="En teléfono" value={`${pct(u.devices.find(d => d.k === 'mobile')?.users ?? 0, devUsers)}%`} />
       </div>

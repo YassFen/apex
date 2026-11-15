@@ -10,7 +10,7 @@ export interface Datum { label: string; value: number; hint?: string; highlight?
 
 function Tip({ children }: { children: React.ReactNode }) {
   return (
-    <span role="tooltip" className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 z-10 px-2 py-1 rounded-lg bg-t text-bg text-[11px] font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-150">
+    <span role="tooltip" className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 z-10 px-2 py-1 rounded-lg bg-t text-bg text-[11px] font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-150">
       {children}
     </span>
   )
@@ -126,7 +126,7 @@ export function LineChart({ labels, series, compare, height = 130, nowLabel, bef
         )}
       </div>
       <div className="flex justify-between text-[10px] text-mu" aria-hidden id={id}>
-        <span>{labels[0]}</span>{n > 2 && <span>{labels[Math.floor((n - 1) / 2)]}</span>}<span>{labels[n - 1]}</span>
+        <span>{labels[0]}</span>{n > 2 && <span>{labels[Math.floor((n - 1) / 2)]}</span>}{n > 1 && <span>{labels[n - 1]}</span>}
       </div>
     </div>
   )

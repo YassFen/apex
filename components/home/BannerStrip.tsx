@@ -7,6 +7,7 @@ import { X, ArrowRight, ArrowSquareOut } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
 import { BANNER_ICONS, BANNER_TONES, isExternal, safeHref, type Banner, type BannerIcon } from '@/lib/utils/banners'
 import { playSound } from '@/lib/utils/sound'
+import { todayISO } from '@/lib/utils/dates'
 import { cn } from '@/lib/utils/cn'
 
 const HIDDEN_KEY = 'apex.bannersHidden'
@@ -66,7 +67,7 @@ export function BannerStrip({ banners }: { banners: Banner[] }) {
     const b = shown[index]
     if (!b) return
     try {
-      const day = new Date().toISOString().slice(0, 10)
+      const day = todayISO()
       const seen: Record<string, string> = JSON.parse(localStorage.getItem(SEEN_KEY) ?? '{}')
       if (seen[b.id] === day) return
       seen[b.id] = day
@@ -94,7 +95,8 @@ export function BannerStrip({ banners }: { banners: Banner[] }) {
   function onScroll() {
     const el = track.current
     if (!el) return
-    setIndex(Math.max(0, Math.min(shown.length - 1, Math.round(el.scrollLeft / Math.max(1, el.clientWidth)))))
+    const step = ((el.firstElementChild as HTMLElement | null)?.offsetWidth ?? el.clientWidth) + 12
+    setIndex(Math.max(0, Math.min(shown.length - 1, Math.round(el.scrollLeft / Math.max(1, step)))))
   }
 
   return (

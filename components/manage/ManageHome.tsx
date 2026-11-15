@@ -37,6 +37,8 @@ function Panel({ title, sub, children, className }: { title: string; sub?: React
 }
 
 export function ManageHome({ profile, box, boxes, s, missing }: { profile: Profile; box: Box; boxes: Box[]; s: ManageSummary; missing: boolean }) {
+  // Keeps the chosen box when an administrator has several.
+  const withBox = (href: string) => (boxes.length > 1 ? `${href}${href.includes('?') ? '&' : '?'}box=${box.id}` : href)
   // What needs a decision, most pressing first.
   const alerts: { tone: 'red' | 'orange' | 'muted'; text: string; href: string }[] = []
   if (s.issues) alerts.push({ tone: 'red', text: s.issues === 1 ? 'Un coach no puede dar una clase. Asigna reemplazo.' : `${s.issues} avisos de coaches que no pueden dar clase.`, href: '/manage/coaches' })
@@ -70,7 +72,7 @@ export function ManageHome({ profile, box, boxes, s, missing }: { profile: Profi
           {alerts.length === 0 ? (
             <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-gr/10 text-gr text-sm"><CheckCircle size={18} weight="fill" /> Todo en orden: sin alertas por ahora.</div>
           ) : alerts.map(a => (
-            <Link key={a.text} href={a.href} className={cn('tap-card flex items-center gap-2.5 p-3.5 rounded-2xl text-sm',
+            <Link key={a.text} href={withBox(a.href)} className={cn('tap-card flex items-center gap-2.5 p-3.5 rounded-2xl text-sm',
               a.tone === 'red' ? 'bg-rd/10 text-rd' : a.tone === 'orange' ? 'bg-or/10 text-or' : 'bg-p text-mu')}>
               <Warning size={18} className="flex-shrink-0" aria-hidden />
               <span className="flex-1 text-pretty">{a.text}</span>
@@ -106,7 +108,7 @@ export function ManageHome({ profile, box, boxes, s, missing }: { profile: Profi
               <ul className="flex flex-col gap-1.5">
                 {s.away.map(p => (
                   <li key={p.id}>
-                    <Link href={`/manage/members/${p.id}`} className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-p2">
+                    <Link href={withBox(`/manage/members/${p.id}`)} data-track-off className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-p2">
                       <Avatar name={p.name} src={p.avatar} size={36} />
                       <span className="flex-1 text-sm font-medium truncate">{p.name}</span>
                       <span className="text-sm text-or font-semibold tabular-nums">{p.days} días</span>
@@ -115,7 +117,7 @@ export function ManageHome({ profile, box, boxes, s, missing }: { profile: Profi
                 ))}
               </ul>
             )}
-            {s.awayCount > s.away.length && <Link href="/manage/members?f=inactive" className="text-sm font-semibold text-ac">Ver los {s.awayCount}</Link>}
+            {s.awayCount > s.away.length && <Link href={withBox('/manage/members?f=inactive')} className="text-sm font-semibold text-ac">Ver los {s.awayCount}</Link>}
           </Panel>
         </div>
       </div>

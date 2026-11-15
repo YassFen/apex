@@ -15,8 +15,15 @@ export const PLAN_STATE_META: Record<PlanState, { label: string; color: 'green' 
 }
 
 /** Latest membership that isn't cancelled (rows may come in any order). */
-export function currentMembership(rows: Membership[]): Membership | null {
-  return rows.filter(m => m.status !== 'cancelled').sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0] ?? null
+export function currentMembership(rows: Membership[], today?: string): Membership | null {
+  const live = rows.filter(m => m.status !== 'cancelled').sort((a, b) => (a.starts_on < b.starts_on ? 1 : a.starts_on > b.starts_on ? -1 : a.created_at < b.created_at ? 1 : -1))
+  // The plan in force is the newest one that already started; a renewal waiting to start doesn't count yet.
+  return (today ? live.find(m => m.starts_on <= today) : undefined) ?? live[live.length - 1] ?? null
+}
+
+/** A renewal already loaded that starts after the current plan. */
+export function upcomingMembership(rows: Membership[], today: string): Membership | null {
+  return rows.filter(m => m.status !== 'cancelled' && m.starts_on > today).sort((a, b) => (a.starts_on < b.starts_on ? -1 : 1))[0] ?? null
 }
 
 export function planState(m: Membership | null, today: string): PlanState {

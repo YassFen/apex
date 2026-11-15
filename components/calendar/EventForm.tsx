@@ -28,7 +28,7 @@ export interface EventFormValues {
 }
 
 interface MovRow { name: string; reps: string; m: string; f: string }
-interface WorkoutDraft { key: string; title: string; type: EventWorkout['type']; cap: string; description: string; movs: MovRow[] }
+interface WorkoutDraft { id?: string; key: string; title: string; type: EventWorkout['type']; cap: string; description: string; movs: MovRow[] }
 
 const toUnitStr = (lb: number | null | undefined, unit: Unit) =>
   lb ? String(unit === 'kg' ? Math.round(lb * 0.453592 * 2) / 2 : Math.round(lb)) : ''
@@ -69,7 +69,7 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
   const [url, setUrl] = useState(initial.url)
   const [notes, setNotes] = useState(initial.notes)
   const [workouts, setWorkouts] = useState<WorkoutDraft[]>(() => initial.workouts.map(w => ({
-    key: newKey(), title: w.title, type: w.type, cap: w.time_cap_mins ? String(w.time_cap_mins) : '', description: w.description,
+    id: w.id, key: newKey(), title: w.title, type: w.type, cap: w.time_cap_mins ? String(w.time_cap_mins) : '', description: w.description,
     movs: w.movements.length ? w.movements.map(m => ({ name: m.name, reps: m.reps, m: toUnitStr(m.load_lb, unit), f: toUnitStr(m.load_lb_f, unit) })) : [emptyMov()],
   })))
   const [saving, setSaving] = useState(false)
@@ -99,13 +99,23 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
     const rows = workouts
       .filter(w => w.title.trim() || w.movs.some(m => m.name.trim()))
       .map((w, i) => ({
-        event_id: eventId, position: i, title: w.title.trim() || `Workout ${i + 1}`, type: w.type,
+        _id: w.id, event_id: eventId, position: i, title: w.title.trim() || `Workout ${i + 1}`, type: w.type,
         time_cap_mins: w.cap ? Number(w.cap) : null, description: w.description.trim(),
         movements: w.movs.filter(m => m.name.trim()).map(m => ({ name: m.name.trim(), reps: m.reps.trim(), load_lb: toLb(m.m, unit), load_lb_f: toLb(m.f, unit) })),
       }))
-    if (editing) await supabase.from('event_workouts').delete().eq('event_id', eventId)
-    if (rows.length) {
-      const { error } = await supabase.from('event_workouts').insert(rows)
+    // Existing workouts are updated in place: deleting them would delete every athlete's results.
+    const keep = rows.filter(r => r._id).map(r => r._id as string)
+    if (editing) {
+      const gone = initial.workouts.map(w => w.id).filter((id): id is string => !!id && !keep.includes(id))
+      if (gone.length) await supabase.from('event_workouts').delete().in('id', gone)
+      for (const { _id, ...r } of rows.filter(r => r._id)) {
+        const { error } = await supabase.from('event_workouts').update(r).eq('id', _id as string)
+        if (error) { setSaving(false); fire(friendlyError(error.message), 'error'); return }
+      }
+    }
+    const fresh = rows.filter(r => !r._id).map(({ _id, ...r }) => r)
+    if (fresh.length) {
+      const { error } = await supabase.from('event_workouts').insert(fresh)
       if (error) { setSaving(false); fire(friendlyError(error.message), 'error'); return }
     }
     // Creating your own competition means you're going.
@@ -116,7 +126,7 @@ export function EventForm({ profile, initial, coachBoxes, movementNames }: {
     }
     setSaving(false)
     fire(editing ? 'Evento actualizado' : 'Evento creado. ¡A prepararse!', 'pr')
-    router.push(`/calendar/event/${eventId}`)
+    router.replace(`/calendar/event/${eventId}`)
     router.refresh()
   }
 

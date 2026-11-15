@@ -39,7 +39,7 @@ export const BANNER_LINKS: { href: string; label: string }[] = [
 export function safeHref(raw: string | null | undefined): string | null {
   const v = (raw ?? '').trim()
   if (!v) return null
-  if (/^\/[^/\\]/.test(v)) return v
+  if (/^\/[A-Za-z0-9][^\s\\]*$/.test(v)) return v
   if (/^https:\/\/[^\s]+$/i.test(v)) return v
   return null
 }

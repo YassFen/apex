@@ -46,7 +46,7 @@ export function Telemetry() {
         }
         return res
       } catch (err) {
-        if (navigator.onLine) reportError('api', `Sin respuesta: ${(err as Error)?.message ?? 'fetch'}`)
+        if ((err as Error)?.name !== 'AbortError' && navigator.onLine) reportError('api', `Sin respuesta: ${(err as Error)?.message ?? 'fetch'}`)
         throw err
       }
     }

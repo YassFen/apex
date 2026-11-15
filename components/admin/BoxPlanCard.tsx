@@ -21,7 +21,6 @@ export function BoxPlanCard({ boxId, boxName, plan, me }: { boxId: string; boxNa
     setBusy(true)
     const supabase = createClient()
     const { error } = await supabase.from('boxes').update({ plan: next }).eq('id', boxId)
-    if (!error) await supabase.from('admin_audit_log').insert({ admin_id: me, action: 'box_plan', target: boxName, detail: { box_id: boxId, from: plan, to: next } })
     setBusy(false)
     if (error) { fire(friendlyError(error.message), 'error'); return }
     fire('Plan actualizado', 'ok'); setNext(null); router.refresh()

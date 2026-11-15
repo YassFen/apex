@@ -23,14 +23,14 @@ export interface NoticeInput {
   newBoxEvents: { id: string; name: string; startsOn: string; createdAt: string; boxName: string }[]
   wods: { id: string; date: string; title: string; classTime: string | null; boxName: string; visible: boolean; myResult: boolean }[]
   /** Support answers not read yet. */
-  replies?: { id: string; date: string }[]
+  replies?: { id: string; date: string; at: string }[]
 }
 
 export function buildNotices({ today, myEvents, newBoxEvents, wods, replies = [] }: NoticeInput): Notice[] {
   const out: Notice[] = []
 
   for (const r of replies) {
-    out.push({ id: `support-${r.id}`, kind: 'support', date: r.date, href: '/support', title: 'Soporte respondió tu mensaje', body: 'Toca para leer la respuesta.' })
+    out.push({ id: `support-${r.id}-${r.at}`, kind: 'support', date: r.date, href: '/support', title: 'Soporte respondió tu mensaje', body: 'Toca para leer la respuesta.' })
   }
 
   for (const e of myEvents) {

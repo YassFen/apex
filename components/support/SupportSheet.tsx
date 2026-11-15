@@ -22,8 +22,8 @@ export const TICKET_KINDS: { k: TicketKind; label: string; hint: string; Icon: t
   { k: 'account', label: 'Mi cuenta', hint: 'Acceso, correo, box, plan…', Icon: UserCircle },
 ]
 
-export function SupportSheet({ open, onClose, userId, boxId, initialKind = 'bug', initialMessage = '' }: {
-  open: boolean; onClose: () => void; userId: string; boxId?: string | null; initialKind?: TicketKind; initialMessage?: string
+export function SupportSheet({ open, onClose, userId, boxId, initialKind = 'bug', initialMessage = '', from }: {
+  open: boolean; onClose: () => void; userId: string; boxId?: string | null; initialKind?: TicketKind; initialMessage?: string; from?: string
 }) {
   const router = useRouter()
   const { fire } = useToast()
@@ -41,7 +41,7 @@ export function SupportSheet({ open, onClose, userId, boxId, initialKind = 'bug'
     const ctx = supportContext()
     const { error } = await createClient().from('support_tickets').insert({
       user_id: userId, box_id: boxId ?? null, kind, message: message.trim().slice(0, 2000),
-      path: (ctx.path as string | null) ?? null, context: withContext ? ctx : { version: ctx.version },
+      path: from ?? (ctx.path as string | null) ?? null, context: withContext ? ctx : { version: ctx.version },
     })
     setBusy(false)
     if (error) { fire(/support_tickets/.test(error.message) ? 'El soporte aún no está activo en el servidor. Escríbenos por WhatsApp mientras tanto.' : friendlyError(error.message), 'error'); return }

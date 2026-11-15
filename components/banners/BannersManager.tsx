@@ -38,16 +38,17 @@ export function BannersManager({ boxId, me, today, banners, missing }: { boxId: 
     router.refresh()
     return true
   }
-  // Swap places with the neighbour.
+  // Swap places with the neighbour, then store 0..n-1 so positions never tie.
   async function move(i: number, dir: -1 | 1) {
-    const a = sorted[i], b = sorted[i + dir]
-    if (!a || !b) return
+    if (!sorted[i] || !sorted[i + dir]) return
+    const order = [...sorted]
+    ;[order[i], order[i + dir]] = [order[i + dir], order[i]]
     const supabase = createClient()
     setBusy(true)
-    await supabase.from('banners').update({ position: i + dir }).eq('id', a.id)
-    const { error } = await supabase.from('banners').update({ position: i }).eq('id', b.id)
+    const results = await Promise.all(order.map((x, k) => (x.position !== k ? supabase.from('banners').update({ position: k }).eq('id', x.id) : Promise.resolve({ error: null }))))
     setBusy(false)
-    if (error) fire(friendlyError(error.message), 'error'); else router.refresh()
+    const failed = results.find(r => r.error)
+    if (failed?.error) fire(friendlyError(failed.error.message), 'error'); else router.refresh()
   }
 
   return (
@@ -96,7 +97,7 @@ export function BannersManager({ boxId, me, today, banners, missing }: { boxId: 
         </ul>
       )}
 
-      {editing && <BannerSheet key={editing === 'new' ? 'new' : editing.id} boxId={boxId} me={me} today={today} banner={editing === 'new' ? null : editing} nextPosition={sorted.length} onClose={() => setEditing(null)} />}
+      {editing && <BannerSheet key={editing === 'new' ? 'new' : editing.id} boxId={boxId} me={me} today={today} banner={editing === 'new' ? null : editing} nextPosition={sorted.reduce((m, b) => Math.max(m, b.position), -1) + 1} onClose={() => setEditing(null)} />}
       <ConfirmDialog open={!!removing} onClose={() => setRemoving(null)} busy={busy} danger title="¿Eliminar este banner?" body="Deja de verse y se pierden sus vistas y toques." confirmLabel="Eliminar"
         onConfirm={async () => { if (removing && await run(createClient().from('banners').delete().eq('id', removing.id), 'Banner eliminado')) setRemoving(null) }} />
     </>

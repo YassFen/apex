@@ -15,7 +15,10 @@ function score(resultType: string, value: string): number {
     const [rounds, reps] = v.split('+').map(n => parseInt(n, 10) || 0)
     return rounds * 1000 + reps
   }
-  return parseFloat(v.replace(',', '.')) || 0
+  const n = parseFloat(v.replace(',', '.')) || 0
+  // Weights are saved in each athlete's unit ("100 kg", "225 lb"): compare them in lb.
+  if (resultType === 'weight' && /kg/i.test(v)) return n * 2.20462262
+  return n
 }
 
 export function rankResults<T extends { result_type: string; result_value: string; rx_level: string; recorded_at?: string }>(

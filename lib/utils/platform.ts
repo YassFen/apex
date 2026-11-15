@@ -18,6 +18,12 @@ export async function requirePlatformAdmin(): Promise<{ supabase: any; userId: s
 }
 
 export async function loadUsage(supabase: any, days: number): Promise<Usage | null> {
-  const { data, error } = await supabase.rpc('admin_usage', { p_days: days })
-  return error || !data ? null : (data as Usage)
+  const [{ data, error }, people] = await Promise.all([
+    supabase.rpc('admin_usage', { p_days: days }),
+    supabase.rpc('admin_period_users', { p_days: days }),
+  ])
+  if (error || !data) return null
+  const u = data as Usage
+  if (!people.error && people.data !== null) u.totals.period_users = Number(people.data)
+  return u
 }

@@ -90,7 +90,7 @@ async function loadNotices(supabase: any, userId: string, boxes: Box[]): Promise
       ? supabase.from('events').select('id, name, starts_on, created_at, box_id, created_by').in('box_id', boxIds)
           .neq('created_by', userId).gte('created_at', new Date(Date.now() - 5 * 86_400_000).toISOString())
       : Promise.resolve({ data: [], error: null }),
-    supabase.from('support_tickets').select('id, replied_at').eq('user_id', userId).eq('status', 'answered').eq('seen_reply', false),
+    supabase.from('support_tickets').select('id, replied_at').eq('user_id', userId).in('status', ['answered', 'closed']).not('reply', 'is', null).eq('seen_reply', false),
   ])
 
   let wods = (wodsRes.data ?? []) as any[]
@@ -109,7 +109,7 @@ async function loadNotices(supabase: any, userId: string, boxes: Box[]): Promise
 
   return buildNotices({
     today,
-    replies: ((repliesRes.error ? [] : repliesRes.data ?? []) as any[]).map(r => ({ id: r.id, date: String(r.replied_at ?? today).slice(0, 10) })),
+    replies: ((repliesRes.error ? [] : repliesRes.data ?? []) as any[]).map(r => ({ id: r.id, date: String(r.replied_at ?? today).slice(0, 10), at: String(r.replied_at ?? '') })),
     myEvents: ((goingRes.error ? [] : goingRes.data ?? []) as any[])
       .map(p => p.events).filter(Boolean)
       .map((e: any) => ({ id: e.id, name: e.name, startsOn: e.starts_on })),

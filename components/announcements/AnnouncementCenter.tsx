@@ -40,7 +40,7 @@ export function AnnouncementCenter({ items, userId }: { items: ShellAnnouncement
     const next = new Set(read).add(a.id)
     setRead(next)
     try { localStorage.setItem(SEEN_KEY, JSON.stringify([...next].slice(-80))) } catch {}
-    void createClient().from('announcement_reads').upsert({ announcement_id: a.id, user_id: userId }, { onConflict: 'announcement_id,user_id' }).then(() => {})
+    void createClient().from('announcement_reads').upsert({ announcement_id: a.id, user_id: userId }, { onConflict: 'announcement_id,user_id', ignoreDuplicates: true }).then(() => {})
   }
 
   return (

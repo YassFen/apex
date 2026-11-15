@@ -14,13 +14,13 @@ export interface MyTicket { id: string; kind: string; message: string; status: '
 
 const STATUS = { open: { label: 'Recibido', color: 'neutral' }, answered: { label: 'Respondido', color: 'green' }, closed: { label: 'Cerrado', color: 'neutral' } } as const
 
-export function SupportView({ profile, tickets, missing, openNew }: { profile: Profile; tickets: MyTicket[]; missing: boolean; openNew: boolean }) {
+export function SupportView({ profile, tickets, missing, openNew, from }: { profile: Profile; tickets: MyTicket[]; missing: boolean; openNew: boolean; from?: string }) {
   const { activeBoxId } = useShell()
   const [sheet, setSheet] = useState(openNew)
 
   // Opening this screen marks the answers as read.
   useEffect(() => {
-    const unseen = tickets.filter(t => t.status === 'answered' && !t.seen_reply)
+    const unseen = tickets.filter(t => t.reply && !t.seen_reply)
     if (!unseen.length) return
     const supabase = createClient()
     unseen.forEach(t => { void supabase.rpc('ticket_seen', { p_id: t.id }).then(() => {}) })
@@ -47,7 +47,7 @@ export function SupportView({ profile, tickets, missing, openNew }: { profile: P
         <ul className="flex flex-col gap-3">
           {tickets.map(t => {
             const kind = TICKET_KINDS.find(k => k.k === t.kind)
-            const fresh = t.status === 'answered' && !t.seen_reply
+            const fresh = !!t.reply && !t.seen_reply
             return (
               <li key={t.id} className={cn('rounded-[20px] bg-p p-4 flex flex-col gap-3', fresh && 'ring-1 ring-inset ring-gr/60')}>
                 <div className="flex items-center gap-2">
@@ -71,7 +71,7 @@ export function SupportView({ profile, tickets, missing, openNew }: { profile: P
           })}
         </ul>
       </div>
-      <SupportSheet open={sheet} onClose={() => setSheet(false)} userId={profile.id} boxId={activeBoxId} />
+      <SupportSheet open={sheet} onClose={() => setSheet(false)} userId={profile.id} boxId={activeBoxId} from={from} />
     </>
   )
 }

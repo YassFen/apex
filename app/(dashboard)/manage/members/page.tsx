@@ -9,7 +9,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
   const sp = await searchParams
   const { supabase, profile, box, boxes } = await requireAdminBox(sp.box)
   const today = todayISO()
-  const from = addDaysISO(today, -60)
+  const from = addDaysISO(today, -365)
 
   const [people, days, msRes] = await Promise.all([
     loadPeople(supabase, box),
@@ -23,7 +23,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
   const rows: MemberRow[] = people.map(p => {
     const d = [...(days.get(p.id) ?? [])].sort()
     const last = d[d.length - 1] ?? null
-    const m = currentMembership(byUser.get(p.id) ?? [])
+    const m = currentMembership(byUser.get(p.id) ?? [], today)
     return {
       id: p.id, name: p.name, email: p.email, avatar: p.avatar, role: p.role, isActive: p.isActive,
       joinedDays: daysBetween(toDateInput(p.joinedAt), today),

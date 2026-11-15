@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Field, labelCls } from '@/components/ui/Field'
 import { Modal, ModalActions } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Avatar, BoxTabs, Empty, MigrationNotice, selectCls } from '@/components/manage/ui'
 import { CalendarCheck, Check, X, Warning, UserPlus } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
@@ -24,7 +25,7 @@ import type { Profile, Box, ClassSlot, ClassOverride, ClassBooking, CoachIssue, 
 
 const REASONS: Record<string, string> = {
   no_class: 'Esa clase ya no existe.', not_member: 'No eres parte de este box.', cancelled: 'Esa clase fue cancelada.',
-  frozen: 'Tu plan está congelado. Habla con tu box para reactivarlo.', expired: 'Tu plan venció. Renuévalo en tu box para reservar.',
+  frozen: 'Tu plan está congelado. Habla con tu box para reactivarlo.', too_late: 'Esa clase ya empezó.', no_plan: 'No tienes un plan vigente en este box.', removed: 'Ya no eres parte de este box.', expired: 'Tu plan venció. Renuévalo en tu box para reservar.',
   no_classes: 'Ya usaste todas las clases de tu plan.', out_of_range: 'Solo puedes reservar hasta 30 días adelante.',
 }
 
@@ -41,7 +42,11 @@ export function ClassesView({ profile, me, boxes, box, staff, today, slots, over
   const [day, setDay] = useState(today)
   const [busy, setBusy] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
-  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, today, addDaysISO(today, 6)), [slots, overrides, bookings, today])
+  const [cancelling, setCancelling] = useState<Session | null>(null)
+  // Classes that already started can't be booked or cancelled by the athlete.
+  const nowHM = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date())
+  const started = (s: Session) => s.date < today || (s.date === today && s.time <= nowHM)
+  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, today, addDaysISO(today, 6), today), [slots, overrides, bookings, today])
   const nameOf = (id: string | null) => people.find(p => p.id === id)?.name ?? null
   const myStatus = (s: Session) => bookings.find(b => b.slot_id === s.slotId && b.class_date === s.date && b.user_id === me && b.status !== 'cancelled')?.status ?? null
   const state = planState(membership, today)
@@ -136,21 +141,25 @@ export function ClassesView({ profile, me, boxes, box, staff, today, slots, over
                     {s.cancelled ? null : coachView ? (
                       <Button size="sm" variant="secondary" onClick={() => setOpen(s.key)}>Lista</Button>
                     ) : mine ? (
-                      <button type="button" disabled={busy === s.key} onClick={() => cancel(s)}
+                      <button type="button" disabled={busy === s.key || started(s)} onClick={() => setCancelling(s)}
                         className={cn('h-10 px-4 rounded-full text-xs font-bold flex items-center gap-1.5 flex-shrink-0', mine === 'waitlist' ? 'bg-or/15 text-or' : 'bg-gr/15 text-gr')}>
                         {mine === 'waitlist' ? 'En espera' : <><Check size={14} weight="bold" /> Reservada</>}
                       </button>
-                    ) : (
+                    ) : started(s) ? <span className="text-xs text-fa flex-shrink-0">Ya empezó</span> : (
                       <Button size="sm" disabled={busy === s.key} variant={full ? 'secondary' : 'primary'} onClick={() => book(s)} className="flex-shrink-0">{full ? 'Lista de espera' : 'Reservar'}</Button>
                     )}
                   </li>
                 )
               })}
             </ul>
-            {!coachView && <p className="text-xs text-mu text-center text-pretty">Toca una reserva para cancelarla. Si el plan es por clases, la clase vuelve a tu plan.</p>}
+            {!coachView && <p className="text-xs text-mu text-center text-pretty">Toca una reserva para cancelarla antes de que empiece la clase.</p>}
           </>
         )}
       </div>
+
+      <ConfirmDialog open={!!cancelling} onClose={() => setCancelling(null)} busy={!!busy} confirmLabel="Cancelar reserva"
+        title="¿Cancelar tu reserva?" body={cancelling ? `${WEEKDAYS[weekdayOf(cancelling.date)]} ${cancelling.time} · ${cancelling.name}. Si tu plan es por clases, la clase vuelve a tu plan.` : undefined}
+        onConfirm={async () => { if (cancelling) await cancel(cancelling); setCancelling(null) }} />
 
       {openSession && box && (
         <RosterSheet key={openSession.key} box={box} me={me} s={openSession} people={people} today={today}
@@ -171,6 +180,7 @@ function RosterSheet({ box, me, s, people, bookings, issue, today, onClose }: {
   const supabase = createClient()
   const [busy, setBusy] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const [withdrawing, setWithdrawing] = useState(false)
   const [reason, setReason] = useState('')
   const [walkIn, setWalkIn] = useState('')
   const who = (id: string) => people.find(p => p.id === id)
@@ -184,7 +194,8 @@ function RosterSheet({ box, me, s, people, bookings, issue, today, onClose }: {
     const { error, data } = await p
     setBusy(false)
     if (error || data?.ok === false) { fire(error ? friendlyError(error.message) : REASONS[data.reason] ?? 'No se pudo.', 'error'); return false }
-    if (ok) fire(ok, 'ok')
+    if (data?.status === 'waitlist') fire('La clase está llena: quedó en lista de espera. Sube el cupo en Horarios para que cuente.', 'info')
+    else if (ok) fire(ok, 'ok')
     router.refresh()
     return true
   }
@@ -235,7 +246,7 @@ function RosterSheet({ box, me, s, people, bookings, issue, today, onClose }: {
               <div className="p-3.5 rounded-2xl bg-or/10 text-sm flex items-center gap-3">
                 <span className="flex-1 text-or">Avisaste que no puedes dar esta clase.</span>
                 <button type="button" disabled={busy} className="text-sm font-semibold underline"
-                  onClick={() => call(supabase.from('coach_issues').delete().eq('id', issue.id), 'Aviso retirado')}>Retirar aviso</button>
+                  onClick={() => setWithdrawing(true)}>Retirar aviso</button>
               </div>
             ) : !issue && (
               <button type="button" onClick={() => setReporting(true)} className="h-11 rounded-full bg-rd/15 text-rd text-sm font-bold flex items-center justify-center gap-2">
@@ -246,6 +257,9 @@ function RosterSheet({ box, me, s, people, bookings, issue, today, onClose }: {
         </div>
       </Modal>
 
+      <ConfirmDialog open={withdrawing} onClose={() => setWithdrawing(false)} busy={busy} confirmLabel="Retirar aviso" title="¿Sí puedes dar la clase?"
+        body="Se retira tu aviso y la administración deja de buscar reemplazo."
+        onConfirm={async () => { if (issue && await call(supabase.from('coach_issues').delete().eq('id', issue.id), 'Aviso retirado')) setWithdrawing(false) }} />
       <Modal open={reporting} onClose={() => setReporting(false)} title="Avisar a la administración" subtitle="Le llega una alerta para asignar a otro coach en esta clase.">
         <form onSubmit={async e => {
           e.preventDefault()

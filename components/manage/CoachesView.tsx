@@ -22,7 +22,7 @@ export function CoachesView({ profile, box, boxes, today, period, from, to, coac
   profile: Profile; box: Box; boxes: Box[]; today: string; period: 'week' | 'month'; from: string; to: string; coaches: PersonLite[]
   slots: ClassSlot[]; overrides: ClassOverride[]; bookings: Pick<ClassBooking, 'slot_id' | 'class_date' | 'status'>[]; issues: CoachIssue[]; missing: boolean
 }) {
-  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, from, to), [slots, overrides, bookings, from, to])
+  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, from, to, today), [slots, overrides, bookings, from, to])
   const load = useMemo(() => coachLoad(sessions), [sessions])
   const [resolving, setResolving] = useState<CoachIssue | null>(null)
   const nameOf = (id: string | null) => coaches.find(c => c.id === id)?.name ?? 'Coach'
@@ -62,7 +62,7 @@ export function CoachesView({ profile, box, boxes, today, period, from, to, coac
           </section>
         )}
         {unassigned.length > 0 && (
-          <Link href="/manage/schedule" className="flex gap-2.5 p-3.5 rounded-2xl bg-or/10 text-or text-sm">
+          <Link href={`/manage/schedule${boxes.length > 1 ? `?box=${box.id}` : ''}`} className="flex gap-2.5 p-3.5 rounded-2xl bg-or/10 text-or text-sm">
             <Warning size={18} className="flex-shrink-0 mt-px" />
             <span>{unassigned.length} {unassigned.length === 1 ? 'clase sin coach' : 'clases sin coach'} en este periodo: {unassigned.slice(0, 3).map(s => `${WEEKDAYS_SHORT[weekdayOf(s.date)]} ${s.time}`).join(', ')}. Asígnalas en Horarios.</span>
           </Link>
@@ -110,7 +110,7 @@ export function CoachesView({ profile, box, boxes, today, period, from, to, coac
                     <div className="flex items-center gap-3">
                       <Avatar name={c.name} src={c.avatar} />
                       <div className="min-w-0 flex-1">
-                        <Link href={`/manage/members/${c.id}`} className="font-semibold text-sm truncate block hover:underline">{c.name}</Link>
+                        <Link href={`/manage/members/${c.id}${boxes.length > 1 ? `?box=${box.id}` : ''}`} data-track-off className="font-semibold text-sm truncate block hover:underline">{c.name}</Link>
                         <div className="text-xs text-mu">{roleLabel(c.role)} · {hoursLabel(weekly)} por semana fijas</div>
                       </div>
                       <div className="text-right flex-shrink-0">

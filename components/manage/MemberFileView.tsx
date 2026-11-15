@@ -13,7 +13,7 @@ import { Avatar, MigrationNotice, SectionTitle, Stat, selectCls } from '@/compon
 import { Snowflake, Play, ArrowsClockwise, Ticket, EnvelopeSimple, Phone, WhatsappLogo } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
 import { addDaysISO, daysBetween, formatDateOnly, toDateInput } from '@/lib/utils/dates'
-import { MEMBERSHIP_EVENT_LABEL, PLAN_STATE_META, classesLeft, currentMembership, planState, unfreeze } from '@/lib/utils/membership'
+import { MEMBERSHIP_EVENT_LABEL, PLAN_STATE_META, classesLeft, currentMembership, planState, unfreeze, upcomingMembership } from '@/lib/utils/membership'
 import { friendlyError } from '@/lib/utils/errors'
 import { cn, roleLabel } from '@/lib/utils/cn'
 import type { Person } from '@/lib/utils/admin-box'
@@ -33,7 +33,8 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
   const [sheet, setSheet] = useState<null | 'assign' | 'freeze' | 'adjust'>(null)
   const [confirm, setConfirm] = useState<null | 'cancel' | 'deactivate'>(null)
 
-  const m = currentMembership(memberships)
+  const m = currentMembership(memberships, today)
+  const next = upcomingMembership(memberships, today)
   const state = planState(m, today)
   const meta = PLAN_STATE_META[state]
   const left = classesLeft(m)
@@ -108,7 +109,7 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
 
   return (
     <>
-      <Topbar title="Ficha" profile={profile} backHref="/manage/members" />
+      <Topbar title="Ficha" profile={profile} backHref={`/manage/members?box=${box.id}`} />
       <div className="p-4 lg:p-6 grid grid-cols-1 gap-4 max-w-3xl w-full">
         {missing && <MigrationNotice />}
 
@@ -151,6 +152,9 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
           {m?.status === 'frozen' && m.frozen_on && (
             <div className="text-sm text-bl">Congelado desde {fmt(m.frozen_on)} ({daysBetween(m.frozen_on, today)} días). Al reactivar, esos días se suman al vencimiento.</div>
           )}
+          {next && next.id !== m?.id && (
+            <div className="text-sm text-gr">Renovación cargada: {next.plan_name} desde el {fmt(next.starts_on)}.</div>
+          )}
           {m?.kind === 'classes' && (
             <div>
               <div className="flex justify-between text-sm mb-1.5">
@@ -164,7 +168,7 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
           )}
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" onClick={() => setSheet('assign')} disabled={missing}><ArrowsClockwise size={15} /> {m ? 'Renovar o cambiar' : 'Asignar plan'}</Button>
-            {m?.status === 'active' && <Button size="sm" variant="secondary" onClick={() => setSheet('freeze')}><Snowflake size={15} /> Congelar</Button>}
+            {m?.status === 'active' && state !== 'expired' && <Button size="sm" variant="secondary" onClick={() => setSheet('freeze')}><Snowflake size={15} /> Congelar</Button>}
             {m?.status === 'frozen' && <Button size="sm" variant="secondary" onClick={reactivate} disabled={busy}><Play size={15} /> Reactivar</Button>}
             {m?.kind === 'classes' && <Button size="sm" variant="secondary" onClick={() => setSheet('adjust')}><Ticket size={15} /> Ajustar clases</Button>}
             {m && <Button size="sm" variant="danger" onClick={() => setConfirm('cancel')}>Cancelar plan</Button>}
@@ -245,7 +249,7 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
         </Card>
       </div>
 
-      <AssignSheet open={sheet === 'assign'} onClose={() => setSheet(null)} plans={plans} today={today} current={m} busy={busy}
+      {sheet === 'assign' && <AssignSheet open onClose={() => setSheet(null)} plans={plans} today={today} current={next ?? m} busy={busy}
         onSave={(plan, start) => run(async () => {
           const { data, error } = await supabase.from('memberships').insert({
             box_id: box.id, user_id: person.id, plan_id: plan.id, plan_name: plan.name, kind: plan.kind, starts_on: start,
@@ -253,24 +257,24 @@ export function MemberFileView({ profile, box, person, me, today, days, membersh
           }).select('id').single()
           if (error || !data) return { error: error ?? { message: 'No se pudo guardar' } }
           return log((data as any).id, m ? 'renewed' : 'assigned', { reason: plan.name })
-        }, m ? 'Plan renovado' : 'Plan asignado')} />
+        }, m ? 'Plan renovado' : 'Plan asignado')} />}
 
-      <ReasonSheet open={sheet === 'freeze'} onClose={() => setSheet(null)} busy={busy} title="Congelar plan"
+      {sheet === 'freeze' && <ReasonSheet open onClose={() => setSheet(null)} busy={busy} title="Congelar plan"
         subtitle="El plan se pausa desde hoy. Al reactivarlo, los días congelados se suman a la fecha de vencimiento." label="Motivo (opcional)" cta="Congelar"
         onSave={reason => run(async () => {
           if (!m) return
           const { error } = await supabase.from('memberships').update({ status: 'frozen', frozen_on: today }).eq('id', m.id)
           if (error) return { error }
           return log(m.id, 'frozen', { reason: reason || null })
-        }, 'Plan congelado')} />
+        }, 'Plan congelado')} />}
 
-      <AdjustSheet open={sheet === 'adjust'} onClose={() => setSheet(null)} busy={busy} used={m?.classes_used ?? 0} total={m?.classes_total ?? 0}
+      {sheet === 'adjust' && <AdjustSheet open onClose={() => setSheet(null)} busy={busy} used={m?.classes_used ?? 0} total={m?.classes_total ?? 0}
         onSave={(used, reason) => run(async () => {
           if (!m) return
           const { error } = await supabase.from('memberships').update({ classes_used: used }).eq('id', m.id)
           if (error) return { error }
           return log(m.id, 'adjusted', { reason: `Clases usadas: ${m.classes_used} → ${used}${reason ? `. ${reason}` : ''}` })
-        }, 'Clases ajustadas')} />
+        }, 'Clases ajustadas')} />}
 
       <ConfirmDialog open={confirm === 'cancel'} onClose={() => setConfirm(null)} onConfirm={cancelPlan} busy={busy} danger
         title="¿Cancelar el plan?" body="El plan deja de estar vigente y queda en el historial. Puedes asignar otro después." confirmLabel="Cancelar plan" />
@@ -326,7 +330,7 @@ function AssignSheet({ open, onClose, plans, today, current, busy, onSave }: {
   onSave: (plan: MembershipPlan, start: string) => void
 }) {
   // A renewal starts the day after the current plan ends, unless it already expired.
-  const suggested = current && current.ends_on >= today && current.status === 'active' ? addDaysISO(current.ends_on, 1) : today
+  const suggested = current && current.ends_on >= today && current.status !== 'cancelled' ? addDaysISO(current.ends_on, 1) : today
   const [planId, setPlanId] = useState<string>(current?.plan_id ?? '')
   const [start, setStart] = useState(suggested)
   const plan = plans.find(p => p.id === planId) ?? plans[0]

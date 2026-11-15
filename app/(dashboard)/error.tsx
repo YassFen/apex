@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { Warning } from '@/components/ui/icons'
-import { reportError } from '@/lib/utils/telemetry'
+import { cleanPath, reportError } from '@/lib/utils/telemetry'
 
 export default function DashboardError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { reportError('render', `${error.message}${error.digest ? ` (${error.digest})` : ''}`, error.stack) }, [error])
@@ -17,7 +17,7 @@ export default function DashboardError({ error, reset }: { error: Error & { dige
           <Link href="/dashboard" className="h-12 rounded-full ring-1 ring-inset ring-t/30 font-semibold grid place-items-center">Ir al inicio</Link>
           <button type="button" onClick={reset} className="h-12 rounded-full bg-ac text-onac font-semibold">Reintentar</button>
         </div>
-        <Link href="/support?new=1" className="text-sm font-semibold text-mu underline underline-offset-4 h-11 grid place-items-center">Contarnos qué estabas haciendo</Link>
+        <Link href={`/support?new=1&from=${encodeURIComponent(cleanPath(typeof window !== 'undefined' ? location.pathname : ''))}`} className="text-sm font-semibold text-mu underline underline-offset-4 h-11 grid place-items-center">Contarnos qué estabas haciendo</Link>
       </div>
     </div>
   )

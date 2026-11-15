@@ -33,15 +33,18 @@ export interface Session {
   cancelReason: string | null
   booked: number
   waitlist: number
+  /** People who actually came (past classes only). */
+  attended: number
 }
 
-export function buildSessions(slots: ClassSlot[], overrides: ClassOverride[], bookings: Pick<ClassBooking, 'slot_id' | 'class_date' | 'status'>[], from: string, to: string): Session[] {
+export function buildSessions(slots: ClassSlot[], overrides: ClassOverride[], bookings: Pick<ClassBooking, 'slot_id' | 'class_date' | 'status'>[], from: string, to: string, today?: string): Session[] {
   const ov = new Map(overrides.map(o => [`${o.slot_id}|${o.class_date}`, o]))
-  const counts = new Map<string, { booked: number; waitlist: number }>()
+  const counts = new Map<string, { booked: number; waitlist: number; attended: number }>()
   for (const b of bookings) {
     const k = `${b.slot_id}|${b.class_date}`
-    const c = counts.get(k) ?? { booked: 0, waitlist: 0 }
+    const c = counts.get(k) ?? { booked: 0, waitlist: 0, attended: 0 }
     if (b.status === 'booked' || b.status === 'attended' || b.status === 'no_show') c.booked++
+    if (today && attended(b, today)) c.attended++
     else if (b.status === 'waitlist') c.waitlist++
     counts.set(k, c)
   }
@@ -51,7 +54,8 @@ export function buildSessions(slots: ClassSlot[], overrides: ClassOverride[], bo
     const date = addDaysISO(from, i)
     const dow = weekdayOf(date)
     for (const s of slots) {
-      if (!s.is_active || s.weekday !== dow) continue
+      // A slot taken off the grid keeps its past classes (history), not its future ones.
+      if (s.weekday !== dow || (!s.is_active && (!today || date >= today))) continue
       const key = `${s.id}|${date}`
       const o = ov.get(key)
       const c = counts.get(key)
@@ -60,7 +64,7 @@ export function buildSessions(slots: ClassSlot[], overrides: ClassOverride[], bo
         capacity: o?.capacity ?? s.capacity, coachId: o?.coach_id ?? s.coach_id,
         regularCoachId: o?.coach_id && o.coach_id !== s.coach_id ? s.coach_id : null,
         cancelled: !!o?.cancelled, cancelReason: o?.cancel_reason ?? null,
-        booked: c?.booked ?? 0, waitlist: c?.waitlist ?? 0,
+        booked: c?.booked ?? 0, waitlist: c?.waitlist ?? 0, attended: c?.attended ?? 0,
       })
     }
   }
@@ -73,7 +77,7 @@ export function coachLoad(sessions: Session[]): Map<string, { hours: number; cla
   for (const s of sessions) {
     if (s.cancelled || !s.coachId) continue
     const c = m.get(s.coachId) ?? { hours: 0, classes: 0, athletes: 0 }
-    c.hours += s.durationMin / 60; c.classes++; c.athletes += s.booked
+    c.hours += s.durationMin / 60; c.classes++; c.athletes += s.attended
     m.set(s.coachId, c)
   }
   return m

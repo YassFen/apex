@@ -13,7 +13,7 @@ import { useToast } from '@/components/ui/Toast'
 import { Empty, MigrationNotice, SectionTitle, selectCls } from '@/components/manage/ui'
 import { Megaphone, Plus, ShareFat, Trash } from '@/components/ui/icons'
 import { createClient } from '@/lib/supabase/client'
-import { formatDateOnly, toDateInput } from '@/lib/utils/dates'
+import { addDaysISO, formatDateOnly, toDateInput } from '@/lib/utils/dates'
 import { AUDIENCE_LABEL, isLive, targetLabel } from '@/lib/utils/announcements'
 import { WEEKDAYS, WEEK_ORDER, hhmm } from '@/lib/utils/schedule'
 import { friendlyError } from '@/lib/utils/errors'
@@ -35,7 +35,8 @@ export function AnnouncementsView({ profile, me, today, boxes, items, slots, rea
   const staffBoxes = boxes.filter(b => b.role !== 'athlete')
   const roleIn = (boxId: string) => boxes.find(b => b.id === boxId)?.role ?? 'athlete'
   const live = items.filter(a => isLive(a, today))
-  const past = items.filter(a => !isLive(a, today))
+  const upcoming = items.filter(a => a.starts_on > today)
+  const past = items.filter(a => !!a.ends_on && a.ends_on < today)
 
   async function remove() {
     if (!removing) return
@@ -96,6 +97,7 @@ export function AnnouncementsView({ profile, me, today, boxes, items, slots, rea
         ) : (
           <>
             {live.length > 0 && <ul className="flex flex-col gap-3 stagger">{live.map(card)}</ul>}
+            {upcoming.length > 0 && <><SectionTitle>Programados</SectionTitle><ul className="flex flex-col gap-3">{upcoming.map(card)}</ul></>}
             {past.length > 0 && <><SectionTitle>Anteriores</SectionTitle><ul className="flex flex-col gap-3 opacity-70">{past.map(card)}</ul></>}
           </>
         )}
@@ -182,11 +184,11 @@ function Composer({ draft, me, today, boxes, slots, onClose }: { draft: Draft; m
         )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Desde" type="date" required value={startsOn} onChange={e => setStartsOn(e.target.value)} />
-          <Field label="Hasta (opcional)" type="date" min={startsOn} value={endsOn} onChange={e => setEndsOn(e.target.value)} />
+          <Field label={urgent ? 'Hasta' : 'Hasta (opcional)'} type="date" min={startsOn} required={urgent} value={endsOn} onChange={e => setEndsOn(e.target.value)} />
         </div>
         <label className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-p2">
           <span className="text-sm"><span className="font-semibold block">Urgente</span><span className="text-mu text-xs">Queda fijo en rojo arriba de la app hasta la fecha de término.</span></span>
-          <Switch checked={urgent} onChange={setUrgent} label="Urgente" />
+          <Switch checked={urgent} onChange={v => { setUrgent(v); if (v && !endsOn) setEndsOn(addDaysISO(startsOn, 7)) }} label="Urgente" />
         </label>
         <ModalActions secondary="Cancelar" primary="Publicar" onSecondary={onClose} primaryType="submit" busy={busy} disabled={!title.trim()} />
       </form>

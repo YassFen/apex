@@ -27,7 +27,7 @@ const isAway = (r: MemberRow) => !r.isActive || (r.lastDays ?? r.joinedDays) >= 
 const TESTS: Record<Filter, (r: MemberRow) => boolean> = {
   all: () => true,
   active: r => !isAway(r),
-  inactive: isAway,
+  inactive: r => r.isActive && isAway(r),
   expiring: r => r.isActive && (r.state === 'expiring' || r.state === 'expired' || r.state === 'no_classes'),
   frozen: r => r.state === 'frozen',
   low: r => !isAway(r) && r.attendance30 < LOW_ATTENDANCE,
@@ -116,7 +116,7 @@ export function MembersView({ profile, box, boxes, rows, initialFilter, missing 
               const away = isAway(r)
               return (
                 <li key={r.id}>
-                  <Link href={`/manage/members/${r.id}?box=${box.id}`} className="tap-card flex items-center gap-3 p-3.5 rounded-2xl bg-p">
+                  <Link href={`/manage/members/${r.id}?box=${box.id}`} data-track-off className="tap-card flex items-center gap-3 p-3.5 rounded-2xl bg-p">
                     <Avatar name={r.name} src={r.avatar} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">

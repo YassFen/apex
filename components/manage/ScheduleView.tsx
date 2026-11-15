@@ -24,7 +24,7 @@ export function ScheduleView({ profile, box, boxes, today, from, people, slots, 
   slots: ClassSlot[]; overrides: ClassOverride[]; bookings: ClassBooking[]; issues: CoachIssue[]; missing: boolean
 }) {
   const to = addDaysISO(from, 6)
-  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, from, to), [slots, overrides, bookings, from, to])
+  const sessions = useMemo(() => buildSessions(slots, overrides, bookings, from, to, today), [slots, overrides, bookings, from, to, today])
   const coaches = people.filter(p => p.role !== 'athlete')
   const nameOf = (id: string | null) => people.find(p => p.id === id)?.name ?? null
   const dates = Array.from({ length: 7 }, (_, i) => addDaysISO(from, i))
@@ -194,13 +194,13 @@ function SessionSheet({ box, s, coaches, people, bookings, onClose, onEditSlot }
               <div>
                 <label className={labelCls} htmlFor="s-coach">Coach de este día</label>
                 <select id="s-coach" className={selectCls} value={coach} onChange={e => setCoach(e.target.value)}>
-                  <option value="">Sin coach</option>
+                  {!(s.regularCoachId ?? s.coachId) && <option value="">Sin coach</option>}
                   {coaches.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <p className="text-xs text-mu mt-1.5">Cambia solo esta fecha. Para cambiarlo todas las semanas, edita el horario.</p>
               </div>
               <Field label="Cupo de este día" type="number" inputMode="numeric" min={1} max={200} value={capacity} onChange={e => setCapacity(e.target.value)} />
-              {dirty && <Button disabled={busy} onClick={() => override({ coach_id: coach || null, capacity: Math.max(1, Number(capacity) || s.capacity), cancelled: false }, 'Clase actualizada')}><UserSwitch size={16} /> Guardar cambios de este día</Button>}
+              {dirty && <Button disabled={busy} onClick={() => override({ ...(coach !== (s.coachId ?? '') ? { coach_id: coach || null } : {}), ...(Number(capacity) !== s.capacity ? { capacity: Math.max(1, Number(capacity) || s.capacity) } : {}), cancelled: false }, 'Clase actualizada')}><UserSwitch size={16} /> Guardar cambios de este día</Button>}
             </>
           )}
 

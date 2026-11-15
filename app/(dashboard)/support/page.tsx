@@ -4,7 +4,7 @@ import { getUser, getProfile } from '@/lib/supabase/session'
 import { SupportView, type MyTicket } from '@/components/support/SupportView'
 import { isMissingTable } from '@/lib/utils/errors'
 
-export default async function SupportPage({ searchParams }: { searchParams: Promise<{ new?: string }> }) {
+export default async function SupportPage({ searchParams }: { searchParams: Promise<{ new?: string; from?: string }> }) {
   const sp = await searchParams
   const supabase = await createClient()
   const user = await getUser()
@@ -13,5 +13,5 @@ export default async function SupportPage({ searchParams }: { searchParams: Prom
   if (!profile) redirect('/auth/login')
   const { data, error } = await supabase.from('support_tickets')
     .select('id, kind, message, status, reply, replied_at, seen_reply, created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30)
-  return <SupportView profile={profile} tickets={(data ?? []) as MyTicket[]} missing={isMissingTable(error)} openNew={sp.new === '1'} />
+  return <SupportView profile={profile} tickets={(data ?? []) as MyTicket[]} missing={isMissingTable(error)} openNew={sp.new === '1'} from={/^\/[\w/:-]{0,118}$/.test(sp.from ?? '') ? sp.from : undefined} />
 }

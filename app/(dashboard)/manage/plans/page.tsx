@@ -18,7 +18,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
   for (const m of ((msRes.data ?? []) as Membership[])) byUser.set(m.user_id, [...(byUser.get(m.user_id) ?? []), m])
   const counts: Record<string, number> = {}
   for (const rows of byUser.values()) {
-    const m = currentMembership(rows)
+    const m = currentMembership(rows, today)
     const s = planState(m, today)
     if (m?.plan_id && s !== 'expired' && s !== 'none') counts[m.plan_id] = (counts[m.plan_id] ?? 0) + 1
   }

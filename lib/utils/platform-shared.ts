@@ -2,7 +2,7 @@
 type KV = { k: string; n: number; users?: number; path?: string; mode?: string }
 export interface Usage {
   days: number
-  totals: { users: number; boxes: number; coaches: number; athletes: number; new_7d: number; dau: number; wau: number; mau: number; sessions: number; open_errors: number }
+  totals: { users: number; boxes: number; coaches: number; athletes: number; new_7d: number; dau: number; wau: number; mau: number; sessions: number; open_errors: number; period_users?: number }
   retention: { before: number; kept: number }
   daily: { d: string; users: number; events: number }[]
   signups: { d: string; n: number }[]
