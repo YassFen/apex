@@ -4,15 +4,14 @@ import { toDateInput, formatDateOnly } from '@/lib/utils/dates'
 
 const ACTION: Record<string, string> = {
   box_plan: 'Cambió el plan de un box', error_resolved: 'Marcó un error como resuelto', error_ignored: 'Ignoró un error', error_open: 'Reabrió un error',
+  ticket_answered: 'Respondió un mensaje de soporte', ticket_closed: 'Cerró un mensaje de soporte', ticket_open: 'Reabrió un mensaje de soporte',
 }
 
 export default async function AdminAudit() {
   const { supabase } = await requirePlatformAdmin()
-  const { data } = await supabase.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(200)
+  const { data } = await supabase.from('admin_audit_log').select('*, profiles:admin_id(full_name)').order('created_at', { ascending: false }).limit(200)
   const rows = (data ?? []) as any[]
-  const ids = [...new Set(rows.map(r => r.admin_id as string))]
-  const { data: admins } = ids.length ? await supabase.from('profiles').select('id, full_name').in('id', ids) : { data: [] }
-  const nameOf = (id: string) => ((admins ?? []) as any[]).find(a => a.id === id)?.full_name ?? 'Administrador'
+  const nameOf = (r: any) => r.profiles?.full_name ?? 'Administrador'
 
   return (
     <>
@@ -23,7 +22,7 @@ export default async function AdminAudit() {
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold">{ACTION[r.action] ?? r.action}</div>
               <div className="text-xs text-mu mt-0.5 break-words">
-                {nameOf(r.admin_id)}{r.target ? ` · ${r.target}` : ''}
+                {nameOf(r)}{r.target ? ` · ${r.target}` : ''}
                 {r.detail?.from ? ` · ${r.detail.from} → ${r.detail.to}` : r.detail?.message ? ` · ${r.detail.message}` : ''}
               </div>
             </div>

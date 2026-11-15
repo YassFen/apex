@@ -10,6 +10,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request })
   }
 
+  // Prefetches only warm the next screen; the page itself checks the session again when it opens.
+  if (request.headers.get('next-router-prefetch') && request.cookies.getAll().some(c => c.name.startsWith('sb-'))) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(

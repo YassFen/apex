@@ -1,4 +1,5 @@
 // Server-side guard and shared types for the application panel (/admin).
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getUser, getProfile } from '@/lib/supabase/session'
@@ -6,16 +7,19 @@ import type { Profile } from '@/lib/types/database'
 import type { Usage } from '@/lib/utils/platform-shared'
 
 /** Only accounts listed in platform_admins get in (added by hand in SQL, never from the app). */
-export async function requirePlatformAdmin(): Promise<{ supabase: any; userId: string; profile: Profile }> {
+// cache(): the layout and the page both call it during one request; the checks run once.
+export const requirePlatformAdmin = cache(async (): Promise<{ supabase: any; userId: string; profile: Profile }> => {
   const supabase = await createClient()
   const user = await getUser()
   if (!user) redirect('/auth/login')
-  const profile = await getProfile(user.id)
+  const [profile, { data, error }] = await Promise.all([
+    getProfile(user.id),
+    supabase.from('platform_admins').select('user_id').eq('user_id', user.id).maybeSingle(),
+  ])
   if (!profile) redirect('/auth/login')
-  const { data, error } = await supabase.from('platform_admins').select('user_id').eq('user_id', user.id).maybeSingle()
   if (error || !data) redirect('/dashboard')
   return { supabase, userId: user.id, profile }
-}
+})
 
 export async function loadUsage(supabase: any, days: number): Promise<Usage | null> {
   const [{ data, error }, people] = await Promise.all([

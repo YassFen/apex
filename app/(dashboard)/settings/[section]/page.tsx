@@ -17,27 +17,17 @@ export default async function SettingsSectionPage({ params }: { params: Promise<
   const profile = p as Profile | null
   if (!profile) redirect('/auth/login')
 
-  const { data: memberships } = await supabase
-    .from('box_members')
-    .select('*, boxes(id, name, city, country, invite_code, logo_url)')
-    .eq('user_id', user.id)
-    .eq('is_active', true)
-
-  const { data: movementsRaw } = await supabase
-    .from('movements').select('id, name, category').order('category').order('name')
-
-  const { data: prsRaw } = await supabase
-    .from('pr_records')
-    .select('metric, value_lb, movements(name, category)')
-    .eq('user_id', user.id)
-    .eq('is_pr', true)
-
-  let ownedBox: Box | null = null
-  if (profile.role === 'coach') {
-    const { data: b } = await supabase
-      .from('boxes').select('*').eq('owner_id', profile.id).maybeSingle()
-    ownedBox = b as Box | null
-  }
+  // Each section loads only what it shows, all at once (appearance, security… need nothing extra).
+  const none = Promise.resolve({ data: null })
+  const [{ data: memberships }, { data: movementsRaw }, { data: prsRaw }, { data: b }] = await Promise.all([
+    section === 'boxes' || section === 'profile'
+      ? supabase.from('box_members').select('*, boxes(id, name, city, country, invite_code, logo_url)').eq('user_id', user.id).eq('is_active', true)
+      : none,
+    section === 'profile' ? supabase.from('movements').select('id, name, category').order('category').order('name') : none,
+    section === 'athletic' ? supabase.from('pr_records').select('metric, value_lb, movements(name, category)').eq('user_id', user.id).eq('is_pr', true) : none,
+    section === 'box' && profile.role === 'coach' ? supabase.from('boxes').select('*').eq('owner_id', profile.id).limit(1).maybeSingle() : none,
+  ])
+  const ownedBox = (b ?? null) as Box | null
 
   return (
     <SettingsView

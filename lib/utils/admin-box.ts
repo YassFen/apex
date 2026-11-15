@@ -21,9 +21,8 @@ export async function requireAdminBox(wanted?: string | null): Promise<{ supabas
   const supabase = await createClient()
   const user = await getUser()
   if (!user) redirect('/auth/login')
-  const profile = await getProfile(user.id)
+  const [profile, boxes] = await Promise.all([getProfile(user.id), adminBoxesFor(supabase, user.id)])
   if (!profile) redirect('/auth/login')
-  const boxes = await adminBoxesFor(supabase, user.id)
   if (!boxes.length) redirect('/dashboard')
   const box = boxes.find(b => b.id === wanted) ?? boxes[0]
   return { supabase, userId: user.id, profile, box, boxes }

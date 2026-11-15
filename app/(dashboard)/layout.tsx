@@ -12,15 +12,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const user = await getUser()
   if (!user) redirect('/auth/login')
 
-  const profile = await getProfile(user.id)
-
-  if (!profile) redirect('/auth/login')
-
-  // Load all boxes this user belongs to (as owner or member)
-  const [{ data: owned }, { data: memberships }] = await Promise.all([
+  // Everything that only needs the user id goes out at once.
+  const [profile, { data: owned }, { data: memberships }, { data: pa, error: paErr }] = await Promise.all([
+    getProfile(user.id),
     supabase.from('boxes').select('*').eq('owner_id', user.id),
     supabase.from('box_members').select('box_id, role, boxes(*)').eq('user_id', user.id).eq('is_active', true),
+    supabase.from('platform_admins').select('user_id').eq('user_id', user.id).maybeSingle(),
   ])
+  if (!profile) redirect('/auth/login')
 
   const boxMap = new Map<string, Box>()
   ;(owned ?? []).forEach((b: any) => { if (b?.id) boxMap.set(b.id, b as Box) })
@@ -34,7 +33,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ...((memberships ?? []) as any[]).filter(m => m.role === 'admin').map(m => m.box_id as string),
   ])]
   // Platform administrators (011). The table may not exist yet.
-  const { data: pa, error: paErr } = await supabase.from('platform_admins').select('user_id').eq('user_id', user.id).maybeSingle()
   const isPlatformAdmin = !paErr && !!pa
 
   const staffBoxIds = new Set([...adminBoxIds, ...((memberships ?? []) as any[]).filter(m => m.role !== 'athlete').map(m => m.box_id as string)])

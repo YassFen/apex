@@ -5,7 +5,7 @@ import { NoData } from '@/components/admin/UsageViews'
 
 export default async function AdminSupport() {
   const { supabase, userId } = await requirePlatformAdmin()
-  const { data, error } = await supabase.from('support_tickets').select('*').order('created_at', { ascending: false }).limit(300)
+  const { data, error } = await supabase.from('support_tickets').select('*').order('created_at', { ascending: false }).limit(120)
   if (error) return <><PageTitle title="Soporte" /><NoData /></>
   const rows = (data ?? []) as any[]
   const ids = [...new Set(rows.map(r => r.user_id as string))]
