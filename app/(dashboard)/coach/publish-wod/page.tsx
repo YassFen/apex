@@ -7,7 +7,8 @@ import type { Profile, Movement } from '@/lib/types/database'
 import { pickCoachBox } from '@/lib/utils/coach-boxes'
 
 const AHEAD_DAYS = 13
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Real ids are UUIDs; the demo uses short readable ids. Either way only safe characters.
+const UUID = /^[A-Za-z0-9-]{1,64}$/
 
 export default async function PublishWodPage({ searchParams }: { searchParams: Promise<{ date?: string; box?: string; from?: string }> }) {
   const supabase = await createClient()
